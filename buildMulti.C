@@ -8,8 +8,6 @@
 #include "meryl.H"
 #include "merStream.H"
 
-#include "swalign.H"
-
 #include <unordered_map>
 #include <vector>
 #include <set>
