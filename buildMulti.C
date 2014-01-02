@@ -134,6 +134,8 @@ main(int argc, char **argv) {
                                         iter != storedHash.end(); 
                                         ++iter) {
       unordered_map<u64bit, u64bit> counts;
+      int aLen = seqLens.find(iter->first)->second;
+
       for (u32bit i = 0; i < args->numHashes; i++) {
          //fprintf(stderr, "For sequence %llu hash %d min value stored is %llu\n", iter->first, i, iter->second[i]);
          vector<u64bit>* sameMin = minToSequence[i].find(iter->second[i])->second;
@@ -147,8 +149,16 @@ main(int argc, char **argv) {
                                         c != storedHash.end() && c->first < iter->first;
                                         ++c) {
          double score = 0;
+         int bLen = seqLens.find(c->first)->second;
+
          if (counts.find(c->first) != counts.end()) {
             score = (double)counts[c->first] / args->numHashes * 100;
+
+            // adjust for different lengths
+            int minLen = (aLen < bLen ? aLen : bLen);
+            int maxLen = (aLen > bLen ? aLen : bLen);
+            double ratio = (double)minLen/maxLen;
+            score /= ratio;
          }
          //fprintf(stderr, "For sequence %llu versus sequence %llu the count is %.2f\n", iter->first, c->first, score);
 
@@ -197,7 +207,7 @@ main(int argc, char **argv) {
             }
             bool aOri = (aFwd > aRev ? true : false);
             bool bOri = (bFwd > bRev ? true : false);
-            fprintf(stderr, "For sequence %llu (%d-%d) %d versus sequence %llu (%d-%d) %d the count is %.2f\n", iter->first, (aOri ? aStart : aEnd), (aOri ? aEnd : aStart), seqLens.find(iter->first)->second, c->first, (bOri ? bStart : bEnd), (bOri ? bEnd : bStart), seqLens.find(c->first)->second, score);
+            fprintf(stderr, "For sequence %llu (%d-%d) %d versus sequence %llu (%d-%d) %d the count is %.2f\n", iter->first, (aOri ? aStart : aEnd), (aOri ? aEnd : aStart), aLen, c->first, (bOri ? bStart : bEnd), (bOri ? bEnd : bStart), bLen, score);
 
             /*
             seq_pair p;

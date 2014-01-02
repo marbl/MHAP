@@ -184,6 +184,7 @@ public class buildMulti {
       startTime = System.nanoTime();
       for (long seq : b.storedHash.keySet()) {
          long[] storedMins = b.storedHash.get(seq);
+         int aLen = b.seqLens.get(seq);
          HashMap<Long, Integer> counts = new HashMap<Long, Integer>();
          for (int i = 0; i < numHashes; i++) {
             ArrayList<Long> sameMin = b.minToSequence.get(i).get(storedMins[i]);
@@ -194,9 +195,16 @@ public class buildMulti {
          }
          for (long seq2 : b.storedHash.keySet()) {
             if (seq2 >= seq) { break; }
+            int bLen = b.seqLens.get(seq2);
             double score = 0;
             if (counts.containsKey(seq2)) {
                score = (double)counts.get(seq2) / numHashes * 100;
+
+               // adjust for different lengths
+               int minLen = Math.min(aLen, bLen);
+               int maxLen = Math.max(aLen, bLen);
+               double ratio = (double)minLen/maxLen;
+               score /= ratio;
             }
 
             if (score >= threshold) {
@@ -246,7 +254,7 @@ public class buildMulti {
                boolean aOri = (aFwd > aRev ? true : false);
                boolean bOri = (bFwd > bRev ? true : false);
             
-               System.out.println("For sequence " + seq + " (" + (aOri ? aStart : aEnd) + ", " + (aOri ? aEnd : aStart) + ") " + b.seqLens.get(seq) + " versus sequence " + seq2 + " (" + (bOri ? bStart : bEnd) + ", " + (bOri ? bEnd : bStart) + ") " + b.seqLens.get(seq2) + " the count is " + score);
+               System.out.println("For sequence " + seq + " (" + (aOri ? aStart : aEnd) + ", " + (aOri ? aEnd : aStart) + ") " + aLen + " versus sequence " + seq2 + " (" + (bOri ? bStart : bEnd) + ", " + (bOri ? bEnd : bStart) + ") " + bLen + " the count is " + score);
             }
          }
      }
