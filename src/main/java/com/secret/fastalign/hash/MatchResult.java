@@ -4,13 +4,15 @@ public final class MatchResult implements Comparable<MatchResult>
 {
 	private final SequenceId fromId;
 	private final SequenceId toId;
+	private final int shift;
 	private final double score;
 	
-	public MatchResult(SequenceId fromId, SequenceId toId, double score)
+	public MatchResult(SequenceId fromId, SequenceId toId, double score, int shift)
 	{
 		this.fromId = fromId;
 		this.toId = toId;
 		this.score = score;
+		this.shift = shift;
 	}
 
 	/**
@@ -41,5 +43,10 @@ public final class MatchResult implements Comparable<MatchResult>
 	public int compareTo(MatchResult o)
 	{
 		return -Double.compare(this.score, o.score);
+	}
+	
+	public int getFromShift()
+	{
+		return this.shift;
 	}
 }
