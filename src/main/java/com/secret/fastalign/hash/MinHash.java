@@ -1,6 +1,7 @@
 package com.secret.fastalign.hash;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +51,10 @@ public final class MinHash
 			ArrayList<SequenceId> currList = hash.get(hashValues[count]);
 			
 			if (currList==null)
+			{
 				currList = new ArrayList<SequenceId>();
+				hash.put(hashValues[count], currList);
+			}
 			
 			currList.add(seq.getId());
 			
@@ -99,7 +103,7 @@ public final class MinHash
 			if (ratio<1.0)
 				ratio = 1.0/ratio;
 			
-			double score = (double)count*ratio;
+			double score = (double)count*ratio/(double)this.numHashes;
 			
 			if (score>threshold)
 				matches.add(new MatchResult(seq.getId(), id, score));
@@ -111,7 +115,7 @@ public final class MinHash
 		return matches;
 	}
 	
-	public void addData(ReadData data)
+	public void addData(FastaData data)
 	{
 		for (Sequence seq : data.getSequences())
 		{
@@ -121,7 +125,9 @@ public final class MinHash
 	
 	private long[] getHashes(Sequence seq)
 	{
+		//allocate the new hashes
 		long[] hashes = new long[this.numHashes];
+		Arrays.fill(hashes, Long.MAX_VALUE);
 		
 		for (int iter=0; iter<seq.numKmers(); iter++)
 		{

@@ -13,4 +13,13 @@ public final class SequenceId
 	{
 		return this.id;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return this.id.toString();
+	}
 }
