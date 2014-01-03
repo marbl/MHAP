@@ -1,10 +1,10 @@
+package com.secret.fastalign.utils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.FileInputStream;
 import java.io.FileReader;
 
 public class Utils {
@@ -29,7 +29,7 @@ public class Utils {
       }
       
       public int size() {
-         return (Math.max(first, (int)second) - Math.min(first, (int)second) + 1);
+         return (Math.max(this.first, (int)this.second) - Math.min(this.first, (int)this.second) + 1);
       }
    }
    
@@ -45,7 +45,7 @@ public class Utils {
 
        public String getCompliment()
        {
-          return other;
+          return this.other;
        }
        Translate( String other )
        {
@@ -148,7 +148,7 @@ public class Utils {
 
        public String getProtein()
        {
-          return other;
+          return this.other;
        }
        ToProtein( String other )
        {
