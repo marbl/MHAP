@@ -1,10 +1,15 @@
 package com.secret.fastalign.hash;
+import jaligner.matrix.Matrix;
+import jaligner.matrix.MatrixLoader;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.LogManager;
 
 public class AlignmentRun {
 
-	private static final int DEFAULT_NUM_HASHES = 1000;
+	private static final int DEFAULT_NUM_HASHES = 2000;
 
 	private static final int DEFAULT_KMER_SIZE = 10;
 
@@ -43,17 +48,21 @@ public class AlignmentRun {
 		System.err.println("num hashes\t" + numHashes);
 		System.err.println("max skip\t" + maxSkip);
 
+		LogManager.getLogManager().reset();
+		
 		// read and index the kmers
 		long startTime = System.nanoTime();
 
 		FastaData data = new FastaData(inFile, fastaSuffix, kmerSize);
+		
+		System.out.println("Read in "+data.size()+" sequences.");
 
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
 
 		// compute hashes
 		startTime = System.nanoTime();
 
-		MinHash minHash = new MinHash(numHashes);
+		MinHash minHash = new MinHash(numHashes, kmerSize);
 		minHash.addData(data);
 
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
@@ -66,21 +75,50 @@ public class AlignmentRun {
 		for (Sequence seq : data.getSequences())
 		{
 			//get the matches
-			List<MatchResult> matches = minHash.findMatches(seq, 0.0);
+			List<MatchResult> matches = minHash.findMatches(seq, 1.0);
 			
 			//added to the list of solutions
 			results.addAll(matches);
 		}
 		
+		//sort to get the best scores on top
+		Collections.sort(results);		
+		//Collections.shuffle(results);
+		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
 		System.out.println("Found "+results.size()+" matches:");
 		
+		Matrix matrix = MatrixLoader.load("/Users/kberlin/Dropbox/Projects/fast-align/src/test/resources/com/secret/fastalign/matrix/score_matrix.txt");
+		
 		//output result
+		int count = 0;
+		double mean = 0;
 		for (MatchResult match : results)
 		{
-			System.out.format("Sequence match (%s - %s) with identity score %f.\n", match.getFromId(), match.getToId(), match.getScore());
+			if (match.getFromId().equals(match.getToId()))
+				continue;
+			
+			Sequence s1 = data.getSequence(match.getFromId());
+			Sequence s2 = data.getSequence(match.getToId());
+			
+			//compute the actual match
+			double score = jaligner.SmithWatermanGotoh.align(new jaligner.Sequence(s1.getString()), new jaligner.Sequence(s2.getString()), matrix, 5, 3).getScore();
+						
+			//System.out.format("Sequence match (%s - %s) with identity score %f (SW=%f).\n", match.getFromId(), match.getToId(), match.getScore(), score);
+			System.out.format("%f %f %s %s %d\n", match.getScore(), score, match.getFromId(), match.getToId(), match.getFromShift());
+			
+			mean += match.getScore();
+			
+			count++;
+			
+			if (count>200)
+				break;
 		}
+		
+		mean = mean/count;
+		
+		System.out.println("Mean: "+mean);
 	}
 
 	public static void printUsage(String error) {

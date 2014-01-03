@@ -2,6 +2,7 @@ package com.secret.fastalign.hash;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.secret.fastalign.utils.Utils;
@@ -10,6 +11,7 @@ public class FastaData
 {
 	// length of sequences loaded
 	private final ArrayList<Sequence> sequenceList;
+	private final HashMap<SequenceId, Sequence> sequenceMap;
 
 	public FastaData(String file, String[] fastaSuffix, int kmerSize) throws Exception
 	{
@@ -18,6 +20,7 @@ public class FastaData
 		StringBuilder fastaSeq = new StringBuilder();
 
 		this.sequenceList = new ArrayList<Sequence>();
+		this.sequenceMap = new HashMap<SequenceId, Sequence>();
 
 		// String header = "";
 		long numProcessed = 0;
@@ -46,7 +49,14 @@ public class FastaData
 	// process a sequence and store the kmers/sequence length/etc
 	public void addMers(SequenceId id, String seq, int merSize)
 	{
-		this.sequenceList.add(new Sequence(seq, merSize, id));
+		Sequence sequence = new Sequence(seq, merSize, id);
+		this.sequenceList.add(sequence);
+		this.sequenceMap.put(id, sequence);
+	}
+	
+	public Sequence getSequence(SequenceId id)
+	{
+		return this.sequenceMap.get(id);
 	}
 
 	public List<Sequence> getSequences()
