@@ -188,7 +188,7 @@ public class Utils {
               }
            }
            if (i == postfix.length) {
-              System.err.println("Unknown fiile format " + fileName + " Skipping!");
+              System.err.println("Unknown file format " + fileName + " Skipping!");
            }
         }
 

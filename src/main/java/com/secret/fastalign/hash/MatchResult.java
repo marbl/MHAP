@@ -40,6 +40,6 @@ public final class MatchResult implements Comparable<MatchResult>
 	@Override
 	public int compareTo(MatchResult o)
 	{
-		return Double.compare(this.score, o.score);
+		return -Double.compare(this.score, o.score);
 	}
 }
