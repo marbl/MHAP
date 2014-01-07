@@ -1,7 +1,7 @@
 package com.secret.fastalign.utils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
-
+import java.util.Random;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -294,6 +294,22 @@ public class Utils {
       
       return result.toString();
    }
+   
+ 	public static int[] errorString(int[] s, double readError)
+ 	{
+ 		int[] snew = s.clone();
+ 		
+ 		Random generator = new Random();
+ 		for (int iter=0; iter<s.length; iter++)
+ 		{
+ 			if (generator.nextDouble()<readError)
+ 				while(snew[iter]==s[iter])
+ 					snew[iter] = generator.nextInt(3);
+ 		}
+ 		
+ 		return snew;
+ 	}
+ 	
    
    public static int checkForEnd(String line, int brackets) {
       if (line.startsWith("{")) {
