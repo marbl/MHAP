@@ -4,22 +4,19 @@ import jaligner.matrix.MatrixLoader;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.logging.LogManager;
 
 import com.secret.fastalign.data.FastaData;
 import com.secret.fastalign.data.Sequence;
-import com.secret.fastalign.data.SequenceId;
 import com.secret.fastalign.minhash.MinHash;
-import com.secret.fastalign.simhash.SequenceSimHash;
-import com.secret.fastalign.simhash.SimHash;
-import com.secret.fastalign.utils.Pair;
+import com.secret.fastalign.simhash.KmerVectoreStore;
 
-public class AlignmentSimHashRun {
+public class AlignmentVectorHashRun 
+{	
 
-	private static final int DEFAULT_NUM_WORDS = 1024;
+	private static final int DEFAULT_NUM_WORDS = 32;
 
-	private static final int DEFAULT_KMER_SIZE = 8;
+	private static final int DEFAULT_KMER_SIZE = 6;
 
 	private static final double DEFAULT_DATA_ERROR = 0.25;
 
@@ -72,7 +69,24 @@ public class AlignmentSimHashRun {
 
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
 		
-		SimHash simHash = new SimHash(kmerSize, numWords);
+		//BitVectorStore simHash = new BitVectorStore(kmerSize, numWords);
+		KmerVectoreStore simHash = new KmerVectoreStore(kmerSize, numWords);
+		
+		/*
+		String ss1 = data.getSequences().get(0).getString().substring(0, 100);
+		String ss2 = data.getSequences().get(10).getString().substring(0, 100);
+		Sequence seq1 = new Sequence(ss1, new SequenceId(1));
+		Sequence seq2 = new Sequence(ss2, new SequenceId(2));
+		System.out.println(ss1);
+		System.out.println(ss2);
+		System.out.println(Arrays.toString(SequenceSimHash.computeHash(seq1, kmerSize, numWords)[0]));
+		System.out.println(Arrays.toString(SequenceSimHash.computeHash(seq1, kmerSize, numWords)[0]));
+		SequenceSimHash val1 = new SequenceSimHash(seq1, kmerSize, numWords, null);
+		SequenceSimHash val2 = new SequenceSimHash(seq2, kmerSize, numWords, null);
+		System.out.println(val1);
+		System.out.println(val2);
+		System.out.println(val1.score(val2));
+		System.exit(1);
 
 		int skip = 0;
 		for (Sequence seq : data.getSequences())
@@ -81,6 +95,9 @@ public class AlignmentSimHashRun {
 				simHash.addSequence(seq);
 			skip++;
 		}
+		*/
+
+		simHash.addData(data);
 
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 
@@ -89,20 +106,14 @@ public class AlignmentSimHashRun {
 
 		//find out the scores
 		ArrayList<MatchResult> results = new ArrayList<MatchResult>();
-		skip = 0;
 		for (Sequence seq : data.getSequences())
 		{
-			if (skip%maxSkip==0)
-			{
-				results.addAll(simHash.findMatches(seq, 0.0));
-			}
-			
-			skip++;
+			results.addAll(simHash.findMatches(seq, 0.0));
 		}
 		
 		//sort to get the best scores on top
-		Collections.sort(results);		
-		//Collections.shuffle(results);
+		//Collections.sort(results);		
+		Collections.shuffle(results);
 		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
@@ -135,7 +146,7 @@ public class AlignmentSimHashRun {
 		
 		mean = mean/count;
 		
-		System.out.println("Mean: "+mean);
+		System.out.println("Mean: "+mean);		
 	}
 
 	public static void printUsage(String error) {

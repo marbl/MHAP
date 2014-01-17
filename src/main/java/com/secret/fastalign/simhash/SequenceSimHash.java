@@ -5,40 +5,79 @@ import org.apache.lucene.util.OpenBitSet;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.secret.fastalign.data.Sequence;
-import com.secret.fastalign.data.SequenceId;
-import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public final class SequenceSimHash implements Comparable<SequenceSimHash>
+public final class SequenceSimHash extends AbstractSequenceBitHash 
 {
-	private final OpenBitSet bits;
-	private final SequenceId id;
-	private final int length;
-	
 	private final static int NUM_LONG_BITS = 64;
+	
+	public static long[][] computeHash(Sequence seq, int kmerSize, int numWords, int subKmerSize)
+	{
+		String seqString = seq.getString();
+		int numberKmers = seqString.length()-kmerSize+1;
+
+		int numerSubKmers = kmerSize-subKmerSize+1;
+		long[][] hashes = new long[numberKmers][numWords*numerSubKmers];
+		//long[][] hashes = new long[numberKmers][numWords];
+		
+
+		HashFunction[] hf = new HashFunction[numWords];
+		for (int hashIndex=0; hashIndex<numWords; hashIndex++)
+		  hf[hashIndex] = Hashing.murmur3_128(hashIndex);
+
+		//System.out.println(seqString.length());
+		for (int kmerIndex=0; kmerIndex<numberKmers; kmerIndex++)
+		{
+			String subSeq = seqString.substring(kmerIndex, kmerIndex+kmerSize);
+			
+			for (int hashIndex=0; hashIndex<numWords; hashIndex++)
+			{
+				for (int i=0; i<numerSubKmers; i++)
+				{
+					String is = subSeq.substring(i, i+subKmerSize);
+					long val = hf[hashIndex].newHasher().putUnencodedChars(is).putInt(1).hash().asLong();
+					
+					hashes[kmerIndex][hashIndex*numerSubKmers+i] = val;
+				}
+			}
+		}
+		
+		return hashes;
+	}
 	
 	public SequenceSimHash(Sequence seq, int kmerSize, int numberWords)
 	{
-		this.bits = new OpenBitSet(NUM_LONG_BITS*numberWords);
-		this.length = seq.length();
-		this.id = seq.getId();
+		super(seq, kmerSize);
 		
-		int[] counts = new int[numberWords*NUM_LONG_BITS];
+		int subKmerSize = kmerSize;
 		
 		//compute the hashes
-		long[][] hashes = computeHash(seq, kmerSize);
+		long[][] hashes = computeHash(seq, kmerSize, numberWords, subKmerSize);
 		
-		//perform count
+		recordHashes(hashes, kmerSize, numberWords, subKmerSize);
+	}
+	
+	private void recordHashes(long[][] hashes, int kmerSize, int numWords, int subKmerSize)
+	{
+		this.bits = new OpenBitSet(NUM_LONG_BITS*numWords);
+		int[] counts = new int[this.bits.length()];
+
+		int numerSubKmers = kmerSize-subKmerSize+1;
+
+		//perform count for each kmer
 		for (int kmerIndex=0; kmerIndex<hashes.length; kmerIndex++)
 		{
-			OpenBitSet val = new OpenBitSet(hashes[kmerIndex], numberWords);
+			OpenBitSet val = new OpenBitSet(hashes[kmerIndex], hashes[kmerIndex].length);
 			
 			//for each hash go through all its bits and count
-			for (int bitIndex=0; bitIndex<val.length(); bitIndex++)
+			for (int wordsBitIndex=0; wordsBitIndex<counts.length; wordsBitIndex++)
 			{
-				if (val.fastGet(bitIndex))
-					counts[bitIndex]++;
-				else
-					counts[bitIndex]--;
+				for (int subIndex=0; subIndex<numerSubKmers; subIndex++)
+				{
+					if (val.fastGet(wordsBitIndex*numerSubKmers+subIndex))
+						counts[wordsBitIndex]++;
+					else
+						counts[wordsBitIndex]--;
+				}
 			}
 		}
 		
@@ -46,103 +85,6 @@ public final class SequenceSimHash implements Comparable<SequenceSimHash>
 		{
 			if (counts[bitIndex]>0)
 				this.bits.fastSet(bitIndex);
-		}
-	}
-	
-	public double adjScore(SequenceSimHash sh)
-	{
-		double score = score(sh);
-		
-		return score;
-	}
-	
-	private long[][] computeHash(Sequence seq, int kmerSize)
-	{
-		int numberLongs = (int)this.bits.size()/NUM_LONG_BITS;
-		
-		String seqString = seq.getString();
-		int size = seqString.length()-kmerSize;
-
-		long[][] hashes = new long[size][numberLongs];
-		
-
-		HashFunction[] hf = new HashFunction[numberLongs];
-		for (int hashIndex=0; hashIndex<numberLongs; hashIndex++)
-		  hf[hashIndex] = Hashing.murmur3_128(hashIndex);
-
-		//System.out.println(seqString.length());
-		for (int kmerIndex=0; kmerIndex<size; kmerIndex++)
-		{
-			CharSequence subSeq = seqString.subSequence(kmerIndex, kmerIndex+kmerSize);
-			for (int hashIndex=0; hashIndex<numberLongs; hashIndex++)
-			{
-				hashes[kmerIndex][hashIndex] = hf[hashIndex].newHasher().putUnencodedChars(subSeq).hash().asLong();
-			}
-		}
-		
-		return hashes;
-	}
-	
-	public boolean getBit(int index)
-	{
-		return this.bits.fastGet(index);
-	}
-	
-	public int getIntersectionCount(SequenceSimHash sh)
-	{
-		if (this.bits.size()!=sh.bits.size())
-			throw new FastAlignRuntimeException("Size of bits in tables must match.");
-		
-		return (int)(this.bits.size()-OpenBitSet.xorCount(this.bits, sh.bits));
-	}
-	
-	public SequenceId getSequenceId()
-	{
-		return this.id;
-	}
-	
-	public double score(SequenceSimHash sh)
-	{
-		int count = getIntersectionCount(sh);
-		
-		return (double)count/(double)this.bits.size();
-	}
-	
-	public int seqLength()
-	{
-		return this.length;
-	}
-
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString()
-	{
-		StringBuilder s = new StringBuilder();
-		for (int index=0; index<this.bits.length(); index++)
-			if (this.bits.fastGet(index))
-				s.append("1");
-			else
-				s.append("0");
-		
-		return s.toString();
-	}
-
-	@Override
-	public int compareTo(SequenceSimHash sim)
-	{
-		for (int bitIndex=0; bitIndex<this.bits.length(); bitIndex++)
-		{
-			boolean v1 = this.bits.fastGet(bitIndex);
-			boolean v2 = sim.bits.fastGet(bitIndex);	
-			
-			if (!v1 && v2)
-				return -1;
-			if (v1 && !v2)
-				return 1;
-		}
-		
-		return 0;
+		}		
 	}
 }
