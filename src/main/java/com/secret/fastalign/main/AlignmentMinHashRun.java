@@ -13,9 +13,9 @@ import com.secret.fastalign.minhash.MinHash;
 
 public class AlignmentMinHashRun {
 
-	private static final int DEFAULT_NUM_HASHES = 5000;
+	private static final int DEFAULT_NUM_HASHES = 100;
 
-	private static final int DEFAULT_KMER_SIZE = 10;
+	private static final int DEFAULT_KMER_SIZE = 18;
 
 	private static final double DEFAULT_DATA_ERROR = 0.25;
 
@@ -79,26 +79,11 @@ public class AlignmentMinHashRun {
 		int skip = 0;
 		for (Sequence seq : data.getSequences())
 		{
-			if (skip%5==0)
+			if (skip%10==0)
 				minHash.addSequence(seq);
 			
 			skip++;
 		}
-		
-		/*
-		int[] s = new int[10000+kmerSize];
-		Random generator = new Random(1);
-		for (int iter=0; iter<s.length; iter++)
-			s[iter] = generator.nextInt(3);
-
-		ArrayList<Sequence> mySeq = new ArrayList<>();
-		for (int iter=0; iter<10; iter++)
-		{
-			Sequence seq = new Sequence(Utils.errorString(s, DEFAULT_DATA_ERROR), new SequenceId(iter));
-			mySeq.add(seq);
-			minHash.addSequence(seq);
-		}
-		*/
 
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 

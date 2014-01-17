@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import com.secret.fastalign.data.FastaData;
 import com.secret.fastalign.data.Sequence;
 import com.secret.fastalign.data.SequenceId;
@@ -77,7 +80,7 @@ public final class MinHash
 		{
 			if (generator.nextDouble()<readError)
 				while(snew[iter]==s[iter])
-					snew[iter] = generator.nextInt(3);
+					snew[iter] = generator.nextInt(4);
 		}
 		
 		return snew;
@@ -108,7 +111,7 @@ public final class MinHash
 		
 		//generate the random sequence
 		for (int iter=0; iter<s.length; iter++)
-			s[iter] = generator.nextInt(3);
+			s[iter] = generator.nextInt(4);
 		
 		//get the permuted matches
 		int[] s1 = errorString(s, readError, generator);
@@ -134,7 +137,7 @@ public final class MinHash
 		
 		double ratio = (double)kmerCount/(double)numKmers;
 						
-		return Math.pow(ratio, SUPER_SHINGLE_SIZE);
+		return ratio;
 	}
 	
 	public MinHash(int numHashes, int kmerSize)
@@ -271,8 +274,8 @@ public final class MinHash
 	
 	public int[][] getHashes(Sequence seq)
 	{
-		return getHashesCyclic(seq);
-		//return getHashesStandard(seq);
+		//return getHashesCyclic(seq);
+		return getHashesStandard(seq);
 	}
 	
 	public int[][] getHashesCyclic(Sequence seq)
@@ -347,38 +350,54 @@ public final class MinHash
 	public int[][] getHashesStandard(Sequence seq)
 	{
 		//allocate the new hashes
-		int[][] hashes = new int[2][this.numHashes];
+		int[][] hashes = new int[2][this.numHashes*SUPER_SHINGLE_SIZE];
+		int[][] hashesFinal = new int[2][this.numHashes];
+		
 		Arrays.fill(hashes[0], Integer.MAX_VALUE);
 		
-		//String seqString = seq.getString();		
-		//char[] seqArray = seqString.toCharArray();
+		HashFunction hasher = Hashing.murmur3_32(0);
 		
-		int size = seq.numKmers(this.kmerSize);
-		for (int kmerIndex=0; kmerIndex<size; kmerIndex++)
-		{
-			String kmer = seq.getKmer(kmerIndex, this.kmerSize);
+		//get the string
+		String seqString = seq.getString();
+		char[] seqArray = seqString.toCharArray();
 			
-			for (int hashIndex=0; hashIndex<this.numHashes; hashIndex++)
+		//start rolling
+		for(int kmerIndex = 0; kmerIndex<seqArray.length-kmerIndex; kmerIndex++) 
+		{
+			//System.out.println(k-this.kmerSize);
+			for (int hashIndex=0; hashIndex<hashes[0].length; hashIndex++)
 			{
-				int salt = this.seeds.get(hashIndex);
-				
-				//compute the hash
-				int hash = (int)hashBasic(kmer, (long)salt);
-				//int hash = HashCodeUtil.hash(salt, seqArray, kmerIndex, this.kmerSize);
-				
-				//store minimum hash
-				if (hash < hashes[0][hashIndex])
+				int currHash = Integer.MAX_VALUE;
+				for (int subKmerIndex = 0; subKmerIndex<this.kmerSize; subKmerIndex++)
 				{
-					hashes[0][hashIndex] = hash;
-					hashes[1][hashIndex] = kmerIndex;
+					int hash = hasher.newHasher().putChar(seqArray[kmerIndex+subKmerIndex]).putInt(subKmerIndex).putInt(hashIndex).hash().asInt();
+					
+					if (hash<currHash)
+						currHash = hash;
 				}
-				else
-				if (hash == hashes[0][hashIndex])
-					hashes[1][hashIndex] = -1;
-			}
+
+				if (currHash <= hashes[0][hashIndex])
+				{
+					hashes[0][hashIndex] = currHash;
+					
+					//record the position of the kmer
+					if (currHash == hashes[0][hashIndex])
+						hashes[1][hashIndex] = -1;
+					else
+						hashes[1][hashIndex] = kmerIndex;
+				}
+			}			
+	}
+		
+		for (int hashIndex=0; hashIndex<this.numHashes; hashIndex++)
+		{
+			hashesFinal[0][hashIndex] = hashes[0][SUPER_SHINGLE_SIZE*hashIndex];
+			for (int superSize=1; superSize<SUPER_SHINGLE_SIZE; superSize++)
+				hashesFinal[0][hashIndex] = hashesFinal[0][hashIndex]*22695477+hashes[0][SUPER_SHINGLE_SIZE*hashIndex+superSize];
+			hashesFinal[1][hashIndex] = hashes[1][SUPER_SHINGLE_SIZE*hashIndex+0];
 		}
 		
-		return hashes;
+		return hashesFinal;
 	}
 	
 	public double maxPercentInCommon(int len1, int len2)
