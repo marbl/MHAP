@@ -141,18 +141,16 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 		    		
 		    		//only search the forward sequences
 		    		if (nextSequence.getSequenceId().isForward())
-		    		{
 		      		localMatches.addAll(findMatches(nextSequence, acceptScore));
-				    	
-		      		//skip the required number of iterations
-				    	for (int skipIter=0; skipIter<numThreads-1; skipIter++)
-				    	{
-				    		if (iterator.hasNext())
-				    			iterator.next();
-				    		else
-				    			break;
-				    	}
-		    		}
+
+	      		//skip the required number of iterations
+			    	for (int skipIter=0; skipIter<numThreads-1; skipIter++)
+			    	{
+			    		if (iterator.hasNext())
+			    			iterator.next();
+			    		else
+			    			break;
+			    	}
 			    }
 		    	
 	    		//combine the results
@@ -183,6 +181,11 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 		return combinedList;
 	}
 
+	public int size()
+	{
+		//since complement is stored
+		return this.sequenceVectorsHash.size()/2;
+	}
 	
 	public List<MatchResult> findMatches(T seqHash, double acceptScore)
 	{		
@@ -194,7 +197,7 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 			
 			double score = seqHash.correlation(hash);
 			
-			if (score>acceptScore)
+			if (score>=acceptScore)
 				results.add(new MatchResult(seqHash.getSequenceId(), hash.getSequenceId(), score, 0));
 		}
 		
