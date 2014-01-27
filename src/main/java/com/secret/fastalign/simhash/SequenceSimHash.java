@@ -66,12 +66,12 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 		  for (int longIndex=0; longIndex<numWords; longIndex++)
 		  {	      
 		  	long val = hashes[kmerIndex][longIndex];
-		  	long mask = 1L;
+		  	long mask = 0b1;
 		  	
 	      for (int bit=0; bit<64; bit++)
 	      {
 	        /* if not different then increase count */
-	        if ((val&mask)==0L)
+	        if ((val&mask)==0b0)
 	          counts[longIndex*64+bit]++;
 	        else
 	        	counts[longIndex*64+bit]--;
@@ -85,7 +85,7 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 	  for (int longIndex=0; longIndex<numWords; longIndex++)
 	  {	      
 	  	long val = this.bits[longIndex];
-	  	long mask = 1L;
+	  	long mask = 0b1;
 	  	
       for (int bit=0; bit<64; bit++)
       {
