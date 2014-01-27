@@ -10,7 +10,7 @@ public class FastAlignMain
 
 	private static final int DEFAULT_KMER_SIZE = 7;
 
-	private static final double DEFAULT_THRESHOLD = 0.28;
+	private static final double DEFAULT_THRESHOLD = 0.3;
 	
 	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
@@ -72,15 +72,9 @@ public class FastAlignMain
 		System.err.println("Found "+results.size()+" matches:");
 		
 		//output result
-		int count = 0;
 		for (MatchResult match : results)
 		{
 			System.out.format("%f %s %s %d\n", match.getScore(), match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
-			
-			count++;
-			
-			if (count>100)
-				break;
 		}		
 	}
 
