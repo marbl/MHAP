@@ -14,11 +14,11 @@ import com.secret.fastalign.simhash.BitVectorStore;
 public class AlignmentVectorHashRun 
 {	
 
-	private static final int DEFAULT_NUM_WORDS = 128;
+	private static final int DEFAULT_NUM_WORDS = 32;
 
 	private static final int DEFAULT_KMER_SIZE = 7;
 
-	private static final double DEFAULT_DATA_ERROR = 0.25;
+	private static final double DEFAULT_DATA_ERROR = 0.28;
 
 	private static final int DEFAULT_SKIP = 10;
 	private static final int DEFAULT_THRESHOLD = 1;
@@ -144,7 +144,7 @@ public class AlignmentVectorHashRun
 			
 			count++;
 			
-			if (count>100)
+			if (count>200)
 				break;
 		}
 		

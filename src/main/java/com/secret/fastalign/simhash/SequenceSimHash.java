@@ -2,9 +2,6 @@ package com.secret.fastalign.simhash;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-
-import org.apache.lucene.util.OpenBitSet;
-
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
@@ -15,9 +12,7 @@ import com.secret.fastalign.utils.RabinKarpSeqHash;
 
 public final class SequenceSimHash extends AbstractSequenceBitHash 
 {
-	private final static int NUM_LONG_BITS = 64;
-	
-	public static long[][] computeHash(Sequence seq, int kmerSize, int numWords)
+	public final static long[][] computeHash(Sequence seq, int kmerSize, int numWords)
 	{
 		String seqString = seq.getString();
 		int numberKmers = seqString.length()-kmerSize+1;
@@ -27,7 +22,9 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 
 		long[][] hashes = new long[numberKmers][numWords];
 
+		//TODO change to city hash
 		HashFunction hf = Hashing.murmur3_128(0);
+		
 		RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
 
 		int[] rabinHashes = rabinHash.hashInt(seqString);
@@ -53,43 +50,53 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 	{
 		super(seq, kmerSize);
 		
-		int subKmerSize = kmerSize;
-		
 		//compute the hashes
 		long[][] hashes = computeHash(seq, kmerSize, numberWords);
 		
-		recordHashes(hashes, kmerSize, numberWords, subKmerSize);
+		recordHashes(hashes, kmerSize, numberWords);
 	}
 	
-	private void recordHashes(long[][] hashes, int kmerSize, int numWords, int subKmerSize)
+	private final void recordHashes(final long[][] hashes, final int kmerSize, final int numWords)
 	{
-		this.bits = new OpenBitSet(NUM_LONG_BITS*numWords);
-		int[] counts = new int[this.bits.length()];
-
-		int numerSubKmers = kmerSize-subKmerSize+1;
+		int[] counts = new int[numWords*64];
 
 		//perform count for each kmer
 		for (int kmerIndex=0; kmerIndex<hashes.length; kmerIndex++)
 		{
-			OpenBitSet val = new OpenBitSet(hashes[kmerIndex], hashes[kmerIndex].length);
-			
-			//for each hash go through all its bits and count
-			for (int wordsBitIndex=0; wordsBitIndex<counts.length; wordsBitIndex++)
-			{
-				for (int subIndex=0; subIndex<numerSubKmers; subIndex++)
-				{
-					if (val.fastGet(wordsBitIndex*numerSubKmers+subIndex))
-						counts[wordsBitIndex]++;
-					else
-						counts[wordsBitIndex]--;
-				}
-			}
+		  for (int longIndex=0; longIndex<numWords; longIndex++)
+		  {	      
+		  	long val = hashes[kmerIndex][longIndex];
+		  	long mask = 1L;
+		  	
+	      for (int bit=0; bit<64; bit++)
+	      {
+	        /* if not different then increase count */
+	        if ((val&mask)==0L)
+	          counts[longIndex*64+bit]++;
+	        else
+	        	counts[longIndex*64+bit]--;
+	        	
+	        mask = mask << 1;
+	      }
+		  }		  
 		}
 		
-		for (int bitIndex=0; bitIndex<counts.length; bitIndex++)
-		{
-			if (counts[bitIndex]>0)
-				this.bits.fastSet(bitIndex);
-		}		
+		this.bits = new long[numWords];
+	  for (int longIndex=0; longIndex<numWords; longIndex++)
+	  {	      
+	  	long val = this.bits[longIndex];
+	  	long mask = 1L;
+	  	
+      for (int bit=0; bit<64; bit++)
+      {
+      	if (counts[longIndex*64+bit]>0)
+      		val = val | mask;
+      	
+      	//adjust the mask
+        mask = mask << 1;
+      }
+      
+      this.bits[longIndex] = val;
+	  }	  
 	}
 }
