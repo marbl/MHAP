@@ -113,7 +113,8 @@ public class AlignmentVectorHashRun
 			results.addAll(simHash.findMatches(seq, 0.0));
 		}
 		*/
-		ArrayList<MatchResult> results = simHash.findMatches(0.0);
+		
+		ArrayList<MatchResult> results = simHash.findMatches(Double.NEGATIVE_INFINITY);
 		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		

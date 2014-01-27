@@ -12,29 +12,29 @@ import com.secret.fastalign.utils.RabinKarpSeqHash;
 
 public final class SequenceSimHash extends AbstractSequenceBitHash 
 {
-	public final static long[][] computeHash(Sequence seq, int kmerSize, int numWords)
+	public final static long[][] computeHash(final Sequence seq, final int kmerSize, final int numWords)
 	{
-		String seqString = seq.getString();
-		int numberKmers = seqString.length()-kmerSize+1;
-		
 		if (numWords%2!=0)
 			throw new FastAlignRuntimeException("Number of words must be a multiple of 2.");
 
-		long[][] hashes = new long[numberKmers][numWords];
+		String seqString = seq.getString();
+		final int numberKmers = seqString.length()-kmerSize+1;
+		
+		final long[][] hashes = new long[numberKmers][numWords];
 
-		//TODO change to city hash
+		//might want to change to city hash if it comes out
 		HashFunction hf = Hashing.murmur3_128(0);
 		
 		RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
 
-		int[] rabinHashes = rabinHash.hashInt(seqString);
+		final int[] rabinHashes = rabinHash.hashInt(seqString);
 		
 		for (int iter=0; iter<rabinHashes.length; iter++)
 		{
 			for (int word128=0; word128<numWords/2; word128++)
 			{
-				Hasher hasher = hf.newHasher(0);
-				HashCode code = hasher.putInt(rabinHashes[iter]).putInt(word128).hash();
+				final Hasher hasher = hf.newHasher(0);
+				final HashCode code = hasher.putInt(rabinHashes[iter]).putInt(word128).hash();
 
 				//store the code
 				LongBuffer bb = ByteBuffer.wrap(code.asBytes()).asLongBuffer();
@@ -58,23 +58,25 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 	
 	private final void recordHashes(final long[][] hashes, final int kmerSize, final int numWords)
 	{
-		int[] counts = new int[numWords*64];
+		final int[] counts = new int[numWords*64];
 
 		//perform count for each kmer
 		for (int kmerIndex=0; kmerIndex<hashes.length; kmerIndex++)
 		{
 		  for (int longIndex=0; longIndex<numWords; longIndex++)
 		  {	      
-		  	long val = hashes[kmerIndex][longIndex];
+		  	final long val = hashes[kmerIndex][longIndex];
+		  	final int offset = longIndex*64;
+
 		  	long mask = 0b1;
 		  	
 	      for (int bit=0; bit<64; bit++)
 	      {
 	        /* if not different then increase count */
 	        if ((val&mask)==0b0)
-	          counts[longIndex*64+bit]++;
+	          counts[offset+bit]++;
 	        else
-	        	counts[longIndex*64+bit]--;
+	        	counts[offset+bit]--;
 	        	
 	        mask = mask << 1;
 	      }
@@ -84,12 +86,13 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 		this.bits = new long[numWords];
 	  for (int longIndex=0; longIndex<numWords; longIndex++)
 	  {	      
-	  	long val = this.bits[longIndex];
+	  	final int offset = longIndex*64;
+	  	long val = 0b0;
 	  	long mask = 0b1;
 	  	
       for (int bit=0; bit<64; bit++)
       {
-      	if (counts[longIndex*64+bit]>0)
+      	if (counts[offset+bit]>0)
       		val = val | mask;
       	
       	//adjust the mask

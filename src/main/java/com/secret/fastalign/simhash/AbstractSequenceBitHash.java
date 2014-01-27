@@ -16,7 +16,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 		this.length = seq.length();
 	}
 
-	public double adjScore(SequenceSimHash sh)
+	public final double adjScore(SequenceSimHash sh)
 	{
 		double score = correlation(sh);
 		
@@ -24,7 +24,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	}
 
 	@Override
-	public int compareTo(AbstractSequenceBitHash sim)
+	public int compareTo(final AbstractSequenceBitHash sim)
 	{
 		for (int bitIndex=0; bitIndex<this.bits.length; bitIndex++)
 		{
@@ -37,7 +37,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 		return 0;
 	}
 
-	public int getIntersectionCount(AbstractSequenceBitHash sh)
+	public final int getIntersectionCount(final AbstractSequenceBitHash sh)
 	{
 		if (this.bits.length!=sh.bits.length)
 			throw new FastAlignRuntimeException("Size of bits in tables must match.");
@@ -54,20 +54,20 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	}
 
 	@Override
-	public SequenceId getSequenceId()
+	public final SequenceId getSequenceId()
 	{
 		return this.id;
 	}
 
 	@Override
-	public double correlation(AbstractSequenceBitHash sh)
+	public final double correlation(final AbstractSequenceBitHash sh)
 	{
 		int count = getIntersectionCount(sh);
 		
 		return ((double)count/(double)(this.bits.length*64)-0.5)*2.0;
 	}
 
-	public int seqLength()
+	public final int seqLength()
 	{
 		return this.length;
 	}
