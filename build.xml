@@ -124,9 +124,6 @@
       <copy todir="${build.home}/classes/">
          <fileset dir="${source.resources}" />
       </copy>
-      <copy todir="${build.home}/classes/opencl">
-         <fileset dir="${source.opencl}" />
-      </copy>
     </target>
   
   <!-- ========== Build Info File =========================================== -->

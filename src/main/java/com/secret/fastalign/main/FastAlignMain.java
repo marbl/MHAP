@@ -6,11 +6,11 @@ import com.secret.fastalign.simhash.BitVectorStore;
 
 public class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 128;
+	private static final int DEFAULT_NUM_WORDS = 32;
 
 	private static final int DEFAULT_KMER_SIZE = 7;
 
-	private static final double DEFAULT_THRESHOLD = 0.3;
+	private static final double DEFAULT_THRESHOLD = 0.28;
 	
 	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
@@ -48,6 +48,9 @@ public class FastAlignMain
 		System.out.println("Read in "+data.size()+" sequences.");
 
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
+		
+		//System.err.println("Press Enter");
+		//System.in.read();
 		
 		BitVectorStore simHash = new BitVectorStore(kmerSize, numWords);
 

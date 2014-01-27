@@ -1,14 +1,12 @@
 package com.secret.fastalign.simhash;
 
-import org.apache.lucene.util.OpenBitSet;
-
 import com.secret.fastalign.data.Sequence;
 import com.secret.fastalign.data.SequenceId;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
 public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHash>, Comparable<AbstractSequenceBitHash>
 {
-	protected OpenBitSet bits;
+	protected long bits[];
 	protected final SequenceId id;
 	protected final int length;
 
@@ -28,31 +26,31 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	@Override
 	public int compareTo(AbstractSequenceBitHash sim)
 	{
-		for (int bitIndex=0; bitIndex<this.bits.length(); bitIndex++)
+		for (int bitIndex=0; bitIndex<this.bits.length; bitIndex++)
 		{
-			boolean v1 = this.bits.fastGet(bitIndex);
-			boolean v2 = sim.bits.fastGet(bitIndex);	
-			
-			if (!v1 && v2)
+			if (this.bits[bitIndex] < this.bits[bitIndex])
 				return -1;
-			if (v1 && !v2)
+			if (this.bits[bitIndex] > this.bits[bitIndex])
 				return 1;
 		}
 		
 		return 0;
 	}
 
-	public boolean getBit(int index)
-	{
-		return this.bits.fastGet(index);
-	}
-
 	public int getIntersectionCount(AbstractSequenceBitHash sh)
 	{
-		if (this.bits.size()!=sh.bits.size())
+		if (this.bits.length!=sh.bits.length)
 			throw new FastAlignRuntimeException("Size of bits in tables must match.");
 		
-		return (int)(this.bits.size()-OpenBitSet.xorCount(this.bits, sh.bits));
+		int count = 0;
+	  for (int longIndex=0; longIndex<this.bits.length; longIndex++)
+	  {	      
+	  	final long xor = this.bits[longIndex]^sh.bits[longIndex];
+	  	
+      count += Long.bitCount(xor);
+	  }
+		
+		return this.bits.length*64-count;
 	}
 
 	@Override
@@ -66,7 +64,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	{
 		int count = getIntersectionCount(sh);
 		
-		return ((double)count/(double)this.bits.size()-0.5)*2.0;
+		return ((double)count/(double)(this.bits.length*64)-0.5)*2.0;
 	}
 
 	public int seqLength()
@@ -78,12 +76,20 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	public String toString()
 	{
 		StringBuilder s = new StringBuilder();
-		for (int index=0; index<this.bits.length(); index++)
-			if (this.bits.fastGet(index))
-				s.append("1");
-			else
-				s.append("0");
-		
+	  for (int longIndex=0; longIndex<this.bits.length; longIndex++)
+	  {
+	  	long mask = 1L << 63;
+	  	
+      for (int bit=63; bit<=0; bit++)
+      {
+        if ((this.bits[longIndex]&mask)==0)
+  				s.append("0");
+        else
+  				s.append("1");
+        
+        mask = mask >>> 1;
+      }
+	  }		
 		return s.toString();
 	}
 }
