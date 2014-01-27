@@ -9,19 +9,20 @@ import java.util.logging.LogManager;
 import com.secret.fastalign.data.FastaData;
 import com.secret.fastalign.data.Sequence;
 import com.secret.fastalign.minhash.MinHash;
-import com.secret.fastalign.simhash.KmerVectoreStore;
+import com.secret.fastalign.simhash.BitVectorStore;
 
 public class AlignmentVectorHashRun 
 {	
 
-	private static final int DEFAULT_NUM_WORDS = 32;
+	private static final int DEFAULT_NUM_WORDS = 128;
 
-	private static final int DEFAULT_KMER_SIZE = 6;
+	private static final int DEFAULT_KMER_SIZE = 7;
 
 	private static final double DEFAULT_DATA_ERROR = 0.25;
 
 	private static final int DEFAULT_SKIP = 10;
 	private static final int DEFAULT_THRESHOLD = 1;
+	
 	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
 	public static void main(String[] args) throws Exception {
@@ -69,8 +70,8 @@ public class AlignmentVectorHashRun
 
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
 		
-		//BitVectorStore simHash = new BitVectorStore(kmerSize, numWords);
-		KmerVectoreStore simHash = new KmerVectoreStore(kmerSize, numWords);
+		BitVectorStore simHash = new BitVectorStore(kmerSize, numWords);
+		//KmerVectoreStore simHash = new KmerVectoreStore(kmerSize, numWords);
 		
 		/*
 		String ss1 = data.getSequences().get(0).getString().substring(0, 100);
@@ -105,18 +106,21 @@ public class AlignmentVectorHashRun
 		startTime = System.nanoTime();
 
 		//find out the scores
+		/*
 		ArrayList<MatchResult> results = new ArrayList<MatchResult>();
 		for (Sequence seq : data.getSequences())
 		{
 			results.addAll(simHash.findMatches(seq, 0.0));
 		}
+		*/
+		ArrayList<MatchResult> results = simHash.findMatches(0.0);
+		
+		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
 		//sort to get the best scores on top
 		//Collections.sort(results);		
 		Collections.shuffle(results);
-		
-		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
-		
+
 		System.out.println("Found "+results.size()+" matches:");
 		
 		Matrix matrix = MatrixLoader.load("/Users/kberlin/Dropbox/Projects/fast-align/src/test/resources/com/secret/fastalign/matrix/score_matrix.txt");
@@ -134,7 +138,7 @@ public class AlignmentVectorHashRun
 			//score = score/Math.min((double)s1.length(), (double)s2.length());
 						
 			//System.out.format("Sequence match (%s - %s) with identity score %f (SW=%f).\n", match.getFromId(), match.getToId(), match.getScore(), score);
-			System.out.format("%f %f %s %s %d\n", match.getScore(), score, match.getFromId(), match.getToId(), match.getFromShift());
+			System.out.format("%f %f %s %s %d\n", match.getScore(), score, match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
 			
 			mean += match.getScore();
 			

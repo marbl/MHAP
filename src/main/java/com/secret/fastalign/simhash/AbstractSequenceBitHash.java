@@ -66,7 +66,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	{
 		int count = getIntersectionCount(sh);
 		
-		return (double)count/(double)this.bits.size();
+		return ((double)count/(double)this.bits.size()-0.5)*2.0;
 	}
 
 	public int seqLength()

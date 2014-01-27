@@ -29,7 +29,7 @@ public class FastaData
 			if (line.startsWith(">"))
 			{
 				if (fastaSeq.length() > 0)
-					addMers(new SequenceId(numProcessed++), fastaSeq.toString().toUpperCase(), kmerSize);
+					addMers(new SequenceId(numProcessed++, true), fastaSeq.toString().toUpperCase(), kmerSize);
 				
 				fastaSeq.setLength(0);
 			}
@@ -40,7 +40,7 @@ public class FastaData
 		}
 		if (fastaSeq.length() != 0)
 		{
-			addMers(new SequenceId(numProcessed++), fastaSeq.toString().toUpperCase(), kmerSize);
+			addMers(new SequenceId(numProcessed++, true), fastaSeq.toString().toUpperCase(), kmerSize);
 		}
 		bf.close();
 
@@ -54,9 +54,18 @@ public class FastaData
 		this.sequenceMap.put(id, sequence);
 	}
 	
+	public Sequence getSequence(int index)
+	{
+		return this.sequenceList.get(index);
+	}
+	
 	public Sequence getSequence(SequenceId id)
 	{
-		return this.sequenceMap.get(id);
+		if (id.isForward())
+			return this.sequenceMap.get(id);
+
+		Sequence seq = this.sequenceMap.get(id.complimentId());
+		return seq.getReverseCompliment();
 	}
 
 	public List<Sequence> getSequences()

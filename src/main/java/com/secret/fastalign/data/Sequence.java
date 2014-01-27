@@ -1,5 +1,7 @@
 package com.secret.fastalign.data;
 
+import com.secret.fastalign.utils.Utils;
+
 public final class Sequence
 {
 	private final String sequence;
@@ -39,6 +41,11 @@ public final class Sequence
 	public SequenceId getId()
 	{
 		return this.id;
+	}
+	
+	public Sequence getReverseCompliment()
+	{
+		return new Sequence(Utils.rc(this.sequence), this.id.complimentId());
 	}
 	
 	public String getKmer(int index, int kmerSize)

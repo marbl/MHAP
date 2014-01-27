@@ -1,7 +1,5 @@
 package com.secret.fastalign.simhash;
 
-import java.util.Arrays;
-
 import com.secret.fastalign.data.Sequence;
 import com.secret.fastalign.data.SequenceId;
 

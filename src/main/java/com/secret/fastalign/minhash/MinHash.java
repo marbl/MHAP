@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Random;
 
 import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.secret.fastalign.data.FastaData;
 import com.secret.fastalign.data.Sequence;
@@ -85,21 +84,6 @@ public final class MinHash
 		
 		return snew;
 	}
-	
-	private static final long hashBasic(final String kmer, final long salt) 
-  {
-	  long key = 5381 + kmer.hashCode();
-		   
-	  key = key * 37;
-	  key = key + salt;
-	  key ^= key >> 33;
-	  key *= 0xff51afd7ed558ccdL;
-	  key ^= key >> 33;
-	  key *= 0xc4ceb9fe1a85ec53L;
-	  key ^= key >> 33;
-		 
-	  return(key);
- }
 	
 	public static double probabilityKmerMatches(double readError, int kmerSize)
 	{
@@ -254,7 +238,7 @@ public final class MinHash
 			//get the sequence length ratios
 			int len2 = this.seqLengths.get(id);
 						
-			double jaccardAccept = jaccardRate(probEqualKmerMatch, len1, len2, 1.0);
+			//double jaccardAccept = jaccardRate(probEqualKmerMatch, len1, len2, 1.0);
 			
 			//System.out.println(""+countPercent +" "+jaccardAccept);
 			
