@@ -6,9 +6,17 @@ public final class SequenceId
 {
 	private final int id;
 	
-	public SequenceId(int val)
+	private final boolean isFwd;
+	
+	public SequenceId(int val, boolean isFwd)
 	{
 		this.id = val;
+		this.isFwd = isFwd;
+	}
+	
+	public SequenceId complimentId()
+	{
+		return new SequenceId(this.id, !this.isFwd);
 	}
 	
 	/* (non-Javadoc)
@@ -25,7 +33,12 @@ public final class SequenceId
 			return false;
 		SequenceId other = (SequenceId) obj;
 		
-		return this.id == other.id;
+		return (this.id == other.id) && (this.isFwd == other.isFwd);
+	}
+	
+	public boolean isForward()
+	{
+		return this.isFwd;
 	}
 
 	public long getLongId()
@@ -39,7 +52,8 @@ public final class SequenceId
 	@Override
 	public int hashCode()
 	{
-		return HashCodeUtil.hash(HashCodeUtil.SEED, this.id);
+		int hash = HashCodeUtil.hash(HashCodeUtil.SEED, this.id);
+		return HashCodeUtil.hash(hash, this.id);
 	}
 
 	/* (non-Javadoc)
@@ -48,6 +62,11 @@ public final class SequenceId
 	@Override
 	public String toString()
 	{
-		return ""+this.id;
+		return ""+this.id+(this.isFwd ? "(fwd)" : "(rev)");
+	}
+	
+	public String toStringInt()
+	{
+		return ""+this.id+(this.isFwd ? " 1 " : " 0 ");
 	}
 }

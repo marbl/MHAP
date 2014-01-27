@@ -15,7 +15,7 @@ public class CharacterHash
 
 	public CharacterHash()
 	{
-		Random r = new Random();
+		Random r = new Random(1);
 		for (int k = 0; k < this.hashvalues.length; ++k)
 			this.hashvalues[k] = r.nextInt();
 	}
