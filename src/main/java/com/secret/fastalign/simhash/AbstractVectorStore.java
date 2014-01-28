@@ -192,13 +192,15 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 		ArrayList<MatchResult> results = new ArrayList<MatchResult>();
 		for (T hash : this.sequenceVectorsHash.values())
 		{
-			if (seqHash.getSequenceId().getLongId()==(hash.getSequenceId().getLongId()))
+			if (seqHash.getSequenceId().getHeaderId()==hash.getSequenceId().getHeaderId())
 				continue;
 			
 			double score = seqHash.correlation(hash);
 			
 			if (score>=acceptScore)
+			{
 				results.add(new MatchResult(seqHash.getSequenceId(), hash.getSequenceId(), score, 0));
+			}
 		}
 		
 		//not decided if should sort

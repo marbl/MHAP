@@ -1,17 +1,33 @@
 package com.secret.fastalign.data;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.secret.fastalign.utils.HashCodeUtil;
 
 public final class SequenceId
 {
-	private final int id;
+	private static ConcurrentHashMap<Long, String> indicies = new ConcurrentHashMap<Long, String>();
+	private static AtomicLong globalCounter = new AtomicLong(-1);
 	
+	private final long id;
 	private final boolean isFwd;
+	private final int hash;
 	
-	public SequenceId(int val, boolean isFwd)
+	public SequenceId(String id, boolean isFwd)
 	{
-		this.id = val;
+		this.id = globalCounter.addAndGet(1);
+		//indicies.put(this.id, id);
+		
 		this.isFwd = isFwd;
+		this.hash = myHashCode();
+	}
+	
+	private SequenceId(long id, boolean isFwd)
+	{
+		this.id = id;
+		this.isFwd = isFwd;
+		this.hash = myHashCode();
 	}
 	
 	public SequenceId complimentId()
@@ -33,17 +49,35 @@ public final class SequenceId
 			return false;
 		SequenceId other = (SequenceId) obj;
 		
-		return (this.id == other.id) && (this.isFwd == other.isFwd);
+		if (other.hash!=this.hash)
+			return false;
+		
+		return (this.id==other.id) && (this.isFwd == other.isFwd);
 	}
 	
 	public boolean isForward()
 	{
 		return this.isFwd;
 	}
-
-	public long getLongId()
+	
+	public long getHeaderId()
 	{
 		return this.id;
+	}
+
+	public String getHeader()
+	{
+		String s = indicies.get(this.id);
+		if (s!=null)
+			return s;
+		
+		return String.valueOf(this.id);
+	}
+
+	private int myHashCode()
+	{
+		int hash = HashCodeUtil.hash(HashCodeUtil.SEED, this.id);
+		return HashCodeUtil.hash(hash, this.isFwd);		
 	}
 
 	/* (non-Javadoc)
@@ -52,8 +86,7 @@ public final class SequenceId
 	@Override
 	public int hashCode()
 	{
-		int hash = HashCodeUtil.hash(HashCodeUtil.SEED, this.id);
-		return HashCodeUtil.hash(hash, this.id);
+		return this.hash;
 	}
 
 	/* (non-Javadoc)
@@ -62,11 +95,11 @@ public final class SequenceId
 	@Override
 	public String toString()
 	{
-		return ""+this.id+(this.isFwd ? "(fwd)" : "(rev)");
+		return ""+getHeader()+(this.isFwd ? "(fwd)" : "(rev)");
 	}
 	
 	public String toStringInt()
 	{
-		return ""+this.id+(this.isFwd ? " 1 " : " 0 ");
+		return ""+getHeader()+(this.isFwd ? " 1" : " 0");
 	}
 }

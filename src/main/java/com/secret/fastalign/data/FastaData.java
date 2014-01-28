@@ -22,16 +22,19 @@ public class FastaData
 		this.sequenceList = new ArrayList<Sequence>();
 		this.sequenceMap = new HashMap<SequenceId, Sequence>();
 
-		// String header = "";
-		int numProcessed = 0;
+		String header = "";
 		while ((line = bf.readLine()) != null)
 		{
 			if (line.startsWith(">"))
 			{
 				if (fastaSeq.length() > 0)
-					addMers(new SequenceId(numProcessed++, true), fastaSeq.toString().toUpperCase(), kmerSize);
+					addMers(new SequenceId(header, true), fastaSeq.toString().toUpperCase(), kmerSize);
 				
+				header = line.substring(1).split("[\\s]+", 2)[0];
+				
+				//reset the storage
 				fastaSeq.setLength(0);
+
 			}
 			else
 			{
@@ -40,7 +43,7 @@ public class FastaData
 		}
 		if (fastaSeq.length() != 0)
 		{
-			addMers(new SequenceId(numProcessed++, true), fastaSeq.toString().toUpperCase(), kmerSize);
+			addMers(new SequenceId(header, true), fastaSeq.toString().toUpperCase(), kmerSize);
 		}
 		bf.close();
 
