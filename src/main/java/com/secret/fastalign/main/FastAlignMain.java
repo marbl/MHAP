@@ -45,7 +45,7 @@ public class FastAlignMain
 
 		FastaData data = new FastaData(inFile, fastaSuffix, kmerSize);
 		
-		System.out.println("Read in "+data.size()+" sequences.");
+		System.err.println("Read in "+data.size()+" sequences.");
 
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
 		
