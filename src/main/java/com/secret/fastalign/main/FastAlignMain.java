@@ -10,7 +10,7 @@ public class FastAlignMain
 
 	private static final int DEFAULT_KMER_SIZE = 7;
 
-	private static final double DEFAULT_THRESHOLD = 0.3;
+	private static final double DEFAULT_THRESHOLD = 0.35;
 	
 	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
@@ -38,7 +38,7 @@ public class FastAlignMain
 		System.err.println("Running with input fasta: " + inFile);
 		System.err.println("kmer size:\t" + kmerSize);
 		System.err.println("threshold:\t" + threshold);
-		System.err.println("num hashes\t" + numWords);
+		System.err.println("num hashed words:\t" + numWords);
 		
 		// read and index the kmers
 		long startTime = System.nanoTime();
@@ -74,7 +74,7 @@ public class FastAlignMain
 		//output result
 		for (MatchResult match : results)
 		{
-			System.out.format("%f %s %s %d\n", match.getScore(), match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
+			System.out.format("%f %s %s\n", match.getScore(), match.getFromId().toStringInt(), match.getToId().toStringInt());
 		}		
 	}
 
