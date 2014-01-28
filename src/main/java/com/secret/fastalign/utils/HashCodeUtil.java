@@ -35,7 +35,6 @@ public final class HashCodeUtil {
 	 * @return the int
 	 */
   public static int hash( int aSeed, boolean aBoolean ) {
-    System.out.println("boolean...");
     return firstTerm( aSeed ) + ( aBoolean ? 1 : 0 );
   }
 
