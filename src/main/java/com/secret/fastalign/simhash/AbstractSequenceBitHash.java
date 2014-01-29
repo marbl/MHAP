@@ -18,7 +18,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 
 	public final double adjScore(SequenceSimHash sh)
 	{
-		double score = correlation(sh);
+		double score = jaccord(sh);
 		
 		return score;
 	}
@@ -60,7 +60,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	}
 
 	@Override
-	public final double correlation(final AbstractSequenceBitHash sh)
+	public final double jaccord(final AbstractSequenceBitHash sh)
 	{
 		int count = getIntersectionCount(sh);
 		

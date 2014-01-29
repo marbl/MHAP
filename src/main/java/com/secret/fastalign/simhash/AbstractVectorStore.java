@@ -15,18 +15,24 @@ import com.secret.fastalign.data.Sequence;
 import com.secret.fastalign.data.SequenceId;
 import com.secret.fastalign.main.MatchResult;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
+import com.secret.fastalign.utils.Pair;
 
 public abstract class AbstractVectorStore<T extends VectorHash<T>>
 {
+	protected static final int SUB_KMER_SIZE = 4;
+	protected static final int SUB_WORD_SIZE = 2;
+	protected static final int SUB_STRING_SIZE = 100;
+	
 	protected final int kmerSize;
-	protected final ConcurrentHashMap<SequenceId, T> sequenceVectorsHash;
 	protected final int numWords;
+	protected final ConcurrentHashMap<SequenceId, SequenceVectorHashes<T>> sequenceVectorsHash;
 	
 	public AbstractVectorStore(int kmerSize, int numWords) 
 	{
 		this.kmerSize = kmerSize;
-		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, T>();
 		this.numWords = numWords;
+
+		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceVectorHashes<T>>();
 	}
 	
 
@@ -46,10 +52,10 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 				{
 			    for (int currIter=currThread; currIter<data.size(); currIter+=numThreads)
 			    {
-			    	T simHashPrev = addSequence(data.getSequence(currIter));
+			    	boolean success = addSequence(data.getSequence(currIter));
 			    	
-			    	if (simHashPrev!=null)
-			    		System.err.println("Warning: Duplicate sequence id "+simHashPrev.getSequenceId()+".");
+			    	if (!success)
+			    		throw new FastAlignRuntimeException("Error: Unable to add duplicate sequence "+data.getSequence(currIter).getId()+".");
 			    }
 				}
 			};
@@ -71,34 +77,53 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
     }
 	}
 	
-	public T addSequence(Sequence seq)
+	public boolean addDirectionalSequence(Sequence seq)
 	{
-		Sequence reverse = seq.getReverseCompliment();
-
-		//store the complement
-		T simHash = this.sequenceVectorsHash.get(reverse.getId());
+		//put the result into the hashmap
+		SequenceVectorHashes<T> simHash = this.sequenceVectorsHash.put(seq.getId(), getVectorHash(seq, this.kmerSize, this.numWords));
 		
-		if (simHash==null)
-			simHash = this.sequenceVectorsHash.put(reverse.getId(), getVectorHash(reverse));
+		if (simHash!=null)
+		{
+			//put back the original value, WARNING: not thread safe
+			this.sequenceVectorsHash.put(seq.getId(), simHash);
+		}
+		else
+			return simHash==null;
 		
-		simHash = this.sequenceVectorsHash.get(seq.getId());
+		//now add the subsequences
+		//int len = seq.getString().length();
+		//ArrayList<T> subHashes = new ArrayList<T>();
+		//for (int iter=0; iter<len; iter++)
+			//do nothing
 		
-		if (simHash==null)
-			simHash = this.sequenceVectorsHash.put(seq.getId(), getVectorHash(seq));
-					
-		return simHash;
+		return true;
 	}
 	
-	public abstract T getVectorHash(Sequence seq);
+	public boolean addSequence(Sequence seq)
+	{
+		//add forward sequence
+		boolean success = addDirectionalSequence(seq);
+		
+		//add reverse sequence
+		if (success)
+		{
+			Sequence reverse = seq.getReverseCompliment();		
+			success = addDirectionalSequence(reverse);
+		}
+
+		return success;
+	}
+	
+	public abstract SequenceVectorHashes<T> getVectorHash(Sequence seq, int kmerSize, int numWords);
 	
 	public List<MatchResult> findMatches(Sequence seq, double acceptScore)
 	{
 		//see if already have the sequence stored
-		T simHash = this.sequenceVectorsHash.get(seq.getId());
+		SequenceVectorHashes<T> simHash = this.sequenceVectorsHash.get(seq.getId());
 		
 		//if not get the sequence
 		if (simHash==null)
-			simHash = getVectorHash(seq);
+			simHash = getVectorHash(seq, this.kmerSize, this.numWords);
 		
 		return findMatches(simHash, acceptScore);
 	}
@@ -110,7 +135,7 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
   	ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
   	
   	//allocate the storage and get the list of valeus
-  	final Collection<T> storedHashes = this.sequenceVectorsHash.values();
+  	final Collection<SequenceVectorHashes<T>> storedHashes = this.sequenceVectorsHash.values();
   	final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
 
   	//for each thread create a task
@@ -122,7 +147,7 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 				@Override
 				public void run()
 				{
-	  			Iterator<T> iterator = storedHashes.iterator();
+	  			Iterator<SequenceVectorHashes<T>> iterator = storedHashes.iterator();
 	  			List<MatchResult> localMatches = new ArrayList<MatchResult>();
 	  			
 	  			//skip to the initial value
@@ -137,7 +162,7 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 		    	//if there are values left
 		    	while (iterator.hasNext())
 			    {
-		    		T nextSequence = iterator.next();
+		    		SequenceVectorHashes<T> nextSequence = iterator.next();
 		    		
 		    		//only search the forward sequences
 		    		if (nextSequence.getSequenceId().isForward())
@@ -183,23 +208,27 @@ public abstract class AbstractVectorStore<T extends VectorHash<T>>
 
 	public int size()
 	{
-		//since complement is stored
-		return this.sequenceVectorsHash.size()/2;
+		return this.sequenceVectorsHash.size();
 	}
 	
-	public List<MatchResult> findMatches(T seqHash, double acceptScore)
+	public List<MatchResult> findMatches(SequenceVectorHashes<T> seqHash, double acceptScore)
 	{		
 		ArrayList<MatchResult> results = new ArrayList<MatchResult>();
-		for (T hash : this.sequenceVectorsHash.values())
+		for (SequenceVectorHashes<T> hash : this.sequenceVectorsHash.values())
 		{
 			if (seqHash.getSequenceId().getHeaderId()==hash.getSequenceId().getHeaderId())
 				continue;
 			
-			double score = seqHash.correlation(hash);
+			//compute the initial score
+			double score = seqHash.jaccord(hash);
 			
 			if (score>=acceptScore)
 			{
-				results.add(new MatchResult(seqHash.getSequenceId(), hash.getSequenceId(), score, 0));
+				Pair<Double,Integer> result = seqHash.orderedScore(hash);
+				score = result.x;
+				int shift = result.y*SUB_STRING_SIZE;
+				
+				results.add(new MatchResult(seqHash.getSequenceId(), hash.getSequenceId(), score, shift));
 			}
 		}
 		

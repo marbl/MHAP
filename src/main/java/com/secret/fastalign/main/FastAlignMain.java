@@ -66,15 +66,14 @@ public class FastAlignMain
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
 		//sort to get the best scores on top
-		//Collections.sort(results);		
-		Collections.shuffle(results);
+		Collections.sort(results);		
 
 		System.err.println("Found "+results.size()+" matches:");
 		
 		//output result
 		for (MatchResult match : results)
 		{
-			System.out.format("%f %s %s\n", match.getScore(), match.getFromId().toStringInt(), match.getToId().toStringInt());
+			System.out.format("%f %s %s %d\n", match.getScore(), match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
 		}		
 	}
 
