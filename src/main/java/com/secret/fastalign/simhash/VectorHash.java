@@ -4,7 +4,7 @@ import com.secret.fastalign.data.SequenceId;
 
 public interface VectorHash<T extends VectorHash<T>>
 {
-	double correlation(T val);
+	double jaccord(T val);
 
 	SequenceId getSequenceId();
 }

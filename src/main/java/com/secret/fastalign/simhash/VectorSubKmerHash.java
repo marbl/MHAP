@@ -75,7 +75,7 @@ public final class VectorSubKmerHash implements VectorHash<VectorSubKmerHash>
 	}
 
 	@Override
-	public double correlation(VectorSubKmerHash val)
+	public double jaccord(VectorSubKmerHash val)
 	{
 		int sum = 0;
 		for (int iter=0; iter<this.kmerVector.length; iter++)

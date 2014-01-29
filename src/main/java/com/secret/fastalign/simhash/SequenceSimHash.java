@@ -20,6 +20,9 @@ public final class SequenceSimHash extends AbstractSequenceBitHash
 		String seqString = seq.getString();
 		final int numberKmers = seqString.length()-kmerSize+1;
 		
+		if (numberKmers<1)
+			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
+
 		final long[][] hashes = new long[numberKmers][numWords];
 
 		//might want to change to city hash if it comes out
