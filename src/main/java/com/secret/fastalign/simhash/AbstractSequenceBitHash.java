@@ -1,30 +1,32 @@
 package com.secret.fastalign.simhash;
 
-import com.secret.fastalign.data.Sequence;
-import com.secret.fastalign.data.SequenceId;
+import com.secret.fastalign.general.AbstractSequenceHashes;
+import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHash>, Comparable<AbstractSequenceBitHash>
+public abstract class AbstractSequenceBitHash<T extends AbstractSequenceBitHash<T>> extends AbstractSequenceHashes<T> implements VectorHash<T>, Comparable<T>
 {
 	protected long bits[];
-	protected final SequenceId id;
-	protected final int length;
-
-	public AbstractSequenceBitHash(Sequence seq, int kmerSize)
+	
+	public AbstractSequenceBitHash(Sequence seq)
 	{
-		this.id = seq.getId();
-		this.length = seq.length();
+		super(seq);
 	}
 
-	public final double adjScore(SequenceSimHash sh)
+	public final double adjScore(T sh)
 	{
 		double score = jaccord(sh);
 		
 		return score;
 	}
+	
+	public long[] getBits()
+	{
+		return this.bits;
+	}
 
 	@Override
-	public int compareTo(final AbstractSequenceBitHash sim)
+	public int compareTo(final T sim)
 	{
 		for (int bitIndex=0; bitIndex<this.bits.length; bitIndex++)
 		{
@@ -37,7 +39,7 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 		return 0;
 	}
 
-	public final int getIntersectionCount(final AbstractSequenceBitHash sh)
+	public final int getIntersectionCount(final T sh)
 	{
 		if (this.bits.length!=sh.bits.length)
 			throw new FastAlignRuntimeException("Size of bits in tables must match.");
@@ -54,22 +56,11 @@ public class AbstractSequenceBitHash implements VectorHash<AbstractSequenceBitHa
 	}
 
 	@Override
-	public final SequenceId getSequenceId()
-	{
-		return this.id;
-	}
-
-	@Override
-	public final double jaccord(final AbstractSequenceBitHash sh)
+	public final double jaccord(final T sh)
 	{
 		int count = getIntersectionCount(sh);
 		
 		return ((double)count/(double)(this.bits.length*64)-0.5)*2.0;
-	}
-
-	public final int seqLength()
-	{
-		return this.length;
 	}
 
 	@Override

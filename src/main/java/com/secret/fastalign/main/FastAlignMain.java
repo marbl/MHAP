@@ -1,8 +1,11 @@
 package com.secret.fastalign.main;
 import java.util.ArrayList;
 import java.util.Collections;
-import com.secret.fastalign.data.FastaData;
-import com.secret.fastalign.simhash.BitVectorStore;
+
+import com.secret.fastalign.general.AbstractHashSearch;
+import com.secret.fastalign.general.FastaData;
+import com.secret.fastalign.general.MatchResult;
+import com.secret.fastalign.simhash.SimHashSearch;
 
 public class FastAlignMain 
 {	
@@ -52,16 +55,16 @@ public class FastAlignMain
 		//System.err.println("Press Enter");
 		//System.in.read();
 		
-		BitVectorStore simHash = new BitVectorStore(kmerSize, numWords);
+		AbstractHashSearch<?,?> hashSearch = new SimHashSearch(kmerSize, numWords);
 
-		simHash.addData(data);
+		hashSearch.addData(data);
 
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
 		startTime = System.nanoTime();
 
-		ArrayList<MatchResult> results = simHash.findMatches(threshold);
+		ArrayList<MatchResult> results = hashSearch.findMatches(threshold);
 		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
