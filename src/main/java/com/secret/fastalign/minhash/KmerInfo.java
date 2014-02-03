@@ -1,6 +1,6 @@
 package com.secret.fastalign.minhash;
 
-import com.secret.fastalign.data.SequenceId;
+import com.secret.fastalign.general.SequenceId;
 
 public final class KmerInfo
 {
