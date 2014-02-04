@@ -32,11 +32,8 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 	}
 	
 	protected static final int SUB_KMER_SIZE = 12;
-	//protected static final int SUB_STRING_SIZE = 25;	
-	//protected static final int SUB_WORD_SIZE = 16;
 	
 	private final ArrayList<HashMap<Integer, ArrayList<SequenceId>>> hashes;
-	//private final HashMap<SequenceId, Integer> seqLengths;
   private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
 	
 	private static int[] errorString(int[] s, double readError, Random generator)
@@ -99,7 +96,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		
 		this.hashes = new ArrayList<HashMap<Integer, ArrayList<SequenceId>>>(numHashes);
 		for (int iter=0; iter<numHashes; iter++)
-			this.hashes.add(new HashMap<Integer, ArrayList<SequenceId>>());
+			this.hashes.add(new HashMap<Integer, ArrayList<SequenceId>>(1024));
 	}
 	
 	@Override

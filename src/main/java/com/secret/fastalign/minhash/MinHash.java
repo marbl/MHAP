@@ -9,16 +9,16 @@ import com.secret.fastalign.utils.Utils;
 public final class MinHash extends AbstractSequenceHashes<MinHash>
 {
 	public final int[] minHashes;
-	public final int[] hashPositions;
 	
 	public MinHash(Sequence seq, int kmerSize, int numWords)
 	{
 		super(seq);
 		
+		//get the hashes
 		long[][] hashes = Utils.computeKmerHashes(seq, kmerSize, numWords/2);
 				
+		//allocate space for min hashes
 		int[] minHashes = new int[numWords];
-		int[] pos = new int[numWords];
 		
 		Arrays.fill(minHashes, Integer.MAX_VALUE);
 		for (int kmerIndex=0; kmerIndex<hashes.length; kmerIndex++)
@@ -36,7 +36,6 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 			}
 		
 		this.minHashes = minHashes;
-		this.hashPositions = pos;
 	}
 
 	@Override
@@ -61,14 +60,6 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 	public final int numHashes()
 	{
 		return this.minHashes.length;
-	}
-
-	/**
-	 * @return the hashPositions
-	 */
-	public final int[] getHashPositions()
-	{
-		return this.hashPositions;
 	}
 
 	/* (non-Javadoc)
