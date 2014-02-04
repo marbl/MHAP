@@ -24,8 +24,6 @@ public class AlignmentHashRun
 	private static final int DEFAULT_SKIP = 10;
 	private static final int DEFAULT_THRESHOLD = 1;
 	
-	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
-
 	public static void main(String[] args) throws Exception {
 		String inFile = null;
 		int kmerSize = DEFAULT_KMER_SIZE;
@@ -65,7 +63,7 @@ public class AlignmentHashRun
 		// read and index the kmers
 		long startTime = System.nanoTime();
 
-		FastaData data = new FastaData(inFile, fastaSuffix, kmerSize);
+		FastaData data = new FastaData(inFile, kmerSize);
 		
 		System.out.println("Read in "+data.size()+" sequences.");
 
