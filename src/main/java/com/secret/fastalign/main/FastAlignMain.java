@@ -14,8 +14,6 @@ public class FastAlignMain
 
 	private static final double DEFAULT_THRESHOLD = 0.07;
 	
-	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
-
 	public static void main(String[] args) throws Exception {
 		String inFile = null;
 		int kmerSize = DEFAULT_KMER_SIZE;
@@ -45,7 +43,7 @@ public class FastAlignMain
 		// read and index the kmers
 		long startTime = System.nanoTime();
 
-		FastaData data = new FastaData(inFile, fastaSuffix, kmerSize);
+		FastaData data = new FastaData(inFile, kmerSize);
 		
 		System.err.println("Read in "+data.size()+" sequences.");
 

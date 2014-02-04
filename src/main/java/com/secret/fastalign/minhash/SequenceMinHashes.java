@@ -1,9 +1,8 @@
 package com.secret.fastalign.minhash;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
-
 import com.secret.fastalign.general.AbstractReducedSequence;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.Pair;
@@ -12,24 +11,42 @@ import com.secret.fastalign.utils.Utils;
 
 public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,SequenceMinHashes>
 {
-	private final ArrayList<SortablePair<Integer, Integer>> completeHash;
+	private final class SortableIntPair extends SortablePair<Integer, Integer>
+	{
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -8427321872814544309L;
+
+		public SortableIntPair(Integer x, Integer y)
+		{
+			super(x, y);
+		}		
+	}
+	
+	private final int completeHash[][];
 	
 	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subKmerSize)
 	{
 		super(seq.getId(), new MinHash(seq, kmerSize, numWords));
 		
 		//compute just direct hash of sequence
-		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1);		
-		this.completeHash = new ArrayList<SortablePair<Integer, Integer>>(hashes.length);
+		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1);	
 		
+		SortableIntPair[] completeHashAsPair = new SortableIntPair[hashes.length];	
 		for (int iter=0; iter<hashes.length; iter++)
-			this.completeHash.add(new SortablePair<Integer, Integer>((int)hashes[iter][0],iter));
+			completeHashAsPair[iter] = new SortableIntPair((int)hashes[iter][0],iter);
 		
 		//sort the results
-		Collections.sort(this.completeHash);
+		Arrays.sort(completeHashAsPair);
 		
-		//minimize storage requirement
-		this.completeHash.trimToSize();
+		//store in array to reduce memory
+		this.completeHash = new int[completeHashAsPair.length][2];
+		for (int iter=0; iter<completeHashAsPair.length; iter++)
+		{
+			this.completeHash[iter][0] = completeHashAsPair[iter].x;
+			this.completeHash[iter][1] = completeHashAsPair[iter].y;
+		}		
 	}
 
 	public Pair<Double, Integer> getFullScore(SequenceMinHashes s)
@@ -46,29 +63,30 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		int shift = 0;
 		for (int repeat=0; repeat<1; repeat++)
 		{
-			ArrayList<Integer> posShift = new ArrayList<Integer>(this.completeHash.size());
+			ArrayList<Integer> posShift = new ArrayList<Integer>(this.completeHash.length);
 			
 			count = 0;
-			Iterator<SortablePair<Integer, Integer>> iter1 = this.completeHash.iterator();
-			Iterator<SortablePair<Integer, Integer>> iter2 = s.completeHash.iterator();
+			int iter1 = 0;
+			int iter2 = 0;
 			
-			SortablePair<Integer, Integer> s1 = iter1.next();
-			SortablePair<Integer, Integer> s2 = iter2.next();			
-			while (iter1.hasNext() && iter2.hasNext())
+			while (iter1<this.completeHash.length && iter2<s.completeHash.length)
 			{
-				if (s1.x < s2.x || s1.y<valid1Lower || s1.y>valid1Upper)
-					s1 = iter1.next();
+				int[] s1 = this.completeHash[iter1];
+				int[] s2 = s.completeHash[iter2];
+				
+				if (s1[0] < s2[0] || s1[1]<valid1Lower || s1[1]>valid1Upper)
+					iter1++;
 				else
-				if (s2.x < s1.x || s2.y<valid2Lower || s2.y>valid2Upper)
-					s2 = iter2.next();
+				if (s2[0] < s1[0] || s1[1]<valid2Lower || s2[1]>valid2Upper)
+					iter2++;
 				else
 				{
 					count++;
 					
-					posShift.add(s2.y-s1.y);
+					posShift.add(s2[1]-s1[1]);
 					
-					s1 = iter1.next();
-					s2 = iter2.next();
+					iter1++;
+					iter2++;
 				}
 			}
 			

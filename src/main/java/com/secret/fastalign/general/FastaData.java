@@ -1,26 +1,39 @@
 package com.secret.fastalign.general;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
+import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Utils;
 
 public class FastaData
 {
 	// length of sequences loaded
 	private final ArrayList<Sequence> sequenceList;
-	private final HashMap<SequenceId, Sequence> sequenceMap;
+	
+	//private final HashMap<SequenceId, Sequence> sequenceMap;
+	
+	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
-	public FastaData(String file, String[] fastaSuffix, int kmerSize) throws Exception
+	public FastaData(String file, int kmerSize) throws IOException 
 	{
-		BufferedReader bf = Utils.getFile(file, fastaSuffix);
+		BufferedReader bf;
+		try
+		{
+			bf = Utils.getFile(file, fastaSuffix);
+		}
+		catch (Exception e)
+		{
+			throw new FastAlignRuntimeException(e);
+		}
+		
 		String line = null;
 		StringBuilder fastaSeq = new StringBuilder();
 
 		this.sequenceList = new ArrayList<Sequence>();
-		this.sequenceMap = new HashMap<SequenceId, Sequence>();
+		//this.sequenceMap = new HashMap<SequenceId, Sequence>();
 
 		String header = "";
 		while ((line = bf.readLine()) != null)
@@ -54,7 +67,7 @@ public class FastaData
 	{
 		Sequence sequence = new Sequence(seq, id);
 		this.sequenceList.add(sequence);
-		this.sequenceMap.put(id, sequence);
+		//this.sequenceMap.put(id, sequence);
 	}
 	
 	public Sequence getSequence(int index)
@@ -62,14 +75,23 @@ public class FastaData
 		return this.sequenceList.get(index);
 	}
 	
-	public Sequence getSequence(SequenceId id)
-	{
-		if (id.isForward())
-			return this.sequenceMap.get(id);
+public Sequence getSequence(SequenceId id)
+{
+	if (id.isForward())
+		return this.sequenceList.get(this.sequenceList.indexOf(id));
 
-		Sequence seq = this.sequenceMap.get(id.complimentId());
-		return seq.getReverseCompliment();
-	}
+	Sequence seq = this.sequenceList.get(this.sequenceList.indexOf(id.complimentId()));
+	return seq.getReverseCompliment();
+}
+	
+//	public Sequence getSequence(SequenceId id)
+//	{
+//		if (id.isForward())
+//			return this.sequenceMap.get(id);
+//
+//		Sequence seq = this.sequenceMap.get(id.complimentId());
+//		return seq.getReverseCompliment();
+//	}
 
 	public List<Sequence> getSequences()
 	{

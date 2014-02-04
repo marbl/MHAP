@@ -1,5 +1,6 @@
 package com.secret.fastalign.minhash;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.secret.fastalign.general.AbstractHashSearch;
+import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.general.SequenceId;
@@ -89,6 +91,14 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		return ratio;
 	}
 	
+	public MinHashSearch(int kmerSize, int numHashes, String inFile) throws IOException
+	{
+		this(kmerSize, numHashes);
+		FastaData data = new FastaData(inFile, kmerSize);
+		
+		addData(data);
+	}
+
 	public MinHashSearch(int kmerSize, int numHashes)
 	{
 		super(kmerSize, numHashes);
@@ -121,17 +131,25 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		int count = 0;
 		for (HashMap<Integer, ArrayList<SequenceId>> hash : this.hashes)
 		{
+			ArrayList<SequenceId> currList;
+			
+			//get the list
 			synchronized (hash)
 			{
-				ArrayList<SequenceId> currList = hash.get(currHash.getMainHashes().minHashes[count]);
+				final int hashVal = currHash.getMainHashes().minHashes[count];
+				currList = hash.get(hashVal);
 				
 				if (currList==null)
 				{
 					currList = new ArrayList<SequenceId>();
-					hash.put(currHash.getMainHashes().minHashes[count], currList);
+					hash.put(hashVal, currList);
 				}
-				
-				currList.add(seq.getId());			
+			}
+			
+			//add the element
+			synchronized (currList)
+			{
+				currList.add(seq.getId());
 			}
 			
 			count++;
