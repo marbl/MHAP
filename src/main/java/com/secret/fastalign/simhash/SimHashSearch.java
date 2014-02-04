@@ -27,7 +27,6 @@ public final class SimHashSearch extends AbstractHashSearch<SimHash,SequenceSimH
 		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceSimHashes>();
 	}
 	
-
 	@Override
 	public boolean addDirectionalSequence(Sequence seq)
 	{

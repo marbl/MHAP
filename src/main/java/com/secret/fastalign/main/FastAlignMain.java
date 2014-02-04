@@ -2,18 +2,17 @@ package com.secret.fastalign.main;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import com.secret.fastalign.general.AbstractHashSearch;
 import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
-import com.secret.fastalign.simhash.SimHashSearch;
+import com.secret.fastalign.minhash.MinHashSearch;
 
 public class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 32;
+	private static final int DEFAULT_NUM_WORDS = 256;
 
-	private static final int DEFAULT_KMER_SIZE = 7;
+	private static final int DEFAULT_KMER_SIZE = 14;
 
-	private static final double DEFAULT_THRESHOLD = 0.35;
+	private static final double DEFAULT_THRESHOLD = 0.07;
 	
 	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
@@ -55,7 +54,7 @@ public class FastAlignMain
 		//System.err.println("Press Enter");
 		//System.in.read();
 		
-		AbstractHashSearch<?,?> hashSearch = new SimHashSearch(kmerSize, numWords);
+		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords);
 
 		hashSearch.addData(data);
 

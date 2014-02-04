@@ -1,7 +1,7 @@
 package com.secret.fastalign.simhash;
 
-import com.secret.fastalign.general.AbstractSequenceHashes;
 import com.secret.fastalign.general.Sequence;
+import com.secret.fastalign.utils.Utils;
 
 public final class SimHash extends AbstractSequenceBitHash<SimHash>
 {
@@ -10,7 +10,7 @@ public final class SimHash extends AbstractSequenceBitHash<SimHash>
 		super(seq);
 		
 		//compute the hashes
-		long[][] hashes = AbstractSequenceHashes.computeKmerHashes(seq, kmerSize, numberWords);
+		long[][] hashes = Utils.computeKmerHashes(seq, kmerSize, numberWords);
 		
 		recordHashes(hashes, kmerSize, numberWords);
 	}

@@ -1,124 +1,88 @@
 package com.secret.fastalign.utils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 import java.util.Random;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.FileReader;
 
-public class Utils {
-   public static final int MBYTES = 1048576;
-   public static final int FASTA_LINE_LENGTH = 60;
-   public static MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
-   
-   public static class Pair {
-      public int first;
-      public double second;
-      public String identifier;
-      
-      public Pair(int first, double second) {
-         this.first = first;
-         this.second = second;
-      }
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
+import com.secret.fastalign.general.Sequence;
 
-      public Pair(int first, double second, String third) {
-         this.first = first;
-         this.second = second;
-         this.identifier = third;
-      }
-      
-      public int size() {
-         return (Math.max(this.first, (int)this.second) - Math.min(this.first, (int)this.second) + 1);
-      }
-   }
-   
-   public enum Translate
-   {
-       A("T"),
-       C("G"),
-       G("C"),
-       T("A"),
-       N("N");
+public final class Utils {
 
-       private String other;
-
-       public String getCompliment()
-       {
-          return this.other;
-       }
-       Translate( String other )
-       {
-          this.other = other;
-       }
-   }
-   
    public enum ToProtein
    {
-      GCT("A"),
-      GCC("A"),
-      GCA("A"),
-      GCG("A"),
-      TTA("L"),
-      TTG("L"),
-      CTT("L"),
-      CTC("L"),
-      CTA("L"),
-      CTG("L"),      
-      CGT("R"),
-      CGC("R"),
-      CGA("R"),
-      CGG("R"),
-      AGA("R"),
-      AGG("R"),
       AAA("K"),
+      AAC("N"),
       AAG("K"),
       AAT("N"),
-      AAC("N"),
-      ATG("M"),
-      GAT("D"),
-      GAC("D"),
-      TTT("F"),
-      TTC("F"),
-      TGT("C"),
-      TGC("C"),
-      CCT("P"),
-      CCC("P"),
-      CCA("P"),
-      CCG("P"),
-      CAA("Q"),
-      CAG("Q"),
-      TCT("S"),
-      TCC("S"),
-      TCA("S"),
-      TCG("S"),
-      AGT("S"),
-      AGC("S"),
-      GAA("E"),
-      GAG("E"),
-      ACT("T"),
-      ACC("T"),
       ACA("T"),
+      ACC("T"),
       ACG("T"),
-      GGT("G"),
-      GGC("G"),
-      GGA("G"),
-      GGG("G"),
-      TGG("W"),
-      CAT("H"),
-      CAC("H"),
-      TAT("Y"),
-      TAC("Y"),
-      ATT("I"),
-      ATC("I"),
+      ACT("T"),
+      AGA("R"),
+      AGC("S"),      
+      AGG("R"),
+      AGT("S"),
       ATA("I"),
-      GTT("V"),
-      GTC("V"),
+      ATC("I"),
+      ATG("M"),
+      ATT("I"),
+      CAA("Q"),
+      CAC("H"),
+      CAG("Q"),
+      CAT("H"),
+      CCA("P"),
+      CCC("P"),
+      CCG("P"),
+      CCT("P"),
+      CGA("R"),
+      CGC("R"),
+      CGG("R"),
+      CGT("R"),
+      CTA("L"),
+      CTC("L"),
+      CTG("L"),
+      CTT("L"),
+      GAA("E"),
+      GAC("D"),
+      GAG("E"),
+      GAT("D"),
+      GCA("A"),
+      GCC("A"),
+      GCG("A"),
+      GCT("A"),
+      GGA("G"),
+      GGC("G"),
+      GGG("G"),
+      GGT("G"),
       GTA("V"),
+      GTC("V"),
       GTG("V"),
+      GTT("V"),
+      TAA("X"),
+      TAC("Y"),
       TAG("X"),
+      TAT("Y"),
+      TCA("S"),
+      TCC("S"),
+      TCG("S"),
+      TCT("S"),
       TGA("X"),
-      TAA("X");
+      TGC("C"),
+      TGG("W"),
+      TGT("C"),
+      TTA("L"),
+      TTC("F"),
+      TTG("L"),
+      TTT("F");
       
       /*
       Ala/A    GCU, GCC, GCA, GCG   
@@ -146,54 +110,135 @@ public class Utils {
       */
        private String other;
 
-       public String getProtein()
-       {
-          return this.other;
-       }
        ToProtein( String other )
        {
           this.other = other;
        }
+       public String getProtein()
+       {
+          return this.other;
+       }
+   }
+   public enum Translate
+   {
+       A("T"),
+       C("G"),
+       G("C"),
+       N("N"),
+       T("A");
+
+       private String other;
+
+       Translate( String other )
+       {
+          this.other = other;
+       }
+       public String getCompliment()
+       {
+          return this.other;
+       }
+   }
+   
+   public static final int FASTA_LINE_LENGTH = 60;
+   
+   public static MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+   
+   public static final int MBYTES = 1048576;
+
+
+   public static int checkForEnd(String line, int brackets) {
+      if (line.startsWith("{")) {
+         brackets++;
+      }
+      if (line.startsWith("}")) {
+         brackets--;
+      }
+      if (brackets == 0) {
+         return -1;
+      }
+      
+      return brackets;
    }
 
+   public final static long[][] computeKmerHashes(final Sequence seq, final int kmerSize, final int numWords)
+	{
+		if (numWords%2!=0)
+			throw new FastAlignRuntimeException("Number of words must be a multiple of 2.");
+	
+		final int numberKmers = seq.numKmers(kmerSize);
+		
+		if (numberKmers<1)
+			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
+	
+		//might want to change to city hash if it comes out
+		HashFunction hf = Hashing.murmur3_128(0);
+		
+		//get the rabin hashes
+		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
+	
+		final long[][] hashes = new long[rabinHashes.length][numWords];
+		
+		for (int iter=0; iter<rabinHashes.length; iter++)
+		{
+			for (int word128=0; word128<numWords/2; word128++)
+			{
+				final Hasher hasher = hf.newHasher(0);
+				final HashCode code = hasher.putInt(rabinHashes[iter]).putInt(word128).hash();
+	
+				//store the code
+				LongBuffer bb = ByteBuffer.wrap(code.asBytes()).asLongBuffer();
+				hashes[iter][word128*2+0] = bb.get(0);
+				hashes[iter][word128*2+1] = bb.get(1);
+			}
+		}
+		
+		return hashes;
+	}
 
-   public static BufferedReader getFile(String fileName, String postfix) throws Exception {
-      String[] array = new String[1];
-      array[0] = postfix;
-
-      return getFile(fileName, array);
-   }
-
-   public static BufferedReader getFile(String fileName, String[] postfix) throws Exception {
-       BufferedReader bf = null;
-
-       if (fileName.endsWith("bz2")) {
-          // open file as a pipe
-          System.err.println("Running command " + "bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
-          Process p = Runtime.getRuntime().exec("bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
-          bf = new BufferedReader(new InputStreamReader(p.getInputStream()));
-          System.err.println(bf.ready());
-        } else if (fileName.endsWith("gz")) {
-          // open file as a pipe
-           System.err.println("Runnning comand " + "gzip -dc " + new File(fileName).getAbsolutePath() + " |");
-           Process p = Runtime.getRuntime().exec("gzip -dc " + new File(fileName).getAbsolutePath() + " |");
-           bf = new BufferedReader(new InputStreamReader(p.getInputStream()));
-           System.err.println(bf.ready());
-        } else {
-           int i = 0;
-           for (i = 0; i < postfix.length; i++) {
-              if (fileName.endsWith(postfix[i])){
-                 bf = new BufferedReader(new FileReader(fileName));
-                 break;
-              }
-           }
-           if (i == postfix.length) {
-              System.err.println("Unknown file format " + fileName + " Skipping!");
-           }
-        }
-
-        return bf;
-   }
+   public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords)
+	{
+		final int numberKmers = seq.numKmers(kmerSize);
+		
+		if (numberKmers<1)
+			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
+	
+		//might want to change to city hash if it comes out
+		HashFunction hf = Hashing.murmur3_32(0);
+		
+		//get the rabin hashes
+		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
+	
+		final int[][] hashes = new int[rabinHashes.length][numWords];
+		
+		for (int iter=0; iter<rabinHashes.length; iter++)
+		{
+			for (int word=0; word<numWords; word++)
+			{
+				final Hasher hasher = hf.newHasher(0);
+				hashes[iter][word] = hasher.putInt(rabinHashes[iter]).putInt(word).hash().asInt();
+			}
+		}
+		
+		return hashes;
+	}
+   
+   public final static int[] computeRabinHashes(final Sequence seq, final int kmerSize)
+	{
+		//RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
+		//final int[] rabinHashes = rabinHash.hashInt(seq.getString());
+		
+		HashFunction hf = Hashing.murmur3_32(0);
+	
+		final int[] rabinHashes = new int[seq.numKmers(kmerSize)];
+		for (int iter=0; iter<seq.numKmers(kmerSize); iter++)
+		{
+			String kmer = seq.getKmer(iter, kmerSize);
+			
+			rabinHashes[iter] = hf.newHasher(0).putUnencodedChars(kmer).hash().asInt();
+		}
+		
+		return rabinHashes;
+	}
 
    // add new line breaks every FASTA_LINE_LENGTH characters
    public static String convertToFasta(String supplied) {
@@ -223,30 +268,6 @@ public class Utils {
       }
       return converted.toString();
    }
-   
-   public static String rc(String supplied) {
-      StringBuilder st = new StringBuilder();
-      for (int i = supplied.length() - 1; i >= 0; i--) {
-         char theChar = supplied.charAt(i);         
-         
-         if (theChar != '-') {
-            Translate t = Translate.valueOf(Character.toString(theChar).toUpperCase());
-            st.append(t.getCompliment());
-         } else {
-            st.append("-");
-         }
-      }
-      return st.toString();
-   }
-
-   public static String getUngappedRead(String fasta) {
-      fasta = fasta.replaceAll("N", "");
-      fasta = fasta.replaceAll("-", "");
-      
-      assert(fasta.length() >= 0);
-      
-      return fasta;
-   }
 
    public static int countLetterInRead(String fasta, String letter) {
       return countLetterInRead(fasta, letter, false);
@@ -271,31 +292,7 @@ public class Utils {
       return count;
    }
    
-   public static double getLetterPercentInRead(String fasta, String letter) {
-      int ungappedLen = getUngappedRead(fasta).length();
-      int count = countLetterInRead(fasta, letter);
-      
-      return count / (double)ungappedLen;
-   }
-
-   public static String toProtein(String genome, boolean isReversed, int frame) {
-      StringBuilder result = new StringBuilder();
-
-      if (isReversed) {
-         genome = rc(genome);
-      }
-      genome = genome.replaceAll("-", "");
-      
-      for (int i = frame; i < (genome.length() - 3); i += 3) {
-         String codon = genome.substring(i, i+3);
-         String protein = ToProtein.valueOf(codon).getProtein();
-         result.append(protein);
-      }
-      
-      return result.toString();
-   }
-   
- 	public static int[] errorString(int[] s, double readError)
+   public static int[] errorString(int[] s, double readError)
  	{
  		int[] snew = s.clone();
  		
@@ -309,21 +306,45 @@ public class Utils {
  		
  		return snew;
  	}
- 	
-   
-   public static int checkForEnd(String line, int brackets) {
-      if (line.startsWith("{")) {
-         brackets++;
-      }
-      if (line.startsWith("}")) {
-         brackets--;
-      }
-      if (brackets == 0) {
-         return -1;
-      }
-      
-      return brackets;
+
+   public static BufferedReader getFile(String fileName, String postfix) throws Exception {
+      String[] array = new String[1];
+      array[0] = postfix;
+
+      return getFile(fileName, array);
    }
+   
+ 	public static BufferedReader getFile(String fileName, String[] postfix) throws Exception {
+       BufferedReader bf = null;
+
+       if (fileName.endsWith("bz2")) {
+          // open file as a pipe
+          System.err.println("Running command " + "bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
+          Process p = Runtime.getRuntime().exec("bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
+          bf = new BufferedReader(new InputStreamReader(p.getInputStream()));
+          System.err.println(bf.ready());
+        } else if (fileName.endsWith("gz")) {
+          // open file as a pipe
+           System.err.println("Runnning comand " + "gzip -dc " + new File(fileName).getAbsolutePath() + " |");
+           Process p = Runtime.getRuntime().exec("gzip -dc " + new File(fileName).getAbsolutePath() + " |");
+           bf = new BufferedReader(new InputStreamReader(p.getInputStream()));
+           System.err.println(bf.ready());
+        } else {
+           int i = 0;
+           for (i = 0; i < postfix.length; i++) {
+              if (fileName.endsWith(postfix[i])){
+                 bf = new BufferedReader(new FileReader(fileName));
+                 break;
+              }
+           }
+           if (i == postfix.length) {
+              System.err.println("Unknown file format " + fileName + " Skipping!");
+           }
+        }
+
+        return bf;
+   }
+ 	
    
    public static String getID(String line) {
       String ids[] = line.split(":");
@@ -335,12 +356,11 @@ public class Utils {
       }
    }
    
-   public static String getValue(String line, String key) {
-      if (line.startsWith(key)) {
-         return line.split(":")[1];
-      }
-
-      return null;
+   public static double getLetterPercentInRead(String fasta, String letter) {
+      int ungappedLen = getUngappedRead(fasta).length();
+      int count = countLetterInRead(fasta, letter);
+      
+      return count / (double)ungappedLen;
    }
    
    public static int getOvlSize(int readA, int readB, int ahang, int bhang) {
@@ -368,12 +388,61 @@ public class Utils {
       return (end-start+1);
    }
    
-   public static boolean isAContainedInB(int startA, int endA, int startB, int endB) {
+   public static String getUngappedRead(String fasta) {
+      fasta = fasta.replaceAll("N", "");
+      fasta = fasta.replaceAll("-", "");
+      
+      assert(fasta.length() >= 0);
+      
+      return fasta;
+   }
+   
+   public static String getValue(String line, String key) {
+      if (line.startsWith(key)) {
+         return line.split(":")[1];
+      }
+
+      return null;
+   }
+
+	public static boolean isAContainedInB(int startA, int endA, int startB, int endB) {
       int minA = Math.min(startA, endA);
       int minB = Math.min(startB, endB);
       int maxA = Math.max(startA, endA);
       int maxB = Math.max(startB, endB);
 
       return (minB < minA && maxB > maxA);
+   }
+
+	public static String rc(String supplied) {
+      StringBuilder st = new StringBuilder();
+      for (int i = supplied.length() - 1; i >= 0; i--) {
+         char theChar = supplied.charAt(i);         
+         
+         if (theChar != '-') {
+            Translate t = Translate.valueOf(Character.toString(theChar).toUpperCase());
+            st.append(t.getCompliment());
+         } else {
+            st.append("-");
+         }
+      }
+      return st.toString();
+   }
+
+	public static String toProtein(String genome, boolean isReversed, int frame) {
+      StringBuilder result = new StringBuilder();
+
+      if (isReversed) {
+         genome = rc(genome);
+      }
+      genome = genome.replaceAll("-", "");
+      
+      for (int i = frame; i < (genome.length() - 3); i += 3) {
+         String codon = genome.substring(i, i+3);
+         String protein = ToProtein.valueOf(codon).getProtein();
+         result.append(protein);
+      }
+      
+      return result.toString();
    }
 }

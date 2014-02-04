@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.secret.fastalign.general.AbstractSequenceHashes;
 import com.secret.fastalign.general.Sequence;
+import com.secret.fastalign.utils.Utils;
 
 public final class MinHash extends AbstractSequenceHashes<MinHash>
 {
@@ -14,7 +15,7 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 	{
 		super(seq);
 		
-		long[][] hashes = AbstractSequenceHashes.computeKmerHashes(seq, kmerSize, numWords/2);
+		long[][] hashes = Utils.computeKmerHashes(seq, kmerSize, numWords/2);
 				
 		int[] minHashes = new int[numWords];
 		int[] pos = new int[numWords];
