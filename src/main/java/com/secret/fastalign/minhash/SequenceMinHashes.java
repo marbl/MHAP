@@ -27,6 +27,9 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		
 		//sort the results
 		Collections.sort(this.completeHash);
+		
+		//minimize storage requirement
+		this.completeHash.trimToSize();
 	}
 
 	public Pair<Double, Integer> getFullScore(SequenceMinHashes s)
