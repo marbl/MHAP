@@ -18,55 +18,24 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 {
 	public final class HitInfo
 	{
-		public int count;
-		public int posSumFrom;
-		public int posSumTo;
-		public int uniqueHits;
+		private int count;
 		
 		public HitInfo()
 		{
-			this.count = 1;
-			this.uniqueHits = 0;
-			this.posSumFrom = 0;
-			this.posSumTo = 0;
+			this.count = 0;
 		}
 		
-		public HitInfo(int posFrom, int posTo)
-		{
-			this.count = 1;
-			this.uniqueHits = 1;
-			this.posSumFrom = posFrom;
-			this.posSumTo = posTo;
-		}
-
-		public void addNonUniqueHit()
+		public void addHit()
 		{
 			this.count++;
 		}
-		
-		public void addUniqueHit(int posFrom, int posTo)
-		{
-			this.count++;
-			this.posSumFrom+=posFrom;
-			this.posSumTo+=posTo;
-			this.uniqueHits++;
-		}
-		
-		public int fromShift()
-		{
-			double averageFrom = (double)this.posSumFrom/(double)this.uniqueHits;
-			double averageTo = (double)this.posSumTo/(double)this.uniqueHits;
-			
-			return (int)Math.round(averageTo-averageFrom);
-		}
-
 	}
 	
-	protected static final int SUB_KMER_SIZE = 16;
+	protected static final int SUB_KMER_SIZE = 12;
 	//protected static final int SUB_STRING_SIZE = 25;	
 	//protected static final int SUB_WORD_SIZE = 16;
 	
-	private final ArrayList<HashMap<Integer, ArrayList<KmerInfo>>> hashes;
+	private final ArrayList<HashMap<Integer, ArrayList<SequenceId>>> hashes;
 	//private final HashMap<SequenceId, Integer> seqLengths;
   private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
 	
@@ -128,15 +97,18 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		super(kmerSize, numHashes);
 		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceMinHashes>();
 		
-		this.hashes = new ArrayList<HashMap<Integer, ArrayList<KmerInfo>>>(numHashes);
+		this.hashes = new ArrayList<HashMap<Integer, ArrayList<SequenceId>>>(numHashes);
 		for (int iter=0; iter<numHashes; iter++)
-			this.hashes.add(new HashMap<Integer, ArrayList<KmerInfo>>());
+			this.hashes.add(new HashMap<Integer, ArrayList<SequenceId>>());
 	}
 	
 	@Override
 	public boolean addDirectionalSequence(Sequence seq)
 	{
 		SequenceMinHashes currHash = getSequenceHash(seq);
+
+		if (currHash.getMainHashes().numHashes()!=this.hashes.size())
+			throw new FastAlignRuntimeException("Number of hashes does not match.");
 		
 		//put the result into the hashmap
 		SequenceMinHashes minHash = this.sequenceVectorsHash.put(seq.getId(), currHash);		
@@ -148,24 +120,21 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 			return false;
 		}
 		
-		if (currHash.getMainHashes().numHashes()!=this.hashes.size())
-			throw new FastAlignRuntimeException("Number of hashes does not match.");
-		
 		//add the hashes
 		int count = 0;
-		for (HashMap<Integer, ArrayList<KmerInfo>> hash : this.hashes)
+		for (HashMap<Integer, ArrayList<SequenceId>> hash : this.hashes)
 		{
 			synchronized (hash)
 			{
-				ArrayList<KmerInfo> currList = hash.get(currHash.getMainHashes().minHashes[count]);
+				ArrayList<SequenceId> currList = hash.get(currHash.getMainHashes().minHashes[count]);
 				
 				if (currList==null)
 				{
-					currList = new ArrayList<KmerInfo>();
+					currList = new ArrayList<SequenceId>();
 					hash.put(currHash.getMainHashes().minHashes[count], currList);
 				}
 				
-				currList.add(new KmerInfo(seq.getId(), currHash.getMainHashes().minHashes[count]));			
+				currList.add(seq.getId());			
 			}
 			
 			count++;
@@ -175,7 +144,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 	}
 	
 	@Override
-	public List<MatchResult> findMatches(SequenceMinHashes seqMinHashes, double score, boolean allToAll)
+	public List<MatchResult> findMatches(SequenceMinHashes seqMinHashes, double minScore, boolean allToAll)
 	{
 		MinHash minHash = seqMinHashes.getMainHashes();
 		
@@ -186,33 +155,25 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 			
 		for (int hashIndex=0; hashIndex<minHash.numHashes(); hashIndex++)
 		{
-			ArrayList<KmerInfo> currentHashMatchList = this.hashes.get(hashIndex).get(minHash.minHashes[hashIndex]);
+			ArrayList<SequenceId> currentHashMatchList = this.hashes.get(hashIndex).get(minHash.minHashes[hashIndex]);
 			
 			//if some matches exist add them
 			if (currentHashMatchList!=null)
 			{
-				for (KmerInfo matchedId : currentHashMatchList)
+				for (SequenceId matchedId : currentHashMatchList)
 				{
 					//get current count in the list
-					HitInfo currentHitInfo = matchHitMap.get(matchedId.getId());
+					HitInfo currentHitInfo = matchHitMap.get(matchedId);
 					
 					//increment the count
 					if (currentHitInfo==null)
 					{
-						//if this kmer is unique then use it for positioning
-						if (minHash.getHashPositions()[hashIndex]>=0 && matchedId.getPosition()>=0)
-							matchHitMap.put(matchedId.getId(), new HitInfo(minHash.getHashPositions()[hashIndex], matchedId.getPosition()));
-						else
-							matchHitMap.put(matchedId.getId(), new HitInfo());
+						currentHitInfo = new HitInfo();
+						matchHitMap.put(matchedId, currentHitInfo);
 					}
-					else
-					{
-						//if this kmer is unique then use it for positioning
-						if (minHash.getHashPositions()[hashIndex]>=0 && matchedId.getPosition()>=0)
-							currentHitInfo.addUniqueHit(minHash.getHashPositions()[hashIndex], matchedId.getPosition());
-						else
-							currentHitInfo.addNonUniqueHit();
-					}
+					
+					//record the match of the kmer hash
+					currentHitInfo.addHit();
 				}
 			}
 		}
@@ -239,12 +200,12 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 				//get the info for the id
 				SequenceMinHashes matchedHash = this.sequenceVectorsHash.get(id);
 				
-				Pair<Double,Integer> result = seqMinHashes.orderedScore(matchedHash);
+				Pair<Double,Integer> result = seqMinHashes.getFullScore(matchedHash);
 				matchScore = result.x;
 				int shift = result.y;
 				
-				//if (matchScore>0.25)
-					matches.add(new MatchResult(minHash.getSequenceId(), id, matchScore, shift));
+				if (matchScore>=minScore)
+					matches.add(new MatchResult(seqMinHashes.getSequenceId(), id, matchScore, shift));
 			}
 		}
 		

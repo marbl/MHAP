@@ -1,27 +1,25 @@
 package com.secret.fastalign.minhash;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
-import com.secret.fastalign.general.AbstractOrderedSequenceHashes;
-import com.secret.fastalign.general.AbstractSequenceHashes;
+import com.secret.fastalign.general.AbstractReducedSequence;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.Pair;
 import com.secret.fastalign.utils.SortablePair;
+import com.secret.fastalign.utils.Utils;
 
-public final class SequenceMinHashes extends AbstractOrderedSequenceHashes<MinHash,SequenceMinHashes>
+public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,SequenceMinHashes>
 {
 	private final ArrayList<SortablePair<Integer, Integer>> completeHash;
 	
 	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subKmerSize)
 	{
-		//super(new MinHash(seq, kmerSize, numWords), generateSubHashes(seq, subStringSize, subKmerSize, subWordSize));
-		super(new MinHash(seq, kmerSize, numWords), null);
+		super(seq.getId(), new MinHash(seq, kmerSize, numWords));
 		
 		//compute just direct hash of sequence
-		long[][] hashes = AbstractSequenceHashes.computeKmerHashes(seq, subKmerSize, 2);		
+		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1);		
 		this.completeHash = new ArrayList<SortablePair<Integer, Integer>>(hashes.length);
 		
 		for (int iter=0; iter<hashes.length; iter++)
@@ -30,39 +28,19 @@ public final class SequenceMinHashes extends AbstractOrderedSequenceHashes<MinHa
 		//sort the results
 		Collections.sort(this.completeHash);
 	}
-	
-	/*
-	private static ArrayList<MinHash> generateSubHashes(Sequence seq, int subStringSize, int subKmerSize, int subWordSize)
-	{
-		//generate the array of simhashes
-		ArrayList<MinHash> subHashes = new ArrayList<MinHash>(seq.length()-subKmerSize+1);
-		for (int iter=0; iter<seq.length()-subKmerSize+1; iter+=subStringSize)
-		{
-			String subString = seq.getString().substring(iter, Math.min(iter+subStringSize, seq.length()));
-			Sequence subSequence = new Sequence(subString, seq.getId());
-			
-			subHashes.add(new MinHash(subSequence, subKmerSize, subWordSize));
-		}
-		
-		return subHashes;
-	}
-	*/
 
-	/* (non-Javadoc)
-	 * @see com.secret.fastalign.general.AbstractOrderedSequenceHashes#orderedScore(com.secret.fastalign.general.AbstractOrderedSequenceHashes)
-	 */
-	@Override
-	public Pair<Double, Integer> orderedScore(SequenceMinHashes s)
+	public Pair<Double, Integer> getFullScore(SequenceMinHashes s)
 	{		
 		//init the ok regions
 		int valid1Lower = 0;
 		int valid1Upper = this.getSequenceLength();
 		int valid2Lower = 0;
 		int valid2Upper = s.getSequenceLength();
+		int overlapSize = 0;
+		int border = 0;
 		
 		int count = 0;
 		int shift = 0;
-		int border = 0;
 		for (int repeat=0; repeat<1; repeat++)
 		{
 			ArrayList<Integer> posShift = new ArrayList<Integer>(this.completeHash.size());
@@ -105,15 +83,11 @@ public final class SequenceMinHashes extends AbstractOrderedSequenceHashes<MinHa
 			valid1Upper = Math.min(getSequenceLength(), s.getSequenceLength()-shift+border);
 			valid2Lower = Math.max(0, shift-border);
 			valid2Upper = Math.min(s.getSequenceLength(), getSequenceLength()+shift+border);
+			overlapSize = valid2Upper-valid2Lower;
 			
 			//System.out.println("Size1= "+getSequenceLength()+" Lower:"+ valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
 			//System.out.println("Size2= "+s.getSequenceLength()+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);
 		}
-		
-		int overlapSize = valid2Upper-valid2Lower-border*2;
-		//overlapSize = Math.min(getSequenceLength(), s.getSequenceLength());
-		
-		System.out.println(overlapSize);
 		
 		double score = 0;
 		if (overlapSize>0)

@@ -11,7 +11,6 @@ import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.minhash.MinHashSearch;
-import com.secret.fastalign.simhash.SimHashSearch;
 
 public class AlignmentHashRun 
 {	
@@ -91,7 +90,8 @@ public class AlignmentHashRun
 		}
 		*/
 		
-		ArrayList<MatchResult> results = hashSearch.findMatches(Double.NEGATIVE_INFINITY);
+		//ArrayList<MatchResult> results = hashSearch.findMatches(Double.NEGATIVE_INFINITY);
+		ArrayList<MatchResult> results = hashSearch.findMatches(0.07);
 		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
@@ -101,7 +101,7 @@ public class AlignmentHashRun
 		Collections.sort(results);		
 		mixedResults.addAll(results.subList(0, Math.min(results.size(), 100)));
 		//Collections.shuffle(results);
-		mixedResults.addAll(results.subList(Math.max(0,results.size()-20), results.size()));
+		mixedResults.addAll(results.subList(Math.max(0,results.size()-50), results.size()));
 		
 		//Collections.shuffle(mixedResults);
 
@@ -114,17 +114,13 @@ public class AlignmentHashRun
 		double mean = 0;
 		for (MatchResult match : mixedResults)
 		{
+			//this already computes the reverse compliment
 			Sequence s1 = data.getSequence(match.getFromId());
 			Sequence s2 = data.getSequence(match.getToId());
 			
-			if (!match.getFromId().isForward())
-				s1 = s1.getReverseCompliment();
-			if (!match.getToId().isForward())
-				s2 = s2.getReverseCompliment();
-						
 			//compute the actual match
 			double score = computeAlignment(s1, s2, matrix);
-						
+			
 			//System.out.format("Sequence match (%s - %s) with identity score %f (SW=%f).\n", match.getFromId(), match.getToId(), match.getScore(), score);
 			System.out.format("%f %f %s %s %d\n", match.getScore(), score, match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
 			
@@ -142,7 +138,7 @@ public class AlignmentHashRun
 	}
 	
 	public static double computeAlignment(Sequence s1, Sequence s2, Matrix matrix)
-	{
+	{		
 		//compute the actual match
 		Alignment alignment = jaligner.SmithWatermanGotoh.align(new jaligner.Sequence(s1.getString()), new jaligner.Sequence(s2.getString()), matrix, 5, 3);
 		

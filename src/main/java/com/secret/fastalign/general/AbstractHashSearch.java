@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T extends AbstractOrderedSequenceHashes<H,T>>
+public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T extends AbstractReducedSequence<H,T>>
 {
 
 	protected final int kmerSize;

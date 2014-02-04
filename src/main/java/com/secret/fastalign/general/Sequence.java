@@ -55,7 +55,7 @@ public final class Sequence
 	
 	public int numKmers(int kmerSize)
 	{
-		return this.sequence.length() - kmerSize;
+		return this.sequence.length()-kmerSize+1;
 	}
 	
 	public int length()
