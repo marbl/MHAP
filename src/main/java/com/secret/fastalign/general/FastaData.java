@@ -78,10 +78,18 @@ public class FastaData
 public Sequence getSequence(SequenceId id)
 {
 	if (id.isForward())
-		return this.sequenceList.get(this.sequenceList.indexOf(id));
+	{
+		for (Sequence seq : this.sequenceList)
+			if (seq.getId().equals(id))
+				return seq;
+	}
 
-	Sequence seq = this.sequenceList.get(this.sequenceList.indexOf(id.complimentId()));
-	return seq.getReverseCompliment();
+	id = id.complimentId();
+	for (Sequence seq : this.sequenceList)
+		if (seq.getId().equals(id))
+			return seq.getReverseCompliment();
+
+	return null;
 }
 	
 //	public Sequence getSequence(SequenceId id)

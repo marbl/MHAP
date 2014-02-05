@@ -1,18 +1,12 @@
 package com.secret.fastalign.utils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
-import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
 import java.util.Random;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.FileReader;
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import com.secret.fastalign.general.Sequence;
 
 public final class Utils {
@@ -162,33 +156,31 @@ public final class Utils {
 
    public final static long[][] computeKmerHashes(final Sequence seq, final int kmerSize, final int numWords)
 	{
-		if (numWords%2!=0)
-			throw new FastAlignRuntimeException("Number of words must be a multiple of 2.");
-	
 		final int numberKmers = seq.numKmers(kmerSize);
 		
 		if (numberKmers<1)
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 	
-		//might want to change to city hash if it comes out
-		HashFunction hf = Hashing.murmur3_128(0);
-		
 		//get the rabin hashes
 		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
 	
 		final long[][] hashes = new long[rabinHashes.length][numWords];
 		
+		//Random rand = new Random(0);
 		for (int iter=0; iter<rabinHashes.length; iter++)
 		{
-			for (int word128=0; word128<numWords/2; word128++)
+			//rand.setSeed(rabinHashes[iter]);
+			long x = rabinHashes[iter];
+			
+			for (int word=0; word<numWords; word++)
 			{
-				final Hasher hasher = hf.newHasher(0);
-				final HashCode code = hasher.putInt(rabinHashes[iter]).putInt(word128).hash();
-	
-				//store the code
-				LongBuffer bb = ByteBuffer.wrap(code.asBytes()).asLongBuffer();
-				hashes[iter][word128*2+0] = bb.get(0);
-				hashes[iter][word128*2+1] = bb.get(1);
+				//hashes[iter][word] = rand.nextLong();
+
+				//XORShift Random Number Generators
+				x ^= (x << 21);
+			  x ^= (x >>> 35);
+			  x ^= (x << 4);
+			  hashes[iter][word] = x;
 			}
 		}
 		
@@ -202,20 +194,26 @@ public final class Utils {
 		if (numberKmers<1)
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 	
-		//might want to change to city hash if it comes out
-		HashFunction hf = Hashing.murmur3_32(0);
-		
 		//get the rabin hashes
 		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
 	
 		final int[][] hashes = new int[rabinHashes.length][numWords];
 		
+		//Random rand = new Random(0);
 		for (int iter=0; iter<rabinHashes.length; iter++)
 		{
+			//rand.setSeed(rabinHashes[iter]);
+			long x = rabinHashes[iter];
+
 			for (int word=0; word<numWords; word++)
 			{
-				final Hasher hasher = hf.newHasher(0);
-				hashes[iter][word] = hasher.putInt(rabinHashes[iter]).putInt(word).hash().asInt();
+				//hashes[iter][word] = rand.nextInt();
+
+				//XORShift Random Number Generators
+				x ^= (x << 21);
+			  x ^= (x >>> 35);
+			  x ^= (x << 4);
+			  hashes[iter][word] = (int)x;
 			}
 		}
 		
@@ -224,18 +222,18 @@ public final class Utils {
    
    public final static int[] computeRabinHashes(final Sequence seq, final int kmerSize)
 	{
-		//RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
-		//final int[] rabinHashes = rabinHash.hashInt(seq.getString());
+		RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
+		final int[] rabinHashes = rabinHash.hashInt(seq.getString());
 		
-		HashFunction hf = Hashing.murmur3_32(0);
+		//HashFunction hf = Hashing.murmur3_32(0);
 	
-		final int[] rabinHashes = new int[seq.numKmers(kmerSize)];
-		for (int iter=0; iter<seq.numKmers(kmerSize); iter++)
-		{
-			String kmer = seq.getKmer(iter, kmerSize);
+		//final int[] rabinHashes = new int[seq.numKmers(kmerSize)];
+		//for (int iter=0; iter<seq.numKmers(kmerSize); iter++)
+		//{
+		//	String kmer = seq.getKmer(iter, kmerSize);
 			
-			rabinHashes[iter] = hf.newHasher(0).putUnencodedChars(kmer).hash().asInt();
-		}
+		//	rabinHashes[iter] = hf.newHasher(0).putUnencodedChars(kmer).hash().asInt();
+		//}
 		
 		return rabinHashes;
 	}

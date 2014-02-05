@@ -1,7 +1,5 @@
 package com.secret.fastalign.utils;
 
-import java.util.Random;
-
 public class RabinKarpSeqHash
 {
 	private final int kmerSize;
@@ -13,14 +11,6 @@ public class RabinKarpSeqHash
 	
 	public int[] hashInt(String seq)
 	{
-		return hashInt(seq, 0);
-	}
-
-	public int[] hashInt(String seq, int seed)
-	{
-		Random rn = new Random(seed);
-		seed = rn.nextInt();
-		
 		//get the string
 		char[] seqArray = seq.toCharArray();
 		
@@ -35,19 +25,16 @@ public class RabinKarpSeqHash
 			ch.eat(seqArray[kmerIndex]);
 		}
 		
-		int hash = ch.eat(seqArray[kmerIndex++]);
-		
 		int count = 0;
-		
-		hashes[count++] = hash*22695477+seed;
+		int hash = ch.eat(seqArray[kmerIndex++]);		
+		hashes[count++] = hash;
 		
 		//start rolling
 		for(; kmerIndex<seqArray.length; kmerIndex++) 
 		{
 			//System.out.println(k-this.kmerSize);
-			hash = ch.update(seqArray[kmerIndex-this.kmerSize], seqArray[kmerIndex]);
-			
-			hashes[count++] = hash*22695477+seed;
+			hash = ch.update(seqArray[kmerIndex-this.kmerSize], seqArray[kmerIndex]);			
+			hashes[count++] = hash;
 		}
 		
 		return hashes;
