@@ -15,27 +15,7 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 		super(seq);
 		
 		//get the hashes
-		long[][] hashes = Utils.computeKmerHashes(seq, kmerSize, numWords/2);
-				
-		//allocate space for min hashes
-		int[] minHashes = new int[numWords];
-		
-		Arrays.fill(minHashes, Integer.MAX_VALUE);
-		for (int kmerIndex=0; kmerIndex<hashes.length; kmerIndex++)
-			for (int hashIndex=0; hashIndex < numWords; hashIndex+=2)
-			{
-				//convert to int
-				long val = hashes[kmerIndex][hashIndex/2];
-				int i1 = (int)(val >> 32);
-				int i2 = (int)val;
-				
-				if (i1<minHashes[hashIndex])
-					minHashes[hashIndex] = i1;
-				if (i2<minHashes[hashIndex+1])
-					minHashes[hashIndex+1] = i2;
-			}
-		
-		this.minHashes = minHashes;
+		this. minHashes = Utils.computeKmerMinHashes(seq, kmerSize, numWords);
 	}
 
 	@Override
