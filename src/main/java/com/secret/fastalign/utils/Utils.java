@@ -1,6 +1,7 @@
 package com.secret.fastalign.utils;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.util.Arrays;
 import java.util.Random;
 import java.io.File;
 import java.io.BufferedReader;
@@ -154,7 +155,54 @@ public final class Utils {
       return brackets;
    }
 
-   public final static long[][] computeKmerHashes(final Sequence seq, final int kmerSize, final int numWords)
+  public final static int[] computeKmerMinHashes(final Sequence seq, final int kmerSize, final int numWords)
+ 	{
+ 		if (numWords%2!=0)
+ 			throw new FastAlignRuntimeException("Number of words must be multiple of 2.");
+
+ 		final int numberKmers = seq.numKmers(kmerSize);
+ 		
+ 		if (numberKmers<1)
+ 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
+ 	
+ 		//get the rabin hashes
+ 		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
+ 	
+ 		final int[] hashes = new int[numWords];
+ 		Arrays.fill(hashes, Integer.MAX_VALUE);
+ 		
+ 		int numWordsBy2 = numWords/2;
+ 		
+ 		//Random rand = new Random(0);
+ 		for (int iter=0; iter<rabinHashes.length; iter++)
+ 		{
+ 			//rand.setSeed(rabinHashes[iter]);
+ 			long x = rabinHashes[iter];
+ 			
+ 			for (int word=0; word<numWordsBy2; word++)
+ 			{
+ 				//hashes[iter][word] = rand.nextLong();
+
+ 				//XORShift Random Number Generators
+ 				x ^= (x << 21);
+ 			  x ^= (x >>> 35);
+ 			  x ^= (x << 4);
+ 			  
+ 			  int val1 = (int)x;
+ 			  int val2 = (int)(x>>32);
+ 			  
+ 			  if (val1<hashes[2*word])
+ 			  	hashes[2*word] = val1;
+ 			  
+ 			  if (val2<hashes[2*word+1])
+ 			  	hashes[2*word+1] = val2;
+ 			}
+ 		}
+ 		
+ 		return hashes;
+ 	}
+   
+  public final static long[][] computeKmerHashes(final Sequence seq, final int kmerSize, final int numWords)
 	{
 		final int numberKmers = seq.numKmers(kmerSize);
 		
@@ -187,7 +235,7 @@ public final class Utils {
 		return hashes;
 	}
 
-   public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords)
+  public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords)
 	{
 		final int numberKmers = seq.numKmers(kmerSize);
 		
