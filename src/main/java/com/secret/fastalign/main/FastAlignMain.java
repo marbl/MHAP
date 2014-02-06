@@ -8,7 +8,7 @@ public class FastAlignMain
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
-	private static final double DEFAULT_THRESHOLD = 0.07;
+	private static final double DEFAULT_THRESHOLD = 0.04;
 	
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
@@ -33,7 +33,7 @@ public class FastAlignMain
 				numWords = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--threshold")) {
 				threshold = Double.parseDouble(args[++i]);
-			} else if (args[i].trim().equalsIgnoreCase("-memory")) {
+			} else if (args[i].trim().equalsIgnoreCase("--memory")) {
 				storeInMemory = false;
 			}
 		}
@@ -87,7 +87,7 @@ public class FastAlignMain
 		System.err.println("Usage FastAlignMain -s<fasta from/self file> [-q<fasta to file]");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
-		System.err.println("\t -memory [store kmers in memory] default: " + DEFAULT_LARGE_MEMORY);
+		System.err.println("\t  --memory [do not store kmers in memory]");
 		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_THRESHOLD);
 		System.exit(1);

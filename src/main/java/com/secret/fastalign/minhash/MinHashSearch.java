@@ -32,6 +32,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		}
 	}
 	
+	protected static final int NUM_MIN_MATCHES = 3;
 	protected static final int SUB_KMER_SIZE = 12;
 	protected static final int SUB_SEQUENCE_SIZE = 5000;
 	
@@ -220,7 +221,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 			
 			double matchScore = (double)hit.count/(double)this.numWords;
 						
-			if (hit.count>=3)
+			if (hit.count>=NUM_MIN_MATCHES)
 			{
 				//get the info for the id
 				SequenceMinHashes matchedHash = this.sequenceVectorsHash.get(id);

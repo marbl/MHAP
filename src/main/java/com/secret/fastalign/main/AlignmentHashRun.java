@@ -19,7 +19,7 @@ public class AlignmentHashRun
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
-	private static final double DEFAULT_THRESHOLD = 0.07;
+	private static final double DEFAULT_THRESHOLD = 0.045;
 
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 
