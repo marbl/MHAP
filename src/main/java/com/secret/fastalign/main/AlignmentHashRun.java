@@ -57,7 +57,7 @@ public class AlignmentHashRun
 		// read and index the kmers
 		long startTime = System.nanoTime();
 
-		FastaData data = new FastaData(inFile, kmerSize);
+		FastaData data = new FastaData(inFile);
 		
 		System.out.println("Read in "+data.size()+" sequences.");
 

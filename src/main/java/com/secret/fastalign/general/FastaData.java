@@ -19,7 +19,7 @@ public class FastaData
 		this.sequenceList = new ConcurrentLinkedQueue<Sequence>(seqList);
 	}
 	
-	public FastaData(String file, int kmerSize) throws IOException 
+	public FastaData(String file) throws IOException 
 	{
 		BufferedReader bf;
 		try
