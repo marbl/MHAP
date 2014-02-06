@@ -1,7 +1,5 @@
 package com.secret.fastalign.main;
 import java.util.ArrayList;
-import java.util.Collections;
-
 import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.minhash.MinHashSearch;
@@ -14,11 +12,14 @@ public class FastAlignMain
 
 	private static final double DEFAULT_THRESHOLD = 0.07;
 	
+	private static final boolean DEFAULT_LARGE_MEMORY = true;
+
 	public static void main(String[] args) throws Exception {
 		String inFile = null;
 		int kmerSize = DEFAULT_KMER_SIZE;
 		double threshold = DEFAULT_THRESHOLD;
 		int numWords = DEFAULT_NUM_WORDS; 
+		boolean storeInMemory = DEFAULT_LARGE_MEMORY;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -29,6 +30,8 @@ public class FastAlignMain
 				numWords = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--threshold")) {
 				threshold = Double.parseDouble(args[++i]);
+			} else if (args[i].trim().equalsIgnoreCase("-memory")) {
+				storeInMemory = false;
 			}
 		}
 		if (inFile == null) {
@@ -52,9 +55,7 @@ public class FastAlignMain
 		//System.err.println("Press Enter");
 		//System.in.read();
 		
-		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords);
-
-		hashSearch.addData(data);
+		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, data, storeInMemory, false);
 
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 
@@ -63,17 +64,17 @@ public class FastAlignMain
 
 		ArrayList<MatchResult> results = hashSearch.findMatches(threshold);
 		
-		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
+		System.err.println("Time (s) to score and output: " + (System.nanoTime() - startTime)*1.0e-9);
 		
 		//sort to get the best scores on top
-		Collections.sort(results);		
+		//Collections.sort(results);		
 
-		System.err.println("Found "+results.size()+" matches:");
+		//System.err.println("Found "+results.size()+" matches:");
 		
 		//output result
 		for (MatchResult match : results)
 		{
-			System.out.format("%f %s %s %d\n", match.getScore(), match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
+			System.out.println(match);
 		}		
 	}
 
@@ -84,6 +85,7 @@ public class FastAlignMain
 		System.err.println("Usage FastAlignMain <-s fasta file>");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
+		System.err.println("\t -memory [store kmers in memory] default: " + DEFAULT_LARGE_MEMORY);
 		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_THRESHOLD);
 		System.exit(1);

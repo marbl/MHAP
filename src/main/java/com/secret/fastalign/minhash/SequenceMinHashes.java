@@ -25,31 +25,63 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 	}
 	
 	private final int completeHash[][];
+	private final int subKmerSize;
+	private final Sequence seq;
 	
-	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subKmerSize)
+	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subKmerSize, boolean storeHashes)
 	{
 		super(seq.getId(), new MinHash(seq, kmerSize, numWords));
+		this.subKmerSize = subKmerSize;
 		
+		if (storeHashes)
+		{
+			this.completeHash = getFullHashes(seq, subKmerSize);
+			this.seq = null;
+		}
+		else
+		{
+			this.completeHash = null;
+			this.seq = seq;
+		}
+	}
+
+	private int[][] getFullHashes(Sequence seq, int subKmerSize)
+	{
 		//compute just direct hash of sequence
 		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1);	
 		
 		SortableIntPair[] completeHashAsPair = new SortableIntPair[hashes.length];	
 		for (int iter=0; iter<hashes.length; iter++)
-			completeHashAsPair[iter] = new SortableIntPair((int)hashes[iter][0],iter);
+			completeHashAsPair[iter] = new SortableIntPair(hashes[iter][0],iter);
 		
 		//sort the results
 		Arrays.sort(completeHashAsPair);
 		
 		//store in array to reduce memory
-		this.completeHash = new int[completeHashAsPair.length][2];
+		int[][] completeHash = new int[completeHashAsPair.length][2];
 		for (int iter=0; iter<completeHashAsPair.length; iter++)
 		{
-			this.completeHash[iter][0] = completeHashAsPair[iter].x;
-			this.completeHash[iter][1] = completeHashAsPair[iter].y;
+			completeHash[iter][0] = completeHashAsPair[iter].x;
+			completeHash[iter][1] = completeHashAsPair[iter].y;
 		}		
+		
+		return completeHash;
+	}
+	
+	public int[][] getFullHashes()
+	{
+		if (this.completeHash!=null)
+			return this.completeHash;
+		
+		return getFullHashes(this.seq, this.subKmerSize);
 	}
 
 	public Pair<Double, Integer> getFullScore(SequenceMinHashes s)
+	{
+		return getFullScore(getFullHashes(), s);
+	}
+
+	public Pair<Double, Integer> getFullScore(int[][] allKmerHashesw, SequenceMinHashes s)
 	{		
 		//init the ok regions
 		int valid1Lower = 0;
@@ -59,20 +91,23 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		int overlapSize = 0;
 		int border = 0;
 		
+		int[][] allKmerHashes = getFullHashes();
+		int[][] sAllKmerHashes = s.getFullHashes();
+		
 		int count = 0;
 		int shift = 0;
 		for (int repeat=0; repeat<1; repeat++)
 		{
-			ArrayList<Integer> posShift = new ArrayList<Integer>(this.completeHash.length);
+			ArrayList<Integer> posShift = new ArrayList<Integer>(allKmerHashes.length);
 			
 			count = 0;
 			int iter1 = 0;
 			int iter2 = 0;
 			
-			while (iter1<this.completeHash.length && iter2<s.completeHash.length)
+			while (iter1<allKmerHashes.length && iter2<sAllKmerHashes.length)
 			{
-				int[] s1 = this.completeHash[iter1];
-				int[] s2 = s.completeHash[iter2];
+				int[] s1 = allKmerHashes[iter1];
+				int[] s2 = sAllKmerHashes[iter2];
 				
 				if (s1[0] < s2[0] || s1[1]<valid1Lower || s1[1]>valid1Upper)
 					iter1++;
