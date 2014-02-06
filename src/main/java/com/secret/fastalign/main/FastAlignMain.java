@@ -1,7 +1,5 @@
 package com.secret.fastalign.main;
-import java.util.ArrayList;
 import com.secret.fastalign.general.FastaData;
-import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.minhash.MinHashSearch;
 
 public class FastAlignMain 
@@ -14,8 +12,11 @@ public class FastAlignMain
 	
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception 
+	{
 		String inFile = null;
+		String toFile = null;
+		
 		int kmerSize = DEFAULT_KMER_SIZE;
 		double threshold = DEFAULT_THRESHOLD;
 		int numWords = DEFAULT_NUM_WORDS; 
@@ -26,6 +27,8 @@ public class FastAlignMain
 				kmerSize = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("-s")) {
 				inFile = args[++i];
+			} else if (args[i].trim().equalsIgnoreCase("-q")) {
+				toFile = args[++i];
 			} else if (args[i].trim().equalsIgnoreCase("--num-hashes")) {
 				numWords = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--threshold")) {
@@ -45,44 +48,43 @@ public class FastAlignMain
 		
 		// read and index the kmers
 		long startTime = System.nanoTime();
-
-		FastaData data = new FastaData(inFile, kmerSize);
-		
+		FastaData data = new FastaData(inFile);
 		System.err.println("Read in "+data.size()+" sequences.");
-
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
 		
 		//System.err.println("Press Enter");
 		//System.in.read();
 		
 		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, data, storeInMemory, false);
-
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
-		startTime = System.nanoTime();
-
-		ArrayList<MatchResult> results = hashSearch.findMatches(threshold);
-		
-		System.err.println("Time (s) to score and output: " + (System.nanoTime() - startTime)*1.0e-9);
-		
-		//sort to get the best scores on top
-		//Collections.sort(results);		
-
-		//System.err.println("Found "+results.size()+" matches:");
-		
-		//output result
-		for (MatchResult match : results)
+		if (toFile==null)
 		{
-			System.out.println(match);
-		}		
+			startTime = System.nanoTime();
+			hashSearch.findMatches(threshold);
+			System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
+		}
+		else
+		{
+			// read and index the kmers
+			startTime = System.nanoTime();
+			data = new FastaData(toFile);
+			System.err.println("Read in "+data.size()+" sequences from to file.");
+			System.err.println("Time (s) to read to file: " + (System.nanoTime() - startTime)*1.0e-9);
+
+			startTime = System.nanoTime();
+			hashSearch.findMatches(data.getSequences(), threshold);
+			System.err.println("Time (s) to score, hash to file, and output: " + (System.nanoTime() - startTime)*1.0e-9);
+		
+		}
 	}
 
 	public static void printUsage(String error) {
 		if (error != null) {
 			System.err.println(error);
 		}
-		System.err.println("Usage FastAlignMain <-s fasta file>");
+		System.err.println("Usage FastAlignMain -s<fasta from/self file> [-q<fasta to file]");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
 		System.err.println("\t -memory [store kmers in memory] default: " + DEFAULT_LARGE_MEMORY);

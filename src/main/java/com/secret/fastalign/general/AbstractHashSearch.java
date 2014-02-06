@@ -2,8 +2,8 @@ package com.secret.fastalign.general;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -108,55 +108,36 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	
 	public abstract T getSequenceHash(Sequence seq);
 
-	public ArrayList<MatchResult> findMatches(final double acceptScore)
+	public ArrayList<MatchResult> findMatches(final ConcurrentLinkedQueue<Sequence> seqList, final double acceptScore)
 	{
 		//figure out number of cores
 		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
 		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
 		
 		//allocate the storage and get the list of valeus
-		final Collection<SequenceId> storedHashes = getStoredForwardSequenceIds();
 		final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
 	
 		//for each thread create a task
 	  for (int iter=0; iter<numThreads; iter++)
 		{
-	  	final int currThread = iter;
 			Runnable task = new Runnable()
 			{ 			
 				@Override
 				public void run()
 				{
-	  			Iterator<SequenceId> iterator = storedHashes.iterator();
 	  			List<MatchResult> localMatches = new ArrayList<MatchResult>();
-	  			
-	  			//skip to the initial value
-		    	for (int skipIter=0; skipIter<currThread; skipIter++)
-		    	{
-		    		if (iterator.hasNext())
-		    			iterator.next();
-		    		else
-		    			break;
-		    	}
-	
-		    	//if there are values left
-		    	while (iterator.hasNext())
+
+	  			Sequence nextSequence = seqList.poll();
+
+	  			while (nextSequence!=null)
 			    {		    		
-		    		//get the sequence hashes
-		    		SequenceId nextSequence = iterator.next();
-		    		T sequenceHashes = getStoredSequenceHash(nextSequence);
+		    		T sequenceHashes = getSequenceHash(nextSequence);
 		    		
 		    		//only search the forward sequences
-	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, true));
-	
-	      		//skip the required number of iterations
-			    	for (int skipIter=0; skipIter<numThreads-1; skipIter++)
-			    	{
-			    		if (iterator.hasNext())
-			    			iterator.next();
-			    		else
-			    			break;
-			    	}
+	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
+
+	      		//get the sequence hashes
+		    		nextSequence = seqList.poll();		    		
 			    }
 		    	
 	    		//combine the results
@@ -164,7 +145,66 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 					{
 						combinedList.addAll(localMatches);
 					}
+				}
+			};
+		
+	  	//enqueue the task
+			execSvc.execute(task);					
+		}
+		
+		//shutdown the service
+	  execSvc.shutdown();
+	  try
+		{
+			execSvc.awaitTermination(365L, TimeUnit.DAYS);
+		} 
+	  catch (InterruptedException e) 
+	  {
+	  	execSvc.shutdownNow();
+	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
+	  }
+		
+		return combinedList;	}
+
+	public ArrayList<MatchResult> findMatches(final double acceptScore)
+	{
+		//figure out number of cores
+		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
+		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
+		
+		//allocate the storage and get the list of valeus
+		final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
+		final ConcurrentLinkedQueue<SequenceId> seqList = new ConcurrentLinkedQueue<SequenceId>(getStoredForwardSequenceIds());
 	
+		//for each thread create a task
+	  for (int iter=0; iter<numThreads; iter++)
+		{
+			Runnable task = new Runnable()
+			{ 			
+				@Override
+				public void run()
+				{
+	  			List<MatchResult> localMatches = new ArrayList<MatchResult>();
+
+      		//get next sequence
+	  			SequenceId nextSequence = seqList.poll();
+
+	  			while (nextSequence!=null)
+			    {		    		
+		    		T sequenceHashes = getStoredSequenceHash(nextSequence);
+		    		
+		    		//only search the forward sequences
+	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, true));
+
+	      		//get next sequence
+		    		nextSequence = seqList.poll();		    		
+			    }
+		    	
+	    		//combine the results
+	    		synchronized (combinedList)
+					{
+						combinedList.addAll(localMatches);
+					}
 				}
 			};
 		
