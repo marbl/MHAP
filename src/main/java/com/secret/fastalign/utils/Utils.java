@@ -155,12 +155,12 @@ public final class Utils {
       return brackets;
    }
 
-  public final static int[] computeKmerMinHashes(final Sequence seq, final int kmerSize, final int numWords)
+  public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numWords)
  	{
  		if (numWords%2!=0)
  			throw new FastAlignRuntimeException("Number of words must be multiple of 2.");
 
- 		final int numberKmers = seq.numKmers(kmerSize);
+ 		final int numberKmers = seq.length()-kmerSize+1;
  		
  		if (numberKmers<1)
  			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
@@ -210,7 +210,7 @@ public final class Utils {
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 	
 		//get the rabin hashes
-		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
+		final int[] rabinHashes = computeRabinHashes(seq.getString(), kmerSize);
 	
 		final long[][] hashes = new long[rabinHashes.length][numWords];
 		
@@ -243,7 +243,7 @@ public final class Utils {
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 	
 		//get the rabin hashes
-		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
+		final int[] rabinHashes = computeRabinHashes(seq.getString(), kmerSize);
 	
 		final int[][] hashes = new int[rabinHashes.length][numWords];
 		
@@ -268,10 +268,10 @@ public final class Utils {
 		return hashes;
 	}
    
-   public final static int[] computeRabinHashes(final Sequence seq, final int kmerSize)
+   public final static int[] computeRabinHashes(final String seq, final int kmerSize)
 	{
 		RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
-		final int[] rabinHashes = rabinHash.hashInt(seq.getString());
+		final int[] rabinHashes = rabinHash.hashInt(seq);
 		
 		//HashFunction hf = Hashing.murmur3_32(0);
 	

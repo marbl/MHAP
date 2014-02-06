@@ -19,17 +19,17 @@ public class AlignmentHashRun
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
+	private static final double DEFAULT_THRESHOLD = 0.07;
+
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 
-	private static final int DEFAULT_SKIP = 10;
-	private static final int DEFAULT_THRESHOLD = 1;
+	private static final boolean DEFAULT_LARGE_MEMORY = true;
 	
 	public static void main(String[] args) throws Exception {
 		String inFile = null;
 		int kmerSize = DEFAULT_KMER_SIZE;
-		int threshold = DEFAULT_THRESHOLD;
+		double threshold = DEFAULT_THRESHOLD;
 		int numWords = DEFAULT_NUM_WORDS; 
-		int maxSkip = DEFAULT_SKIP;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -39,20 +39,14 @@ public class AlignmentHashRun
 			} else if (args[i].trim().equalsIgnoreCase("--num-hashes")) {
 				numWords = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--threshold")) {
-				threshold = Integer.parseInt(args[++i]);
-			} else if (args[i].trim().equalsIgnoreCase("--max-skip")) {
-				maxSkip = Integer.parseInt(args[++i]);
+				threshold = Double.parseDouble(args[++i]);
 			}
-		}
-		if (inFile == null) {
-			printUsage("Error: no input fasta file specified");
 		}
 
 		System.err.println("Running with input fasta: " + inFile);
 		System.err.println("kmer size:\t" + kmerSize);
 		System.err.println("threshold:\t" + threshold);
 		System.err.println("num hashes\t" + numWords);
-		System.err.println("max skip\t" + maxSkip);
 
 		LogManager.getLogManager().reset();
 		
@@ -70,26 +64,14 @@ public class AlignmentHashRun
 		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
 		
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords);
-
-		hashSearch.addData(data);
+		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, data.clone(), DEFAULT_LARGE_MEMORY, true);
 
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
 		startTime = System.nanoTime();
-
-		//find out the scores
-		/*
-		ArrayList<MatchResult> results = new ArrayList<MatchResult>();
-		for (Sequence seq : data.getSequences())
-		{
-			results.addAll(simHash.findMatches(seq, 0.0));
-		}
-		*/
 		
-		//ArrayList<MatchResult> results = hashSearch.findMatches(Double.NEGATIVE_INFINITY);
-		ArrayList<MatchResult> results = hashSearch.findMatches(0.07);
+		ArrayList<MatchResult> results = hashSearch.findMatches(DEFAULT_THRESHOLD);
 		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
@@ -120,7 +102,7 @@ public class AlignmentHashRun
 			double score = computeAlignment(s1, s2, matrix);
 			
 			//System.out.format("Sequence match (%s - %s) with identity score %f (SW=%f).\n", match.getFromId(), match.getToId(), match.getScore(), score);
-			System.out.format("%f %f %s %s %d\n", match.getScore(), score, match.getFromId().toStringInt(), match.getToId().toStringInt(), match.getFromShift());
+			System.out.format("%s %f %f\n", match, match.getScore(), score);
 			
 			mean += match.getScore();
 			
@@ -249,18 +231,5 @@ public class AlignmentHashRun
 		calcScore = calcScore/(float)(end-start+1);
 		
 		return calcScore;
-	}
-
-	public static void printUsage(String error) {
-		if (error != null) {
-			System.err.println(error);
-		}
-		System.err.println("Usage buildMulti <-s fasta file>");
-		System.err.println("Options: ");
-		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
-		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
-		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_THRESHOLD);
-		System.err.println("\t --max-skip [int bp maximum distance to nearest minimum value when guessing overlap positions], default: " + DEFAULT_SKIP);
-		System.exit(1);
 	}
 }

@@ -8,14 +8,25 @@ import com.secret.fastalign.utils.Utils;
 
 public final class MinHash extends AbstractSequenceHashes<MinHash>
 {
-	public final int[] minHashes;
+	private final int[][] minHashes;
 	
 	public MinHash(Sequence seq, int kmerSize, int numWords)
 	{
 		super(seq);
 		
-		//get the hashes
-		this. minHashes = Utils.computeKmerMinHashes(seq, kmerSize, numWords);
+		int numberSubSeq = seq.length()/MinHashSearch.SUB_SEQUENCE_SIZE+1;
+		if (seq.length()%MinHashSearch.SUB_SEQUENCE_SIZE<kmerSize)
+			numberSubSeq--;
+		
+		this.minHashes = new int[numberSubSeq][];
+		for (int iter=0; iter<numberSubSeq; iter++)
+		{
+			String subString = seq.getString().substring(iter*MinHashSearch.SUB_SEQUENCE_SIZE, Math.min(seq.length(), (iter+1)*MinHashSearch.SUB_SEQUENCE_SIZE));
+
+			//get the hashes
+			this.minHashes[iter] = Utils.computeKmerMinHashes(subString, kmerSize, numWords);
+		}
+		
 	}
 
 	@Override
@@ -32,14 +43,14 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 	/**
 	 * @return the minHashes
 	 */
-	public final int[] getMinHashes()
+	public final int[][] getSubSeqMinHashes()
 	{
 		return this.minHashes;
 	}
 	
 	public final int numHashes()
 	{
-		return this.minHashes.length;
+		return this.minHashes[0].length;
 	}
 
 	/* (non-Javadoc)

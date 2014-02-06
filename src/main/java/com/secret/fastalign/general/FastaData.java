@@ -2,8 +2,7 @@ package com.secret.fastalign.general;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Utils;
@@ -11,12 +10,15 @@ import com.secret.fastalign.utils.Utils;
 public class FastaData
 {
 	// length of sequences loaded
-	private final ArrayList<Sequence> sequenceList;
-	
-	//private final HashMap<SequenceId, Sequence> sequenceMap;
+	private final ConcurrentLinkedQueue<Sequence> sequenceList;
 	
 	private static final String[] fastaSuffix = {"fna", "contigs", "final", "fasta", "fa"};
 
+	private FastaData(ConcurrentLinkedQueue<Sequence> seqList)
+	{
+		this.sequenceList = new ConcurrentLinkedQueue<Sequence>(seqList);
+	}
+	
 	public FastaData(String file, int kmerSize) throws IOException 
 	{
 		BufferedReader bf;
@@ -32,8 +34,7 @@ public class FastaData
 		String line = null;
 		StringBuilder fastaSeq = new StringBuilder();
 
-		this.sequenceList = new ArrayList<Sequence>();
-		//this.sequenceMap = new HashMap<SequenceId, Sequence>();
+		this.sequenceList = new ConcurrentLinkedQueue<Sequence>();
 
 		String header = "";
 		while ((line = bf.readLine()) != null)
@@ -41,9 +42,9 @@ public class FastaData
 			if (line.startsWith(">"))
 			{
 				if (fastaSeq.length() > 0)
-					addMers(new SequenceId(header, true), fastaSeq.toString().toUpperCase(), kmerSize);
+					addMers(new SequenceId(header), fastaSeq.toString().toUpperCase());
 				
-				header = line.substring(1).split("[\\s]+", 2)[0];
+				//header = line.substring(1).split("[\\s]+", 2)[0];
 				
 				//reset the storage
 				fastaSeq.setLength(0);
@@ -56,54 +57,57 @@ public class FastaData
 		}
 		if (fastaSeq.length() != 0)
 		{
-			addMers(new SequenceId(header, true), fastaSeq.toString().toUpperCase(), kmerSize);
+			addMers(new SequenceId(header), fastaSeq.toString().toUpperCase());
 		}
 		bf.close();
-
 	}
-
+	
 	// process a sequence and store the kmers/sequence length/etc
-	public void addMers(SequenceId id, String seq, int merSize)
+	public void addMers(SequenceId id, String seq)
 	{
 		Sequence sequence = new Sequence(seq, id);
 		this.sequenceList.add(sequence);
-		//this.sequenceMap.put(id, sequence);
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#clone()
+	 */
+	@Override
+	public FastaData clone()
+	{
+		return new FastaData(this.sequenceList);
 	}
 	
-	public Sequence getSequence(int index)
+	public Sequence dequeue()
 	{
-		return this.sequenceList.get(index);
+		return this.sequenceList.poll();
 	}
 	
-public Sequence getSequence(SequenceId id)
-{
-	if (id.isForward())
+	public Sequence getSequence(SequenceId id)
 	{
+		if (id.isForward())
+		{
+			for (Sequence seq : this.sequenceList)
+				if (seq.getId().equals(id))
+					return seq;
+		}
+	
+		id = id.complimentId();
 		for (Sequence seq : this.sequenceList)
 			if (seq.getId().equals(id))
-				return seq;
+				return seq.getReverseCompliment();
+	
+		return null;
 	}
 
-	id = id.complimentId();
-	for (Sequence seq : this.sequenceList)
-		if (seq.getId().equals(id))
-			return seq.getReverseCompliment();
-
-	return null;
-}
-	
-//	public Sequence getSequence(SequenceId id)
-//	{
-//		if (id.isForward())
-//			return this.sequenceMap.get(id);
-//
-//		Sequence seq = this.sequenceMap.get(id.complimentId());
-//		return seq.getReverseCompliment();
-//	}
-
-	public List<Sequence> getSequences()
+	public ConcurrentLinkedQueue<Sequence> getSequences()
 	{
 		return this.sequenceList;
+	}
+
+	public boolean isEmpty()
+	{
+		return this.sequenceList.isEmpty();
 	}
 
 	public int size()

@@ -1,33 +1,32 @@
 package com.secret.fastalign.general;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-
-import com.secret.fastalign.utils.HashCodeUtil;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SequenceId
 {
-	private static ConcurrentHashMap<Long, String> indicies = new ConcurrentHashMap<Long, String>();
-	private static AtomicLong globalCounter = new AtomicLong(-1);
+	//private static ConcurrentHashMap<Long, String> indicies = new ConcurrentHashMap<Long, String>();
+	private static AtomicInteger globalCounter = new AtomicInteger(0);
 	
-	private final long id;
+	private final int id;
 	private final boolean isFwd;
-	private final int hash;
 	
-	public SequenceId(String id, boolean isFwd)
+	private SequenceId(String id, boolean isFwd)
 	{
 		this.id = globalCounter.addAndGet(1);
 		//indicies.put(this.id, id);
 		
 		this.isFwd = isFwd;
-		this.hash = myHashCode();
 	}
 	
-	private SequenceId(long id, boolean isFwd)
+	public SequenceId(String id)
+	{
+		this(id, true);
+	}
+	
+	private SequenceId(int id, boolean isFwd)
 	{
 		this.id = id;
 		this.isFwd = isFwd;
-		this.hash = myHashCode();
 	}
 	
 	public SequenceId complimentId()
@@ -49,9 +48,6 @@ public final class SequenceId
 			return false;
 		SequenceId other = (SequenceId) obj;
 		
-		if (other.hash!=this.hash)
-			return false;
-		
 		return (this.id==other.id) && (this.isFwd == other.isFwd);
 	}
 	
@@ -67,17 +63,11 @@ public final class SequenceId
 
 	public String getHeader()
 	{
-		String s = indicies.get(this.id);
-		if (s!=null)
-			return s;
+		//String s = indicies.get(this.id);
+		//if (s!=null)
+		//	return s;
 		
 		return String.valueOf(this.id);
-	}
-
-	private int myHashCode()
-	{
-		int hash = HashCodeUtil.hash(HashCodeUtil.SEED, this.id);
-		return HashCodeUtil.hash(hash, this.isFwd);		
 	}
 
 	/* (non-Javadoc)
@@ -86,7 +76,7 @@ public final class SequenceId
 	@Override
 	public int hashCode()
 	{
-		return this.hash;
+		return this.isFwd? (int)this.id : -(int)this.id;
 	}
 
 	/* (non-Javadoc)

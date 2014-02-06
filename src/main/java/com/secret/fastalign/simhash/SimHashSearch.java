@@ -76,8 +76,9 @@ public final class SimHashSearch extends AbstractHashSearch<SimHash,SequenceSimH
 				Pair<Double,Integer> result = seqHash.orderedScore(hash);
 				//score = result.x;
 				int shift = result.y*SUB_STRING_SIZE;
+				int shiftb = 0;
 				
-				results.add(new MatchResult(seqHash.getSequenceId(), hash.getSequenceId(), score, shift));
+				results.add(new MatchResult(seqHash.getSequenceId(), hash.getSequenceId(), score, -shift, shiftb));
 			}
 		}
 		

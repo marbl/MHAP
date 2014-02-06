@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
@@ -28,20 +29,27 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
 		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
 		
+		final AtomicInteger counter = new AtomicInteger();
+		final int dataSize = data.size();
 	  for (int iter=0; iter<numThreads; iter++)
 		{
-	  	final int currThread = iter;
 			Runnable task = new Runnable()
 			{					
 				@Override
 				public void run()
 				{
-			    for (int currIter=currThread; currIter<data.size(); currIter+=numThreads)
+			    while(!data.isEmpty())
 			    {
-			    	boolean success = addSequence(data.getSequence(currIter));
+			    	Sequence seq = data.dequeue();
 			    	
-			    	if (!success)
-			    		throw new FastAlignRuntimeException("Error: Unable to add duplicate sequence "+data.getSequence(currIter).getId()+".");
+			    	if (seq!=null)
+			    	{
+			    		addSequence(seq);
+
+			    		int currCount = counter.getAndIncrement();
+				    	if (currCount%10000==0)
+				    		System.err.println("Sequences Hashed: "+currCount+" out of "+dataSize+".");
+			    	}
 			    }
 				}
 			};

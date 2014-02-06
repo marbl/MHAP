@@ -5,15 +5,22 @@ public final class MatchResult implements Comparable<MatchResult>
 {
 	private final SequenceId fromId;
 	private final SequenceId toId;
-	private final int shift;
+	private final int a;
+	private final int b;
 	private final double score;
 	
-	public MatchResult(SequenceId fromId, SequenceId toId, double score, int shift)
+	public MatchResult(SequenceId fromId, SequenceId toId, double score, int a, int b)
 	{
 		this.fromId = fromId;
 		this.toId = toId;
-		this.score = score;
-		this.shift = shift;
+		
+		this.a = a;
+		this.b = b;
+		
+		if (score>1.0)
+			this.score = 	1.0;
+		else
+			this.score = score;
 	}
 
 	/**
@@ -46,8 +53,23 @@ public final class MatchResult implements Comparable<MatchResult>
 		return -Double.compare(this.score, o.score);
 	}
 	
-	public int getFromShift()
+	public int getAShift()
 	{
-		return this.shift;
+		return this.a;
 	}
+	
+	public int getBShift()
+	{
+		return this.b;
+	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("%s %s %s %d %d %.2f", getFromId().getHeaderId(), getToId().getHeaderId(),
+				getFromId().isForward()&&getToId().isForward() ? 'N' : 'I', 
+				getAShift(), getBShift(), (1.0-getScore())*100.0);
+	}
+
+
 }
