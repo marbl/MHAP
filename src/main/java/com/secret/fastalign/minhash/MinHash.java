@@ -10,18 +10,18 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 {
 	private final int[][] minHashes;
 	
-	public MinHash(Sequence seq, int kmerSize, int numWords)
+	public MinHash(Sequence seq, int kmerSize, int numWords, int subSequenceSize)
 	{
 		super(seq);
 		
-		int numberSubSeq = seq.length()/MinHashSearch.SUB_SEQUENCE_SIZE+1;
-		if (seq.length()%MinHashSearch.SUB_SEQUENCE_SIZE<kmerSize)
+		int numberSubSeq = seq.length()/subSequenceSize+1;
+		if (seq.length()%subSequenceSize<kmerSize)
 			numberSubSeq--;
 		
 		this.minHashes = new int[numberSubSeq][];
 		for (int iter=0; iter<numberSubSeq; iter++)
 		{
-			String subString = seq.getString().substring(iter*MinHashSearch.SUB_SEQUENCE_SIZE, Math.min(seq.length(), (iter+1)*MinHashSearch.SUB_SEQUENCE_SIZE));
+			String subString = seq.getString().substring(iter*subSequenceSize, Math.min(seq.length(), (iter+1)*subSequenceSize));
 
 			//get the hashes
 			this.minHashes[iter] = Utils.computeKmerMinHashes(subString, kmerSize, numWords);

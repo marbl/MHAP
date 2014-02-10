@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.io.File;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.FileReader;
 
@@ -135,6 +136,7 @@ public final class Utils {
    }
    
    public static final int FASTA_LINE_LENGTH = 60;
+   public static final int BUFFER_BYTE_SIZE = 800000;
    
    public static MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
    
@@ -360,26 +362,27 @@ public final class Utils {
       return getFile(fileName, array);
    }
    
- 	public static BufferedReader getFile(String fileName, String[] postfix) throws Exception {
+ 	public static BufferedReader getFile(String fileName, String[] postfix) throws IOException 
+ 	{
        BufferedReader bf = null;
 
        if (fileName.endsWith("bz2")) {
           // open file as a pipe
           System.err.println("Running command " + "bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
           Process p = Runtime.getRuntime().exec("bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
-          bf = new BufferedReader(new InputStreamReader(p.getInputStream()));
+          bf = new BufferedReader(new InputStreamReader(p.getInputStream()), BUFFER_BYTE_SIZE);
           System.err.println(bf.ready());
         } else if (fileName.endsWith("gz")) {
           // open file as a pipe
            System.err.println("Runnning comand " + "gzip -dc " + new File(fileName).getAbsolutePath() + " |");
            Process p = Runtime.getRuntime().exec("gzip -dc " + new File(fileName).getAbsolutePath() + " |");
-           bf = new BufferedReader(new InputStreamReader(p.getInputStream()));
+           bf = new BufferedReader(new InputStreamReader(p.getInputStream()), BUFFER_BYTE_SIZE);
            System.err.println(bf.ready());
         } else {
            int i = 0;
            for (i = 0; i < postfix.length; i++) {
               if (fileName.endsWith(postfix[i])){
-                 bf = new BufferedReader(new FileReader(fileName));
+                 bf = new BufferedReader(new FileReader(fileName), BUFFER_BYTE_SIZE);
                  break;
               }
            }

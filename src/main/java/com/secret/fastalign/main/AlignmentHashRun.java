@@ -18,6 +18,10 @@ public class AlignmentHashRun
 	private static final int DEFAULT_NUM_WORDS = 256;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
+	
+	protected static final int DEFAULT_NUM_MIN_MATCHES = 3;
+
+	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
 	private static final double DEFAULT_THRESHOLD = 0.045;
 
@@ -59,14 +63,14 @@ public class AlignmentHashRun
 
 		FastaData data = new FastaData(inFile);
 		
-		System.out.println("Read in "+data.size()+" sequences.");
-
-		System.err.println("Time (s) to read: " + (System.nanoTime() - startTime)*1.0e-9);
-		
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, data.clone(), DEFAULT_LARGE_MEMORY, true);
-
+		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, DEFAULT_LARGE_MEMORY, true);
+		hashSearch.addData(data.clone());
+		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
+		
+		System.out.println("Read in and processed "+data.getNumberProcessed()+" sequences.");
+
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
 		startTime = System.nanoTime();

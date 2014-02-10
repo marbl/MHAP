@@ -3,12 +3,17 @@ package com.secret.fastalign.general;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Utils;
 
 public class FastaData
 {
+	private final BufferedReader fileReader;
+	private String lastLine;
+	private AtomicLong numberProcessed;
+	private boolean readFullFile;
 	// length of sequences loaded
 	private final ConcurrentLinkedQueue<Sequence> sequenceList;
 	
@@ -17,70 +22,126 @@ public class FastaData
 	private FastaData(ConcurrentLinkedQueue<Sequence> seqList)
 	{
 		this.sequenceList = new ConcurrentLinkedQueue<Sequence>(seqList);
+		this.fileReader = null;
+		this.lastLine = null;
+		this.readFullFile = true;
+		this.numberProcessed = new AtomicLong(this.sequenceList.size());
 	}
 	
 	public FastaData(String file) throws IOException 
 	{
-		BufferedReader bf;
 		try
 		{
-			bf = Utils.getFile(file, fastaSuffix);
+			this.fileReader = Utils.getFile(file, fastaSuffix);
 		}
 		catch (Exception e)
 		{
 			throw new FastAlignRuntimeException(e);
 		}
 		
-		String line = null;
-		StringBuilder fastaSeq = new StringBuilder();
-
+		this.lastLine = null;
+		this.readFullFile = false;		
+		this.numberProcessed = new AtomicLong(0);
 		this.sequenceList = new ConcurrentLinkedQueue<Sequence>();
-
-		String header = "";
-		while ((line = bf.readLine()) != null)
-		{
-			if (line.startsWith(">"))
-			{
-				if (fastaSeq.length() > 0)
-					addMers(new SequenceId(header), fastaSeq.toString().toUpperCase());
-				
-				//header = line.substring(1).split("[\\s]+", 2)[0];
-				
-				//reset the storage
-				fastaSeq.setLength(0);
-
-			}
-			else
-			{
-				fastaSeq.append(line);
-			}
-		}
-		if (fastaSeq.length() != 0)
-		{
-			addMers(new SequenceId(header), fastaSeq.toString().toUpperCase());
-		}
-		bf.close();
 	}
 	
-	// process a sequence and store the kmers/sequence length/etc
-	public void addMers(SequenceId id, String seq)
-	{
-		Sequence sequence = new Sequence(seq, id);
-		this.sequenceList.add(sequence);
-	}
-
 	/* (non-Javadoc)
 	 * @see java.lang.Object#clone()
 	 */
 	@Override
 	public FastaData clone()
 	{
+		//enqueue all the data
+		try
+		{
+			enqueueFullFile();
+		}
+		catch (IOException e)
+		{
+			throw new FastAlignRuntimeException(e);
+		}
+		
 		return new FastaData(this.sequenceList);
 	}
 	
-	public Sequence dequeue()
+	public synchronized Sequence dequeue() throws IOException
 	{
+		if (this.sequenceList.isEmpty())
+			enqueueNextSequenceInFile();
+		
 		return this.sequenceList.poll();
+	}
+	
+	public void enqueue(SequenceId id, String seq)
+	{
+		Sequence sequence = new Sequence(seq, id);
+		this.sequenceList.add(sequence);
+		this.numberProcessed.getAndIncrement();
+	}
+
+	public void enqueueFullFile() throws IOException
+	{
+		while (enqueueNextSequenceInFile()) {}		
+	}
+	
+	private boolean enqueueNextSequenceInFile() throws IOException
+	{
+		synchronized (this.fileReader)
+		{
+			if (this.readFullFile)
+				return false;
+			
+			//try to read the next line
+			if (this.lastLine==null)
+			{
+				this.lastLine = this.fileReader.readLine();
+			
+				//there is no next line
+				if (this.lastLine==null)
+				{
+					this.fileReader.close();
+					this.readFullFile = true;
+					return false;
+				}
+			}
+			
+			//process the header
+			if (!this.lastLine.startsWith(">"))
+				throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
+			
+			//process the current header
+			//parse the new header
+			//header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
+			String header = "";			
+			this.lastLine = this.fileReader.readLine();
+			
+			StringBuilder fastaSeq = new StringBuilder();
+			while (true)
+			{
+				if (this.lastLine==null || this.lastLine.startsWith(">"))
+				{
+					//enqueue sequence
+					enqueue(new SequenceId(header), fastaSeq.toString());
+
+					if (this.lastLine==null)
+					{
+						this.fileReader.close();
+						this.readFullFile = true;
+					}
+					
+					return true;
+				}
+								
+				//append the last line
+				fastaSeq.append(this.lastLine);				
+				this.lastLine = this.fileReader.readLine();
+			}
+		}
+	}
+	
+	public long getNumberProcessed()
+	{
+		return this.numberProcessed.get();
 	}
 	
 	public Sequence getSequence(SequenceId id)
@@ -107,10 +168,10 @@ public class FastaData
 
 	public boolean isEmpty()
 	{
-		return this.sequenceList.isEmpty();
+		return this.sequenceList.isEmpty() && this.readFullFile;
 	}
 
-	public int size()
+	public int currentCacheSize()
 	{
 		return this.sequenceList.size();
 	}

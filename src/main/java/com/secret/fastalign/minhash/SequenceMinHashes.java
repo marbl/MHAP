@@ -41,9 +41,9 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 	private final int subKmerSize;
 	private final Sequence seq;
 	
-	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subKmerSize, boolean storeHashes)
+	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subSequenceSize, int subKmerSize, boolean storeHashes)
 	{
-		super(seq.getId(), new MinHash(seq, kmerSize, numWords));
+		super(seq.getId(), new MinHash(seq, kmerSize, numWords, subSequenceSize));
 		this.subKmerSize = subKmerSize;
 		
 		if (storeHashes)
