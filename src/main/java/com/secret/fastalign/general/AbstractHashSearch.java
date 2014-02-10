@@ -1,5 +1,6 @@
 package com.secret.fastalign.general;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,7 +31,6 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
 		
 		final AtomicInteger counter = new AtomicInteger();
-		final int dataSize = data.size();
 	  for (int iter=0; iter<numThreads; iter++)
 		{
 			Runnable task = new Runnable()
@@ -40,7 +40,15 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 				{
 			    while(!data.isEmpty())
 			    {
-			    	Sequence seq = data.dequeue();
+			    	Sequence seq;
+						try
+						{
+							seq = data.dequeue();
+						}
+						catch (IOException e)
+						{
+							throw new FastAlignRuntimeException(e);
+						}
 			    	
 			    	if (seq!=null)
 			    	{
@@ -48,7 +56,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 
 			    		int currCount = counter.getAndIncrement();
 				    	if (currCount%10000==0)
-				    		System.err.println("Sequences Hashed: "+currCount+" out of "+dataSize+".");
+				    		System.err.println("Current sequences hashed: "+currCount+"...");
 			    	}
 			    }
 				}
@@ -108,7 +116,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	
 	public abstract T getSequenceHash(Sequence seq);
 
-	public ArrayList<MatchResult> findMatches(final ConcurrentLinkedQueue<Sequence> seqList, final double acceptScore)
+	public ArrayList<MatchResult> findMatches(final FastaData data, final double acceptScore)
 	{
 		//figure out number of cores
 		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
@@ -126,25 +134,32 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 				public void run()
 				{
 	  			List<MatchResult> localMatches = new ArrayList<MatchResult>();
-
-	  			Sequence nextSequence = seqList.poll();
-
-	  			while (nextSequence!=null)
-			    {		    		
-		    		T sequenceHashes = getSequenceHash(nextSequence);
-		    		
-		    		//only search the forward sequences
-	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
-
-	      		//get the sequence hashes
-		    		nextSequence = seqList.poll();		    		
-			    }
-		    	
-	    		//combine the results
-	    		synchronized (combinedList)
-					{
-						combinedList.addAll(localMatches);
-					}
+	  			
+	  			try
+	  			{
+		  			Sequence nextSequence = data.dequeue();
+	
+		  			while (nextSequence!=null)
+				    {		    		
+			    		T sequenceHashes = getSequenceHash(nextSequence);
+			    		
+			    		//only search the forward sequences
+		      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
+	
+		      		//get the sequence hashes
+			    		nextSequence = data.dequeue();	    		
+				    }
+			    	
+		    		//combine the results
+		    		synchronized (combinedList)
+						{
+							combinedList.addAll(localMatches);
+						}
+	  			}
+	  			catch (IOException e)
+	  			{
+	  				throw new FastAlignRuntimeException(e);
+	  			}
 				}
 			};
 		
