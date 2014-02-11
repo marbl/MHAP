@@ -1,5 +1,8 @@
 package com.secret.fastalign.minhash;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,6 +11,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.secret.fastalign.general.AbstractHashSearch;
+import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.general.SequenceId;
@@ -32,6 +36,9 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 	}
 	
 	protected static final int DEFAULT_SUB_KMER_SIZE = 12;
+	public final static int INITIAL_HASH_SIZE = 10000;
+	
+	private static BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(System.out));
 	
 	private final ArrayList<HashMap<Integer, ArrayList<SequenceId>>> hashes;
   private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
@@ -94,7 +101,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		return ratio;
 	}
 	
-	public MinHashSearch(int kmerSize, int numHashes, int numMinMatches, int subSequenceSize, boolean storeKmerInMemory, boolean storeResults)
+	public MinHashSearch(int kmerSize, int numHashes, int numMinMatches, int subSequenceSize, boolean storeKmerInMemory, boolean storeResults, FastaData data) throws IOException
 	{
 		super(kmerSize, numHashes);
 		
@@ -103,12 +110,17 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		this.storeKmerInMemory = storeKmerInMemory;
 		this.storeResults = storeResults;
 		
+		//enqueue full file
+		data.enqueueFullFile();
+		
 		int numThreads = Runtime.getRuntime().availableProcessors();
-		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceMinHashes>(10000, (float)0.75, numThreads);
+		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceMinHashes>((int)data.getNumberProcessed()*2+100, (float)0.75, numThreads);
 	
 		this.hashes = new ArrayList<HashMap<Integer, ArrayList<SequenceId>>>(numHashes);
 		for (int iter=0; iter<numHashes; iter++)
-			this.hashes.add(new HashMap<Integer, ArrayList<SequenceId>>(10000));
+			this.hashes.add(new HashMap<Integer, ArrayList<SequenceId>>((int)data.getNumberProcessed()*2*20));
+		
+		addData(data);
 	}
 	
 	@Override
@@ -133,12 +145,12 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 		int count = 0;
 		for (HashMap<Integer, ArrayList<SequenceId>> hash : this.hashes)
 		{
-			ArrayList<SequenceId> currList;
-			
 			int[][] minHashes = currHash.getMainHashes().getSubSeqMinHashes();
 			
 			for (int subSequences=0; subSequences<minHashes.length; subSequences++)
 			{
+				ArrayList<SequenceId> currList;
+				
 				//get the list
 				synchronized (hash)
 				{
@@ -147,7 +159,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 					
 					if (currList==null)
 					{
-						currList = new ArrayList<SequenceId>(32);
+						currList = new ArrayList<SequenceId>(16);
 						hash.put(hashVal, currList);
 					}
 				}
@@ -220,8 +232,6 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 			//get the hit info
 			HitInfo hit = matchHitMap.get(id);
 			
-			double matchScore = (double)hit.count/(double)this.numWords;
-						
 			if (hit.count>=this.numMinMatches)
 			{
 				//get the info for the id
@@ -232,7 +242,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 					fullKmerMatch = seqMinHashes.getFullHashes();
 
 				Pair<Double,Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash);
-				matchScore = result.x;
+				double matchScore = result.x;
 				int shift = result.y;
 				int shiftb = -shift-seqMinHashes.getSequenceLength()+matchedHash.getSequenceLength();
 				
@@ -245,14 +255,27 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash,SequenceMinH
 				}
 			}
 			
+			//output results to screen
 			if (!this.storeResults)
 			{
-				synchronized (System.out)
+				try
 				{
-					for (MatchResult currResult : matches)
-						System.out.println(currResult);					
+					synchronized (outWriter)
+					{
+						for (MatchResult currResult : matches)
+						{
+							outWriter.write(currResult.toString());
+							outWriter.newLine();
+						}
+						
+						outWriter.flush();
+					}
 				}
-				
+				catch (IOException e)
+				{
+					throw new FastAlignRuntimeException(e);
+				}
+								
 				matches.clear();
 			}
 		}

@@ -62,4 +62,18 @@ public final class Sequence
 	{
 		return this.sequence.length();
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		StringBuilder str = new StringBuilder();
+		
+		str.append(">"+this.id+"\n");
+		str.append(this.sequence);
+		
+		return str.toString();
+	}
 }
