@@ -8,7 +8,7 @@ import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.minhash.MinHashSearch;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public class FastAlignMain 
+public final class FastAlignMain 
 {	
 	private static final int DEFAULT_NUM_WORDS = 1024;
 
@@ -16,9 +16,11 @@ public class FastAlignMain
 
 	private static final double DEFAULT_THRESHOLD = 0.04;
 			
-	protected static final int DEFAULT_NUM_MIN_MATCHES = 3;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
-	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
+	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
+	
+	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors()*2;
 	
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
@@ -33,6 +35,7 @@ public class FastAlignMain
 		int numMinMatches = DEFAULT_NUM_MIN_MATCHES;
 		int subSequenceSize = DEFAULT_SUB_SEQUENCE_SIZE; 
 		boolean storeInMemory = DEFAULT_LARGE_MEMORY;
+		int numThreads = DEFAULT_NUM_THREADS;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -49,6 +52,8 @@ public class FastAlignMain
 				numMinMatches = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--subsequence-size")) {
 				subSequenceSize = Integer.parseInt(args[++i]);
+			} else if (args[i].trim().equalsIgnoreCase("--num-threads")) {
+				numThreads = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--memory")) {
 				storeInMemory = false;
 			}
@@ -63,6 +68,7 @@ public class FastAlignMain
 		System.err.println("num hashed words:\t" + numWords);
 		System.err.println("num min matches:\t" + numMinMatches);
 		System.err.println("subsequence size:\t" + subSequenceSize);
+		System.err.println("number of threads:\t" + numThreads);
 		System.err.println("use large amount of memory:\t" + storeInMemory);
 		
 		long startTotalTime = System.nanoTime();
@@ -75,7 +81,7 @@ public class FastAlignMain
 		//System.in.read();
 		
 		long startTime = System.nanoTime();
-		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, storeInMemory, false);
+		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, numThreads, storeInMemory, false);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - startTime)*1.0e-9);
 
@@ -127,6 +133,7 @@ public class FastAlignMain
 			//first perform to self
 			startTime = System.nanoTime();
 			hashSearch.findMatches(threshold);
+			System.out.flush();
 			System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
 
 			//no do to all files
@@ -136,13 +143,17 @@ public class FastAlignMain
 				data = new FastaData(cf.getCanonicalPath());
 				System.err.println("Opened fasta file "+cf.getCanonicalPath()+".");
 	
+				//match the file
 				startTime = System.nanoTime();
 				hashSearch.findMatches(data, threshold);
+				
+				System.out.flush();
 				System.err.println("Processed "+data.getNumberProcessed()+" to sequences.");
 				System.err.println("Time (s) to score, hash to-file, and output: " + (System.nanoTime() - startTime)*1.0e-9);
 			}
 		}
 
+		System.err.println("Total matches found: "+hashSearch.getMatchesProcessed());
 		System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
 		System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
 	}
@@ -158,6 +169,7 @@ public class FastAlignMain
 		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_THRESHOLD);
 		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: " + DEFAULT_NUM_MIN_MATCHES);
+		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): " + DEFAULT_NUM_THREADS);
 		System.err.println("\t  --subsequence-size [int size of maximum minhashed sequence], default: " + DEFAULT_SUB_SEQUENCE_SIZE);
 		System.exit(1);
 	}

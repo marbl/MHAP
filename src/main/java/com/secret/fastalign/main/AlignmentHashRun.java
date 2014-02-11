@@ -15,7 +15,7 @@ import com.secret.fastalign.minhash.MinHashSearch;
 public class AlignmentHashRun 
 {	
 
-	private static final int DEFAULT_NUM_WORDS = 256;
+	private static final int DEFAULT_NUM_WORDS = 1024;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 	
@@ -23,7 +23,7 @@ public class AlignmentHashRun
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
-	private static final double DEFAULT_THRESHOLD = 0.045;
+	private static final double DEFAULT_THRESHOLD = 0.04;
 
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 
@@ -34,6 +34,7 @@ public class AlignmentHashRun
 		int kmerSize = DEFAULT_KMER_SIZE;
 		double threshold = DEFAULT_THRESHOLD;
 		int numWords = DEFAULT_NUM_WORDS; 
+		int numThreads = Runtime.getRuntime().availableProcessors()*2;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -64,7 +65,7 @@ public class AlignmentHashRun
 		FastaData data = new FastaData(inFile);
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, DEFAULT_LARGE_MEMORY, true);
+		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, numThreads, DEFAULT_LARGE_MEMORY, true);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 		
