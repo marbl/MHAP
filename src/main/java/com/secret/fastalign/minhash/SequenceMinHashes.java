@@ -10,7 +10,7 @@ import com.secret.fastalign.utils.Utils;
 
 public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,SequenceMinHashes>
 {
-	private final class SortableIntPair implements Comparable<SortableIntPair>
+	private static final class SortableIntPair implements Comparable<SortableIntPair>
 	{
 		public final int x;
 		public final int y;

@@ -65,6 +65,8 @@ public class FastAlignMain
 		System.err.println("subsequence size:\t" + subSequenceSize);
 		System.err.println("use large amount of memory:\t" + storeInMemory);
 		
+		long startTotalTime = System.nanoTime();
+
 		// read and index the kmers
 		FastaData data = new FastaData(inFile);
 		//System.err.println("Read in "+data.currentCacheSize()+" sequences.");
@@ -73,11 +75,11 @@ public class FastAlignMain
 		//System.in.read();
 		
 		long startTime = System.nanoTime();
-		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, numMinMatches, subSequenceSize, storeInMemory, false, data);
+		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, storeInMemory, false);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - startTime)*1.0e-9);
 
-		long startTotalTime = System.nanoTime();
+		long startTotalScoringTime = System.nanoTime();
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
 		if (toFile==null)
@@ -141,7 +143,8 @@ public class FastAlignMain
 			}
 		}
 
-		System.err.println("Total time (s) to score, hash, and output to-files results: " + (System.nanoTime() - startTotalTime)*1.0e-9);
+		System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
+		System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
 	}
 
 	public static void printUsage(String error) {
