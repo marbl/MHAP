@@ -10,17 +10,12 @@ public final class SequenceId
 	private final int id;
 	private final boolean isFwd;
 	
-	private SequenceId(String id, boolean isFwd)
+	public SequenceId(String id)
 	{
 		this.id = globalCounter.addAndGet(1);
 		//indicies.put(this.id, id);
 		
-		this.isFwd = isFwd;
-	}
-	
-	public SequenceId(String id)
-	{
-		this(id, true);
+		this.isFwd = true;
 	}
 	
 	private SequenceId(int id, boolean isFwd)
@@ -76,7 +71,7 @@ public final class SequenceId
 	@Override
 	public int hashCode()
 	{
-		return this.isFwd? (int)this.id : -(int)this.id;
+		return this.isFwd? this.id : -this.id;
 	}
 
 	/* (non-Javadoc)

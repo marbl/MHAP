@@ -24,7 +24,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		this.numWords = numWords;
 	}
 
-	public void addData(final FastaData data)
+	protected void addData(final FastaData data)
 	{
 		//figure out number of cores
 		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
@@ -38,27 +38,24 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 				@Override
 				public void run()
 				{
-			    while(!data.isEmpty())
-			    {
-			    	Sequence seq;
-						try
-						{
-							seq = data.dequeue();
-						}
-						catch (IOException e)
-						{
-							throw new FastAlignRuntimeException(e);
-						}
-			    	
-			    	if (seq!=null)
-			    	{
+					try
+					{
+			    	Sequence seq = data.dequeue();
+				    while(seq != null)
+				    {
 			    		addSequence(seq);
 
-			    		int currCount = counter.getAndIncrement();
+			    		int currCount = counter.incrementAndGet();
 				    	if (currCount%10000==0)
 				    		System.err.println("Current sequences hashed: "+currCount+"...");
-			    	}
+				    	
+				    	seq = data.dequeue();
+				    }
 			    }
+					catch (IOException e)
+					{
+						throw new FastAlignRuntimeException(e);
+					}
 				}
 			};
 		
@@ -79,7 +76,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	  }
 	}
 
-	public boolean addSequence(Sequence seq)
+	protected boolean addSequence(Sequence seq)
 	{
 		//add forward sequence
 		boolean success = addDirectionalSequence(seq);
@@ -98,7 +95,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	
 	public abstract T getStoredSequenceHash(SequenceId id);
 
-	public abstract boolean addDirectionalSequence(Sequence seq);
+	protected abstract boolean addDirectionalSequence(Sequence seq);
 
 	public List<MatchResult> findMatches(Sequence seq, double acceptScore)
 	{

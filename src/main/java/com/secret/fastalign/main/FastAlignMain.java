@@ -10,7 +10,7 @@ import com.secret.fastalign.utils.FastAlignRuntimeException;
 
 public class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 256;
+	private static final int DEFAULT_NUM_WORDS = 1024;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
@@ -73,8 +73,7 @@ public class FastAlignMain
 		//System.in.read();
 		
 		long startTime = System.nanoTime();
-		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, numMinMatches, subSequenceSize, storeInMemory, false);
-		hashSearch.addData(data);
+		MinHashSearch hashSearch = new MinHashSearch(kmerSize, numWords, numMinMatches, subSequenceSize, storeInMemory, false, data);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - startTime)*1.0e-9);
 
