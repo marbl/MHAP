@@ -20,9 +20,9 @@ public final class SimHashSearch extends AbstractHashSearch<SimHash,SequenceSimH
 	protected static final int SUB_STRING_SIZE = 200;	
 	protected static final int SUB_WORD_SIZE = 2;
 	
-	public SimHashSearch(int kmerSize, int numWords) 
+	public SimHashSearch(int kmerSize, int numWords, int numThreads) 
 	{
-		super(kmerSize, numWords, true);
+		super(kmerSize, numWords, numThreads, true);
 
 		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceSimHashes>();
 	}

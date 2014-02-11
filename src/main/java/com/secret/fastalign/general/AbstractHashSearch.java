@@ -11,32 +11,36 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
 public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T extends AbstractReducedSequence<H,T>>
 {
 	protected final int kmerSize;
-	protected final int numWords;
+	private final AtomicLong matchesProcessed;
 
+	protected final int numWords;
+	protected final int numThreads;
 	private final boolean storeResults;
 	protected static BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(System.out), 8*1024*1024);
 
-	public AbstractHashSearch(int kmerSize, int numWords, boolean storeResults)
+	public AbstractHashSearch(int kmerSize, int numWords, int numThreads, boolean storeResults)
 	{
 		this.kmerSize = kmerSize;
 		this.numWords = numWords;
+		this.numThreads = numThreads;
 		this.storeResults = storeResults;
+		this.matchesProcessed = new AtomicLong();
 	}
-
+	
 	protected void addData(final FastaData data)
 	{
 		//figure out number of cores
-		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
-		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
+		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
 		
 		final AtomicInteger counter = new AtomicInteger();
-	  for (int iter=0; iter<numThreads; iter++)
+	  for (int iter=0; iter<this.numThreads; iter++)
 		{
 			Runnable task = new Runnable()
 			{					
@@ -82,7 +86,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	}
 
 	protected abstract boolean addDirectionalSequence(Sequence seq);
-	
+
 	protected boolean addSequence(Sequence seq)
 	{
 		//add forward sequence
@@ -101,15 +105,14 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	public ArrayList<MatchResult> findMatches(final double acceptScore)
 	{
 		//figure out number of cores
-		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
-		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
+		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
 		
 		//allocate the storage and get the list of valeus
 		final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
 		final ConcurrentLinkedQueue<SequenceId> seqList = new ConcurrentLinkedQueue<SequenceId>(getStoredForwardSequenceIds());
 	
 		//for each thread create a task
-	  for (int iter=0; iter<numThreads; iter++)
+	  for (int iter=0; iter<this.numThreads; iter++)
 		{
 			Runnable task = new Runnable()
 			{ 			
@@ -130,18 +133,27 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 
 	      		//get next sequence
 		    		nextSequence = seqList.poll();		    		
+
+		    		//output stored results
+		    		if (nextSequence==null || localMatches.size()>20000)
+		    		{
+			    		//count the number of matches
+			  			AbstractHashSearch.this.matchesProcessed.addAndGet(localMatches.size());
+				    	
+			  			if (AbstractHashSearch.this.storeResults)
+			  			{	  			
+				    		//combine the results
+				    		synchronized (combinedList)
+								{
+									combinedList.addAll(localMatches);
+								}
+			  			}
+			  			else
+			  				outputResults(localMatches);
+			  			
+			  			localMatches.clear();
+		    		}
 			    }
-		    	
-	  			if (AbstractHashSearch.this.storeResults)
-	  			{	  			
-		    		//combine the results
-		    		synchronized (combinedList)
-						{
-							combinedList.addAll(localMatches);
-						}
-	  			}
-	  			else
-	  				outputResults(localMatches);
 				}
 			};
 		
@@ -163,18 +175,17 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		
 		return combinedList;
 	}
-
+	
 	public ArrayList<MatchResult> findMatches(final FastaData data, final double acceptScore)
 	{
 		//figure out number of cores
-		final int numThreads = Runtime.getRuntime().availableProcessors()*2;
-		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
+		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
 		
 		//allocate the storage and get the list of valeus
 		final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
 	
 		//for each thread create a task
-	  for (int iter=0; iter<numThreads; iter++)
+	  for (int iter=0; iter<this.numThreads; iter++)
 		{
 			Runnable task = new Runnable()
 			{ 			
@@ -195,19 +206,28 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
 	
 		      		//get the sequence hashes
-			    		nextSequence = data.dequeue();	    		
+			    		nextSequence = data.dequeue();	 
+			    		
+			    		//output stored results
+			    		if (nextSequence==null || localMatches.size()>20000)
+			    		{
+				    		//count the number of matches
+				  			AbstractHashSearch.this.matchesProcessed.addAndGet(localMatches.size());
+					    	
+				  			if (AbstractHashSearch.this.storeResults)
+				  			{	  			
+					    		//combine the results
+					    		synchronized (combinedList)
+									{
+										combinedList.addAll(localMatches);
+									}
+				  			}
+				  			else
+				  				outputResults(localMatches);
+				  			
+				  			localMatches.clear();
+			    		}
 				    }
-			    	
-		  			if (AbstractHashSearch.this.storeResults)
-		  			{	  			
-			    		//combine the results
-			    		synchronized (combinedList)
-							{
-								combinedList.addAll(localMatches);
-							}
-		  			}
-		  			else
-		  				outputResults(localMatches);
 		  		}
 	  			catch (IOException e)
 	  			{
@@ -235,19 +255,12 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		return combinedList;	
 	}
 
-	public List<MatchResult> findMatches(Sequence seq, double acceptScore)
-	{
-		//see if already have the sequence stored
-		T hashes = getStoredSequenceHash(seq.getId());
-		
-		//if not get the sequence
-		if (hashes==null)
-			hashes = getSequenceHash(seq);
-		
-		return findMatches(hashes, acceptScore, false);
-	}
+	protected abstract List<MatchResult> findMatches(T hashes, double acceptScore, boolean allToAll);
 
-	public abstract List<MatchResult> findMatches(T hashes, double acceptScore, boolean allToAll);
+	public long getMatchesProcessed()
+	{
+		return this.matchesProcessed.get();
+	}
 	
 	public abstract T getSequenceHash(Sequence seq);
 
