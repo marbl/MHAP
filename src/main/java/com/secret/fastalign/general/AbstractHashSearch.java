@@ -19,6 +19,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 {
 	protected final int kmerSize;
 	private final AtomicLong matchesProcessed;
+	private final AtomicLong sequencesSearched;
 
 	protected final int numWords;
 	protected final int numThreads;
@@ -32,6 +33,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		this.numThreads = numThreads;
 		this.storeResults = storeResults;
 		this.matchesProcessed = new AtomicLong();
+		this.sequencesSearched = new AtomicLong();
 	}
 	
 	protected void addData(final FastaData data)
@@ -130,6 +132,9 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		    		
 		    		//only search the forward sequences
 	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, true));
+	      		
+	      		//record search
+	      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
 
 	      		//get next sequence
 		    		nextSequence = seqList.poll();		    		
@@ -138,7 +143,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		    		if (nextSequence==null || localMatches.size()>20000)
 		    		{
 			    		//count the number of matches
-			  			AbstractHashSearch.this.matchesProcessed.addAndGet(localMatches.size());
+			  			AbstractHashSearch.this.matchesProcessed.getAndAdd(localMatches.size());
 				    	
 			  			if (AbstractHashSearch.this.storeResults)
 			  			{	  			
@@ -205,6 +210,9 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 			    		//only search the forward sequences
 		      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
 	
+		      		//record search
+		      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
+
 		      		//get the sequence hashes
 			    		nextSequence = data.dequeue();	 
 			    		
@@ -212,7 +220,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 			    		if (nextSequence==null || localMatches.size()>20000)
 			    		{
 				    		//count the number of matches
-				  			AbstractHashSearch.this.matchesProcessed.addAndGet(localMatches.size());
+				  			AbstractHashSearch.this.matchesProcessed.getAndAdd(localMatches.size());
 					    	
 				  			if (AbstractHashSearch.this.storeResults)
 				  			{	  			
@@ -293,5 +301,21 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	}
 
 	public abstract int size();
+
+	/**
+	 * @return the sequencesSearched
+	 */
+	public long getNumberSequencesSearched()
+	{
+		return this.sequencesSearched.get();
+	}
+
+	/**
+	 * @param outWriter the outWriter to set
+	 */
+	public static void setOutWriter(BufferedWriter outWriter)
+	{
+		AbstractHashSearch.outWriter = outWriter;
+	}
 
 }

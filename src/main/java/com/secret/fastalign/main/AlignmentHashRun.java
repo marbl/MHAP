@@ -14,12 +14,11 @@ import com.secret.fastalign.minhash.MinHashSearch;
 
 public class AlignmentHashRun 
 {	
-
 	private static final int DEFAULT_NUM_WORDS = 1024;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 	
-	protected static final int DEFAULT_NUM_MIN_MATCHES = 3;
+	protected static final int DEFAULT_NUM_MIN_MATCHES = 2;
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 

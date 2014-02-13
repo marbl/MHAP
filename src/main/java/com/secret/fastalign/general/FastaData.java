@@ -2,6 +2,7 @@ package com.secret.fastalign.general;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -120,7 +121,7 @@ public class FastaData
 			if (this.lastLine == null || this.lastLine.startsWith(">"))
 			{
 				// enqueue sequence
-				enqueue(new Sequence(fastaSeq.toString(), new SequenceId(header)));
+				enqueue(new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), new SequenceId(header)));
 
 				if (this.lastLine == null)
 				{
