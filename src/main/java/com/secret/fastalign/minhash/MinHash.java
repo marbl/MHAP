@@ -8,7 +8,7 @@ import com.secret.fastalign.utils.Utils;
 
 public final class MinHash extends AbstractSequenceHashes<MinHash>
 {
-	private final int[][] minHashes;
+	private int[][] minHashes;
 	
 	public MinHash(Sequence seq, int kmerSize, int numWords, int subSequenceSize)
 	{

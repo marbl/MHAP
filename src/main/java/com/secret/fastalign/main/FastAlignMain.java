@@ -10,13 +10,13 @@ import com.secret.fastalign.utils.FastAlignRuntimeException;
 
 public final class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 1024;
+	private static final int DEFAULT_NUM_WORDS = 768;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
 	private static final double DEFAULT_THRESHOLD = 0.04;
 			
-	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 2;
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 	
@@ -153,9 +153,14 @@ public final class FastAlignMain
 			}
 		}
 
-		System.err.println("Total matches found: "+hashSearch.getMatchesProcessed());
 		System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
 		System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
+		System.err.println("Total matches found: "+hashSearch.getMatchesProcessed());
+		System.err.println("Average number of matches per lookup: " + (double)hashSearch.getMatchesProcessed()/(double)hashSearch.getNumberSequencesSearched()*100.0);
+		System.err.println("Average % of hashed sequences hit per lookup: " + (double)hashSearch.getNumberSequencesHit()/(double)(hashSearch.size()*hashSearch.getNumberSequencesSearched())*100.0);
+		System.err.println("Average % of hashed sequences hit that are matches: " + (double)hashSearch.getMatchesProcessed()/(double)hashSearch.getNumberSequencesHit()*100.0);
+		System.err.println("Average % of hashed sequences fully compared that are matches: " + (double)hashSearch.getMatchesProcessed()/(double)hashSearch.getNumberSequencesFullyCompared()*100.0);
+		System.err.flush();
 	}
 
 	public static void printUsage(String error) {
