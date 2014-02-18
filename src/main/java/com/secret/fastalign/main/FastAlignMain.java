@@ -10,9 +10,9 @@ import com.secret.fastalign.utils.FastAlignRuntimeException;
 
 public final class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 768;
+	private static final int DEFAULT_NUM_WORDS = 1024;
 
-	private static final int DEFAULT_KMER_SIZE = 14;
+	private static final int DEFAULT_KMER_SIZE = 16;
 
 	private static final double DEFAULT_THRESHOLD = 0.04;
 			
@@ -23,6 +23,8 @@ public final class FastAlignMain
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors()*2;
 	
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
+
+	private static final boolean DEFAULT_NO_SELF = false;
 
 	public static void main(String[] args) throws Exception 
 	{
@@ -36,6 +38,7 @@ public final class FastAlignMain
 		int subSequenceSize = DEFAULT_SUB_SEQUENCE_SIZE; 
 		boolean storeInMemory = DEFAULT_LARGE_MEMORY;
 		int numThreads = DEFAULT_NUM_THREADS;
+		boolean noSelf = DEFAULT_NO_SELF;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -56,6 +59,8 @@ public final class FastAlignMain
 				numThreads = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--memory")) {
 				storeInMemory = false;
+			} else if (args[i].trim().equalsIgnoreCase("--no-self")) {
+				noSelf = true;
 			}
 		}
 		if (inFile == null) {
@@ -70,6 +75,7 @@ public final class FastAlignMain
 		System.err.println("subsequence size:\t" + subSequenceSize);
 		System.err.println("number of threads:\t" + numThreads);
 		System.err.println("use large amount of memory:\t" + storeInMemory);
+		System.err.println("compute alignment to self of -s file:\t" + !noSelf);
 		
 		long startTotalTime = System.nanoTime();
 
@@ -132,9 +138,12 @@ public final class FastAlignMain
 
 			//first perform to self
 			startTime = System.nanoTime();
-			hashSearch.findMatches(threshold);
-			System.out.flush();
-			System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
+			if (!noSelf)
+			{
+				hashSearch.findMatches(threshold);
+				System.out.flush();
+				System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
+			}
 
 			//no do to all files
 			for (File cf : toFiles)
@@ -176,6 +185,7 @@ public final class FastAlignMain
 		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: " + DEFAULT_NUM_MIN_MATCHES);
 		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): " + DEFAULT_NUM_THREADS);
 		System.err.println("\t  --subsequence-size [int size of maximum minhashed sequence], default: " + DEFAULT_SUB_SEQUENCE_SIZE);
+		System.err.println("\t  --no-self [do not compute results to self], default: "+DEFAULT_NO_SELF);
 		System.exit(1);
 	}
 }
