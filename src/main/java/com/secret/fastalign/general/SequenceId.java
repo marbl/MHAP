@@ -18,7 +18,7 @@ public final class SequenceId
 		this.isFwd = true;
 	}
 	
-	private SequenceId(int id, boolean isFwd)
+	public SequenceId(int id, boolean isFwd)
 	{
 		this.id = id;
 		this.isFwd = isFwd;
