@@ -165,10 +165,11 @@ public class KmerStatSimulator
 			StringBuilder realErrorStr, double insertionRate, double deletionRate, double substitutionRate)
 	{
 		StringBuilder firstSeq = new StringBuilder();
-		firstSeq.append(sequence.substring(firstPos, Math.min(sequence.length(), (firstPos + firstLen))));
-		if (firstSeq.length() < firstLen)
+		firstSeq.append(sequence.substring(firstPos, Math.min(sequence.length(), 2*(firstPos + firstLen))));
+		
+		if (firstSeq.length() < 2*firstLen)
 		{
-			firstSeq.append(sequence.substring(0, Math.min(sequence.length(), firstLen - firstSeq.length())));
+			firstSeq.append(sequence.substring(0, Math.min(sequence.length(), (2*firstLen - firstSeq.length()))));
 		}
 
 		// now mutate
@@ -205,8 +206,9 @@ public class KmerStatSimulator
 				i++;
 			}
 		}
+		
 		realErrorStr.append((double) realError / firstLen);
-		return firstSeq.toString();
+		return firstSeq.substring(0, firstLen).toString();
 	}
 
 	private void outputStats(ArrayList<Double> values, PrintStream out)
@@ -306,8 +308,8 @@ public class KmerStatSimulator
 			secondSeq = getSequence(firstLen, secondPos, sequence, errorRate, firstAdj, errors, insertionPercentage,
 					deletionPercentage, subPercentage);
 			
-			System.err.println("Hi "+firstSeq.length());
-			System.err.println("Hi2 "+secondSeq.length());
+			//System.err.println("Hi "+firstSeq.length());
+			//System.err.println("Hi2 "+secondSeq.length());
 				
 			this.randomJaccard.add(compareKmers(firstSeq, secondSeq));
 			this.randomMerCounts.add(this.sharedCount);
