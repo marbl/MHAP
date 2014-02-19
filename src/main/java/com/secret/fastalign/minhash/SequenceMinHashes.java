@@ -139,6 +139,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 				}
 			}
 			
+			//TODO replace with a selection algorithm maybe
 			Collections.sort(posShift);
 			
 			//get the median
