@@ -161,6 +161,10 @@ public class FastaData
 		return null;
 	}
 
+        public Sequence[] toArray() {
+           return this.sequenceList.toArray(new Sequence[(int)this.getNumberProcessed()]);
+        }
+
 	public boolean isEmpty()
 	{
 		return this.sequenceList.isEmpty() && this.readFullFile;
