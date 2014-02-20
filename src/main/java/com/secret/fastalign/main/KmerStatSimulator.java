@@ -13,6 +13,7 @@ import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.Utils;
 
 public class KmerStatSimulator {
+	private boolean verbose = false;
 	private int kmer = 12;
 	private int overlap = 100;
 
@@ -152,13 +153,13 @@ public class KmerStatSimulator {
 	private String getSequence(int firstLen, int firstPos, String sequence,
 			double errorRate, StringBuilder profile, StringBuilder realErrorStr) {
 		return getSequence(firstLen, firstPos, sequence, errorRate, profile,
-				realErrorStr, 0.792, 0.122, 0.086);
+				realErrorStr, 0.792, 0.122, 0.086, true);
 	}
 
 	private String getSequence(int seqLength, int firstPos, String sequence,
 			double errorRate, StringBuilder profile,
 			StringBuilder realErrorStr, double insertionRate,
-			double deletionRate, double substitutionRate) {
+			double deletionRate, double substitutionRate, boolean trimRight) {
 		StringBuilder firstSeq = new StringBuilder();
 		firstSeq.append(sequence.substring(firstPos,
 				Math.min(sequence.length(), firstPos + 2 * seqLength)));
@@ -197,7 +198,11 @@ public class KmerStatSimulator {
 		}
 
 		realErrorStr.append((double) realError / seqLength);
-		return firstSeq.substring(0, seqLength).toString();
+		if (trimRight) {
+			return firstSeq.substring(0, seqLength).toString();
+		} else {
+			return firstSeq.substring(firstSeq.length()-seqLength, firstSeq.length()).toString();
+		}
 	}
 
 	private void outputStats(ArrayList<Double> values, PrintStream out) {
@@ -256,12 +261,12 @@ public class KmerStatSimulator {
 			int sequenceLength = (int) this.requestedLength;
 			int firstPos = 0;
 
-			String sequence = buildRandomSequence(sequenceLength * 2);
+			String sequence = null;
 			int seqID = 0;
 			if (this.reference != null) {
 				sequence = null;
 				while (sequence == null
-						|| sequence.length() < 2 * sequenceLength) {
+						|| sequence.length() < 4 * sequenceLength) {
 					// pick a sequence from our reference
 					seqID = generator.nextInt(sequences.length);
 					sequence = sequences[seqID];
@@ -269,6 +274,8 @@ public class KmerStatSimulator {
 
 				// now pick a position
 				firstPos = generator.nextInt(sequence.length());
+			} else {
+				sequence = buildRandomSequence(sequenceLength * 4);
 			}
 
 			// simulate sequence with error
@@ -276,16 +283,25 @@ public class KmerStatSimulator {
 			StringBuilder errors = new StringBuilder();
 			String firstSeq = getSequence(sequenceLength, firstPos, sequence,
 					errorRate, firstAdj, errors, insertionPercentage,
-					deletionPercentage, subPercentage);
+					deletionPercentage, subPercentage, false);
 
 			// compare number of shared kmers out of total to another sequence
 			// from
 			// same position
-			int offset = (int) (sequenceLength - this.overlap);
+			int offset = (int) ((requestedLength * 2) - this.overlap);
 			int secondPos = (firstPos + offset) % sequence.length();
 			String secondSeq = getSequence(sequenceLength, secondPos, sequence,
 					errorRate, firstAdj, errors, insertionPercentage,
-					deletionPercentage, subPercentage);
+					deletionPercentage, subPercentage, true);
+			if (verbose) {
+				System.err.println("Given seq " + firstPos + " of len " + sequence.length() + " and offset " + secondPos + " due to offset " + offset);
+				System.err.println(">" + seqID + "_" + firstPos + "\n" + firstSeq);
+				System.err.println(">" + seqID + "_" + secondPos + "\n" + secondSeq);
+			}
+			if (firstSeq.length() != secondSeq.length() || firstSeq.length() != requestedLength) {
+				System.err.println("Error wrong length first: " + firstSeq.length() + " second: " + secondSeq.length() + " requested " + requestedLength);
+				System.exit(1);
+			}
 			this.sharedJaccard.add(compareKmers(firstSeq, secondSeq));
 			this.sharedMerCounts.add(this.sharedCount);
 
@@ -310,12 +326,16 @@ public class KmerStatSimulator {
 				// generate error for second sequence
 				secondSeq = getSequence(sequenceLength, secondPos, sequence,
 						errorRate, firstAdj, errors, insertionPercentage,
-						deletionPercentage, subPercentage);
+						deletionPercentage, subPercentage, true);
 			} else {
 				secondPos = 0;
 				secondSeq = buildRandomSequence(sequenceLength);
 			}
 
+			if (firstSeq.length() != secondSeq.length() || firstSeq.length() != requestedLength) {
+				System.err.println("Error wrong length " + firstSeq.length());
+				System.exit(1);
+			}
 			// System.err.println("First: "+firstSeq.length());
 			// System.err.println("Second: "+secondSeq.length());
 
