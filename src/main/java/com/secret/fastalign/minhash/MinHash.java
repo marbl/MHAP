@@ -1,6 +1,7 @@
 package com.secret.fastalign.minhash;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import com.secret.fastalign.general.AbstractSequenceHashes;
 import com.secret.fastalign.general.Sequence;
@@ -10,7 +11,7 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 {
 	private int[][] minHashes;
 	
-	public MinHash(Sequence seq, int kmerSize, int numWords, int subSequenceSize)
+	public MinHash(Sequence seq, int kmerSize, int numWords, int subSequenceSize, HashSet<Integer> filter)
 	{
 		super(seq);
 		
@@ -24,7 +25,7 @@ public final class MinHash extends AbstractSequenceHashes<MinHash>
 			String subString = seq.getString().substring(iter*subSequenceSize, Math.min(seq.length(), (iter+1)*subSequenceSize));
 
 			//get the hashes
-			this.minHashes[iter] = Utils.computeKmerMinHashes(subString, kmerSize, numWords);
+			this.minHashes[iter] = Utils.computeKmerMinHashes(subString, kmerSize, numWords, filter);
 		}
 		
 	}

@@ -3,23 +3,28 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
 
 import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.minhash.MinHashSearch;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
+import com.secret.fastalign.utils.Utils;
 
 public final class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 1024;
+	private static final int DEFAULT_NUM_WORDS = 512;
 
-	private static final int DEFAULT_KMER_SIZE = 16;
+	private static final int DEFAULT_KMER_SIZE = 14;
 
-	private static final double DEFAULT_THRESHOLD = 0.04;
+	private static final double DEFAULT_THRESHOLD = 0.03;
 			
-	private static final int DEFAULT_NUM_MIN_MATCHES = 2;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 	
+	private static final double DEFAULT_FILTER_CUTOFF = 2.0e-5;
+
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors()*2;
 	
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
@@ -28,6 +33,9 @@ public final class FastAlignMain
 
 	public static void main(String[] args) throws Exception 
 	{
+		//set the locale
+	  Locale.setDefault(Locale.US);
+		
 		String inFile = null;
 		String toFile = null;
 		
@@ -39,6 +47,8 @@ public final class FastAlignMain
 		boolean storeInMemory = DEFAULT_LARGE_MEMORY;
 		int numThreads = DEFAULT_NUM_THREADS;
 		boolean noSelf = DEFAULT_NO_SELF;
+		String filterFile = null;
+		double filterThreshold = DEFAULT_FILTER_CUTOFF;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -47,10 +57,14 @@ public final class FastAlignMain
 				inFile = args[++i];
 			} else if (args[i].trim().equalsIgnoreCase("-q")) {
 				toFile = args[++i];
+			} else if (args[i].trim().equalsIgnoreCase("-f")) {
+				filterFile = args[++i];
 			} else if (args[i].trim().equalsIgnoreCase("--num-hashes")) {
 				numWords = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--threshold")) {
 				threshold = Double.parseDouble(args[++i]);
+			} else if (args[i].trim().equalsIgnoreCase("--filter-threshold")) {
+				filterThreshold = Double.parseDouble(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--num-min-matches")) {
 				numMinMatches = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--subsequence-size")) {
@@ -68,8 +82,11 @@ public final class FastAlignMain
 		}
 
 		System.err.println("Running with input fasta: " + inFile);
+		System.err.println("Running with to directory or file: " + toFile);
+		System.err.println("Running with kmer filter file: " + filterFile);
 		System.err.println("kmer size:\t" + kmerSize);
 		System.err.println("threshold:\t" + threshold);
+		System.err.println("kmer filter percent cutoff:\t" + filterThreshold);
 		System.err.println("num hashed words:\t" + numWords);
 		System.err.println("num min matches:\t" + numMinMatches);
 		System.err.println("subsequence size:\t" + subSequenceSize);
@@ -87,9 +104,20 @@ public final class FastAlignMain
 		//System.in.read();
 		
 		long startTime = System.nanoTime();
-		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, numThreads, storeInMemory, false);
+
+		//read in the kmer filter set
+		HashSet<Integer> filter = null;
+		if (filterFile!=null)
+		{
+			System.err.println("Reading in filter file "+filterFile+".");
+			filter = Utils.createKmerFilter(filterFile, filterThreshold, kmerSize);
+			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime)*1.0e-9);
+		}
+
+		long processTime = System.nanoTime();
+		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, numThreads, storeInMemory, false, filter);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
-		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - startTime)*1.0e-9);
+		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
 
 		long startTotalScoringTime = System.nanoTime();
 
@@ -161,6 +189,9 @@ public final class FastAlignMain
 				System.err.println("Time (s) to score, hash to-file, and output: " + (System.nanoTime() - startTime)*1.0e-9);
 			}
 		}
+		
+		//flush output
+		System.out.flush();
 
 		System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
 		System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
@@ -176,7 +207,7 @@ public final class FastAlignMain
 		if (error != null) {
 			System.err.println(error);
 		}
-		System.err.println("Usage FastAlignMain -s<fasta from/self file> [-q<fasta to file]");
+		System.err.println("Usage FastAlignMain -s<fasta from/self file> [-q<fasta to file] [-f<kmer filter list]");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
 		System.err.println("\t  --memory [do not store kmers in memory]");

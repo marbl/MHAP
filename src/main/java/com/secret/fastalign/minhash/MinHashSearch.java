@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -94,6 +95,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	private final ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>> hashes;
 	private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
 	private final boolean storeKmerInMemory;
+	private final HashSet<Integer> filter;
 	
 	private final AtomicLong numberSubSequencesHit;
 	private final AtomicLong numberSequencesHit;
@@ -156,7 +158,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	}
 
 	public MinHashSearch(FastaData data, int kmerSize, int numHashes, int numMinMatches, int subSequenceSize, int numThreads,
-			boolean storeKmerInMemory, boolean storeResults) throws IOException
+			boolean storeKmerInMemory, boolean storeResults, HashSet<Integer> filter) throws IOException
 	{
 		super(kmerSize, numHashes, numThreads, storeResults);
 
@@ -166,6 +168,9 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		this.numberSubSequencesHit = new AtomicLong();
 		this.numberSequencesHit = new AtomicLong();
 		this.numberSequencesFullyCompared = new AtomicLong();
+		
+		//add the sequence filter
+		this.filter = filter;
 
 		// enqueue full file
 		data.enqueueFullFile();
@@ -345,7 +350,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	public SequenceMinHashes getSequenceHash(Sequence seq)
 	{
 		return new SequenceMinHashes(seq, this.kmerSize, this.numWords, this.subSequenceSize, DEFAULT_SUB_KMER_SIZE,
-				this.storeKmerInMemory);
+				this.storeKmerInMemory, this.filter);
 	}
 
 	@Override

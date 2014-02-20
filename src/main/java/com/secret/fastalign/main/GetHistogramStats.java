@@ -65,6 +65,7 @@ public class GetHistogramStats {
 		}
 	}
 
+	@Override
 	public String toString() {
 		return nf.format(mean) + "\t" + nf.format(stdev) + "\t" + "\t" + cut
 				+ "\t" + nf.format(mean + NUM_SD * stdev);
