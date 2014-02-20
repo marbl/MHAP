@@ -3,6 +3,8 @@ package com.secret.fastalign.minhash;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+
 import com.secret.fastalign.general.AbstractReducedSequence;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.Pair;
@@ -41,9 +43,9 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 	private final int subKmerSize;
 	private final Sequence seq;
 	
-	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subSequenceSize, int subKmerSize, boolean storeHashes)
+	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subSequenceSize, int subKmerSize, boolean storeHashes, HashSet<Integer> filter)
 	{
-		super(seq.getId(), new MinHash(seq, kmerSize, numWords, subSequenceSize));
+		super(seq.getId(), new MinHash(seq, kmerSize, numWords, subSequenceSize, filter));
 		this.subKmerSize = subKmerSize;
 		
 		if (storeHashes)
