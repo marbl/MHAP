@@ -1,10 +1,12 @@
 package com.secret.fastalign.main;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.GregorianCalendar;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.io.BufferedReader;
 import java.io.PrintStream;
 import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.Sequence;
@@ -22,6 +24,7 @@ public class KmerStatSimulator {
 	private double sharedCount = 0;
 	private ArrayList<Double> sharedJaccard = new ArrayList<Double>();
 	private ArrayList<Double> sharedMerCounts = new ArrayList<Double>();
+	private HashMap<String, Integer> skipMers = new HashMap<String, Integer>();
 
 	private int totalTrials = 10000;
 
@@ -45,6 +48,9 @@ public class KmerStatSimulator {
 		if (f.overlap > f.requestedLength) {
 			System.err.println("Cannot have overlap > sequence length");
 			System.exit(1);
+		}
+		if (args.length > 8) {
+			f.loadSkipMers(args[8]);
 		}
 
 		f.simulate(Double.parseDouble(args[4]), Double.parseDouble(args[5]),
@@ -71,6 +77,19 @@ public class KmerStatSimulator {
 
 		generator = new Random(seed);
 	}
+	
+	private void loadSkipMers(String file) throws Exception {
+		BufferedReader bf = Utils.getFile(file, "repeats");
+		String line = null;
+
+		while ((line = bf.readLine()) != null) {
+			String[] split = line.trim().split("\\s+");
+			String mer = split[0].trim();
+			int count = Integer.parseInt(split[1]);
+			skipMers.put(mer, count);
+		}
+		bf.close();
+	}
 
 	private String buildRandomSequence(int length) {
 		StringBuilder st = new StringBuilder();
@@ -88,13 +107,14 @@ public class KmerStatSimulator {
 
 		for (int i = 0; i <= first.length() - this.kmer; i++) {
 			String fmer = first.substring(i, i + this.kmer);
-			firstSeqs.add(fmer);
+			if (!skipMers.containsKey(fmer)) { 
+				firstSeqs.add(fmer);
+			}
 			totalSeqs.add(fmer);
 		}
 
 		for (int i = 0; i <= second.length() - this.kmer; i++) {
 			String smer = second.substring(i, i + this.kmer);
-
 			if (firstSeqs.contains(smer)) {
 				shared.add(smer);
 			} else {
@@ -209,11 +229,15 @@ public class KmerStatSimulator {
 		System.err.println("Started...");
 
 		FastaData data = null;
-		Sequence[] sequences = null;
+		String[] sequences = null;
 		if (this.reference != null) {
 			data = new FastaData(this.reference);
 			data.enqueueFullFile();
-			sequences = data.toArray();
+			Sequence[] dataSeq = data.toArray();
+			sequences = new String[dataSeq.length];
+			for (int i = 0; i < dataSeq.length; i++) {
+				sequences[i] = dataSeq[i].getString().toUpperCase().replace("N", "");
+			}
 		}
 		System.err.println("Loaded reference");
 
@@ -225,14 +249,14 @@ public class KmerStatSimulator {
 			int firstPos = 0;
 
 			String sequence = buildRandomSequence(sequenceLength * 2);
-
+			int seqID = 0;
 			if (this.reference != null) {
 				sequence = null;
 				while (sequence == null
 						|| sequence.length() < 2 * sequenceLength) {
 					// pick a sequence from our reference
-					int seqID = generator.nextInt(sequences.length);
-					sequence = sequences[seqID].getString();
+					seqID = generator.nextInt(sequences.length);
+					sequence = sequences[seqID];
 				}
 
 				// now pick a position
@@ -262,8 +286,15 @@ public class KmerStatSimulator {
 			// non-overlapping position
 			// get a non-overlapping position
 			if (this.reference != null) {
+				sequence = null;
+				int secondSeqID = 0;
+				while (sequence == null
+						|| sequence.length() < 2 * sequenceLength) {
+					secondSeqID = generator.nextInt(sequences.length);
+					sequence = sequences[secondSeqID];
+				}
 				secondPos = generator.nextInt(sequence.length());
-				while (Utils
+				while (seqID == secondSeqID && Utils
 						.getRangeOverlap(firstPos, firstPos + sequenceLength,
 								secondPos, secondPos + sequenceLength) > 0) {
 					secondPos = generator.nextInt(sequence.length());
