@@ -203,14 +203,22 @@ public class KmerStatSimulator {
 	private void outputStats(ArrayList<Double> values, PrintStream out) {
 		double mean = 0.0;
 		double variance = 0.0;
-		int N = 0;
+		
+		int N = 0;		
 		for (double d : values) {
 			N++;
-			double delta = (d - mean);
-			mean += (delta / N);
-			variance += delta * (d - mean);
+			mean += d;
 		}
-		variance /= (double) N;
+		mean = mean/(double)N;
+		
+		N = 0;
+		for (double d : values) {
+			N++;
+			variance += (d-mean)*(d-mean);
+		}
+		
+		variance /= (double) (N-1);
+		
 		double stdev = Math.sqrt(variance);
 		out.print(mean + "\t" + stdev);
 	}
