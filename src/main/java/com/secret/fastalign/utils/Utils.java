@@ -155,6 +155,58 @@ public final class Utils
 
 		return hashes;
 	}
+	
+	//adapted form http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
+	public final static int quickSelect(ArrayList<Integer> array, int k)
+	{
+		if (array == null || array.size() <= k)
+			return Integer.MAX_VALUE;
+
+		int from = 0;
+		int to = array.size() - 1;
+
+		// if from == to we reached the kth element
+		while (from < to)
+		{
+			int r = from;
+			int w = to;
+			int mid = array.get((r + w) / 2);
+
+			// stop if the reader and writer meets
+			while (r < w)
+			{
+				if (array.get(r) >= mid)
+				{ // put the large values at the end
+					Integer tmp = array.get(w);
+					array.set(w, array.get(r));
+					array.set(r, tmp);
+					//Collections.swap(array, w, r);
+					w--;
+				}
+				else
+				{ 
+					// the value is smaller than the pivot, skip
+					r++;
+				}
+			}
+
+			// if we stepped up (r++) we need to step one down
+			if (array.get(r) > mid)
+				r--;
+
+			// the r pointer is on the end of the first k elements
+			if (k <= r)
+			{
+				to = r;
+			}
+			else
+			{
+				from = r + 1;
+			}
+		}
+
+		return array.get(k);
+	}
 
 	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numWords,
 			HashSet<Integer> filter)
@@ -235,7 +287,7 @@ public final class Utils
 	}
 
 	// add new line breaks every FASTA_LINE_LENGTH characters
-	public static String convertToFasta(String supplied)
+	public final static String convertToFasta(String supplied)
 	{
 		StringBuffer converted = new StringBuffer();
 		int i = 0;
@@ -273,12 +325,12 @@ public final class Utils
 		return converted.toString();
 	}
 
-	public static int countLetterInRead(String fasta, String letter)
+	public final static int countLetterInRead(String fasta, String letter)
 	{
 		return countLetterInRead(fasta, letter, false);
 	}
 
-	public static int countLetterInRead(String fasta, String letter, Boolean caseSensitive)
+	public final static int countLetterInRead(String fasta, String letter, Boolean caseSensitive)
 	{
 		String ungapped = Utils.getUngappedRead(fasta);
 		int len = ungapped.length();
@@ -304,7 +356,7 @@ public final class Utils
 		return count;
 	}
 
-	public static final HashSet<Integer> createKmerFilter(String fileName, double maxPercent, int kmerSize) throws IOException
+	public final static HashSet<Integer> createKmerFilter(String fileName, double maxPercent, int kmerSize) throws IOException
 	{
 		File file = new File(fileName);
 		
@@ -344,7 +396,7 @@ public final class Utils
 		return new HashSet<Integer>(filterArray);
 	}
 
-	public static int[] errorString(int[] s, double readError)
+	public final static int[] errorString(int[] s, double readError)
 	{
 		int[] snew = s.clone();
 
@@ -359,7 +411,7 @@ public final class Utils
 		return snew;
 	}
 
-	public static BufferedReader getFile(String fileName, String postfix) throws Exception
+	public final static BufferedReader getFile(String fileName, String postfix) throws Exception
 	{
 		String[] array = new String[1];
 		array[0] = postfix;
@@ -367,7 +419,7 @@ public final class Utils
 		return getFile(fileName, array);
 	}
 
-	public static BufferedReader getFile(String fileName, String[] postfix) throws IOException
+	public final static BufferedReader getFile(String fileName, String[] postfix) throws IOException
 	{
 		BufferedReader bf = null;
 
@@ -407,7 +459,7 @@ public final class Utils
 		return bf;
 	}
 
-	public static String getID(String line)
+	public final static String getID(String line)
 	{
 		String ids[] = line.split(":");
 		int commaPos = ids[1].indexOf(",");
@@ -421,7 +473,7 @@ public final class Utils
 		}
 	}
 
-	public static double getLetterPercentInRead(String fasta, String letter)
+	public final static double getLetterPercentInRead(String fasta, String letter)
 	{
 		int ungappedLen = getUngappedRead(fasta).length();
 		int count = countLetterInRead(fasta, letter);
@@ -429,7 +481,7 @@ public final class Utils
 		return count / (double) ungappedLen;
 	}
 
-	public static int getOvlSize(int readA, int readB, int ahang, int bhang)
+	public final static int getOvlSize(int readA, int readB, int ahang, int bhang)
 	{
 		if ((ahang <= 0 && bhang >= 0) || (ahang >= 0 && bhang <= 0))
 		{
@@ -446,7 +498,7 @@ public final class Utils
 		}
 	}
 
-	public static int getRangeOverlap(int startA, int endA, int startB, int endB)
+	public final static int getRangeOverlap(int startA, int endA, int startB, int endB)
 	{
 		int minA = Math.min(startA, endA);
 		int minB = Math.min(startB, endB);
@@ -459,7 +511,7 @@ public final class Utils
 		return (end - start + 1);
 	}
 
-	public static String getUngappedRead(String fasta)
+	public final static String getUngappedRead(String fasta)
 	{
 		fasta = fasta.replaceAll("N", "");
 		fasta = fasta.replaceAll("-", "");
@@ -469,7 +521,7 @@ public final class Utils
 		return fasta;
 	}
 
-	public static String getValue(String line, String key)
+	public final static String getValue(String line, String key)
 	{
 		if (line.startsWith(key))
 		{
@@ -479,7 +531,7 @@ public final class Utils
 		return null;
 	}
 
-	public static boolean isAContainedInB(int startA, int endA, int startB, int endB)
+	public final static boolean isAContainedInB(int startA, int endA, int startB, int endB)
 	{
 		int minA = Math.min(startA, endA);
 		int minB = Math.min(startB, endB);
@@ -489,7 +541,7 @@ public final class Utils
 		return (minB < minA && maxB > maxA);
 	}
 
-	public static String rc(String supplied)
+	public final static String rc(String supplied)
 	{
 		StringBuilder st = new StringBuilder();
 		for (int i = supplied.length() - 1; i >= 0; i--)
@@ -509,7 +561,7 @@ public final class Utils
 		return st.toString();
 	}
 
-	public static String toProtein(String genome, boolean isReversed, int frame)
+	public final static String toProtein(String genome, boolean isReversed, int frame)
 	{
 		StringBuilder result = new StringBuilder();
 

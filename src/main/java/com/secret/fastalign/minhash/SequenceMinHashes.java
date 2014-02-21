@@ -2,7 +2,6 @@ package com.secret.fastalign.minhash;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 
 import com.secret.fastalign.general.AbstractReducedSequence;
@@ -141,15 +140,15 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 				}
 			}
 			
-			//TODO replace with a selection algorithm maybe
-			Collections.sort(posShift);
-			
 			//get the median
 			if (!posShift.isEmpty())
-				shift = posShift.get(posShift.size()/2);
+			{
+				shift = Utils.quickSelect(posShift, posShift.size()/2);
+			}
 			else
 				shift = 0;
 			
+			//Collections.sort(posShift);			
 			//System.out.println(posShift);
 
 			valid1Lower = Math.max(0, -shift-border);
