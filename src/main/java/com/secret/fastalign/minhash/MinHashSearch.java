@@ -323,7 +323,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				SequenceMinHashes matchedHash = this.sequenceVectorsHash.get(match.getKey());
 
 				// if are not holding to the full kmer info load it
-				if (fullKmerMatch != null)
+				if (fullKmerMatch == null)
 					fullKmerMatch = seqMinHashes.getFullHashes();
 
 				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash);
