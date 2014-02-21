@@ -5,6 +5,7 @@ import java.util.HashSet;
 
 import com.secret.fastalign.general.AbstractReducedSequence;
 import com.secret.fastalign.general.Sequence;
+import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Pair;
 import com.secret.fastalign.utils.Utils;
 
@@ -36,6 +37,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 	
 	public final static int MAX_SHIFT_ALLOWED = 100;
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
+	public final static int NUM_SCORING_REPEATS = 2;
 	
 	private final int completeHash[][];
 	private final int subKmerSize;
@@ -94,38 +96,43 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		return getFullScore(getFullHashes(), s);
 	}
 
-	public Pair<Double, Integer> getFullScore(int[][] allKmerHashesw, SequenceMinHashes s)
-	{		
+	public Pair<Double, Integer> getFullScore(int[][] allKmerHashes, SequenceMinHashes s)
+	{	
+		if (allKmerHashes==null)
+			throw new FastAlignRuntimeException("Hash input cannot be null.");
+		
+		//get the kmers of the second sequence
+		int[][] sAllKmerHashes = s.getFullHashes();
+		
 		//init the ok regions
 		int valid1Lower = 0;
-		int valid1Upper = this.getSequenceLength();
+		int valid1Upper = allKmerHashes.length;
 		int valid2Lower = 0;
-		int valid2Upper = s.getSequenceLength();
+		int valid2Upper = sAllKmerHashes.length;
 		int overlapSize = 0;
 		int border = MAX_SHIFT_ALLOWED;
-		
-		int[][] allKmerHashes = getFullHashes();
-		int[][] sAllKmerHashes = s.getFullHashes();
 		
 		int count = 0;
 		int shift = 0;
 		int[] posShift = new int[Math.min(allKmerHashes.length, sAllKmerHashes.length)];
 		
-		for (int repeat=0; repeat<2; repeat++)
+		//refine multiple times to get better interval estimate
+		for (int repeat=0; repeat<NUM_SCORING_REPEATS; repeat++)
 		{
 			count = 0;
 			int iter1 = 0;
 			int iter2 = 0;
 			
-			while (iter1<allKmerHashes.length && iter2<sAllKmerHashes.length)
+			//perform merge operation to get the shift and the kmer count
+			while (iter1<valid1Upper && iter2<valid2Upper)
 			{
 				int[] s1 = allKmerHashes[iter1];
 				int[] s2 = sAllKmerHashes[iter2];
 				
-				if (s1[0] < s2[0] || s1[1]<valid1Lower || s1[1]>valid1Upper)
+				if (s1[0] < s2[0] || s1[1]<valid1Lower || s1[1]>=valid1Upper)
 					iter1++;
 				else
-				if (s2[0] < s1[0] || s2[1]<valid2Lower || s2[1]>valid2Upper)
+				if (s2[0] < s1[0] || s2[1]<valid2Lower || s2[1]>=valid2Upper)
 					iter2++;
 				else
 				{
@@ -150,28 +157,29 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 			//Arrays.sort(test);
 			//System.err.println(Arrays.toString(Arrays.copyOf(posShift, count)));
 			
-
+			//get the updated borders
 			valid1Lower = Math.max(0, -shift-border);
-			valid1Upper = Math.min(getSequenceLength(), s.getSequenceLength()-shift+border);
+			valid1Upper = Math.min(allKmerHashes.length, sAllKmerHashes.length-shift+border);
 			valid2Lower = Math.max(0, shift-border);
-			valid2Upper = Math.min(s.getSequenceLength(), getSequenceLength()+shift+border);
+			valid2Upper = Math.min(sAllKmerHashes.length, allKmerHashes.length+shift+border);
 
+			//get the actual overlap size
 			int valid2LowerBorder = Math.max(0, shift);
-			int valid2UpperBorder = Math.min(s.getSequenceLength(), getSequenceLength()+shift);
+			int valid2UpperBorder = Math.min(sAllKmerHashes.length, allKmerHashes.length+shift);
 			overlapSize = valid2UpperBorder-valid2LowerBorder;
 			
-			//System.out.println("Size1= "+getSequenceLength()+" Lower:"+ valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
-			//System.out.println("Size2= "+s.getSequenceLength()+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);			
+			//System.out.println("Size1= "+allKmerHashes.length+" Lower:"+ valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
+			//System.out.println("Size2= "+sAllKmerHashes.length+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);			
 		}
 		
 		//count percent valid shift, there must be a consensus 
-		int percentValid = 0;
+		int validCount = 0;
 		for (int iter=0; iter<count; iter++)
 		{
 			if (Math.abs(posShift[iter]-shift)<=MAX_SHIFT_ALLOWED)
-				percentValid++;
+				validCount++;
 		}
-		double validShiftPercent = (double)percentValid/(double)count;
+		double validShiftPercent = (double)validCount/(double)count;
 		
 		double score = 0;
 		if (overlapSize>0 && validShiftPercent>SHIFT_CONSENSUS_PERCENTAGE)

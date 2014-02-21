@@ -22,7 +22,7 @@ public class AlignmentHashRun
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
-	private static final double DEFAULT_THRESHOLD = 0.03;
+	private static final double DEFAULT_THRESHOLD = 0.025;
 
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 

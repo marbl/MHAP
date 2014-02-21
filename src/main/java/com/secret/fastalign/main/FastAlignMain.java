@@ -17,7 +17,7 @@ public final class FastAlignMain
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
-	private static final double DEFAULT_THRESHOLD = 0.02;
+	private static final double DEFAULT_THRESHOLD = 0.025;
 			
 	private static final int DEFAULT_NUM_MIN_MATCHES = 4;
 
