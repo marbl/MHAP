@@ -36,8 +36,8 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		}		
 	}
 	
-	public final static int MAX_SHIFT_ALLOWED = 200;
-	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.8;
+	public final static int MAX_SHIFT_ALLOWED = 100;
+	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
 	
 	private final int completeHash[][];
 	private final int subKmerSize;

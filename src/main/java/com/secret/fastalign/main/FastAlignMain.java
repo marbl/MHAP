@@ -13,17 +13,17 @@ import com.secret.fastalign.utils.Utils;
 
 public final class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 512;
+	private static final int DEFAULT_NUM_WORDS = 1024;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
 	private static final double DEFAULT_THRESHOLD = 0.03;
 			
-	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 4;
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 	
-	private static final double DEFAULT_FILTER_CUTOFF = 2.0e-5;
+	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors()*2;
 	

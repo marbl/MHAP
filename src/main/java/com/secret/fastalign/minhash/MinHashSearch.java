@@ -180,7 +180,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 
 		this.hashes = new ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>>(numHashes);
 		for (int iter = 0; iter < numHashes; iter++)
-			this.hashes.add(new HashMap<Integer, ArrayList<SubSequenceId>>((int) data.getNumberProcessed() * 2 * 20));
+			this.hashes.add(new HashMap<Integer, ArrayList<SubSequenceId>>((int) data.getNumberProcessed() * 2 * 10));
 
 		addData(data);
 	}
