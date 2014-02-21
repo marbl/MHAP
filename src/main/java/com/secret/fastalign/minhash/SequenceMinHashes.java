@@ -102,7 +102,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		int valid2Lower = 0;
 		int valid2Upper = s.getSequenceLength();
 		int overlapSize = 0;
-		int border = 200;
+		int border = MAX_SHIFT_ALLOWED;
 		
 		int[][] allKmerHashes = getFullHashes();
 		int[][] sAllKmerHashes = s.getFullHashes();
@@ -110,6 +110,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		int count = 0;
 		int shift = 0;
 		int[] posShift = new int[Math.min(allKmerHashes.length, sAllKmerHashes.length)];
+		
 		for (int repeat=0; repeat<2; repeat++)
 		{
 			count = 0;
@@ -160,7 +161,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 			overlapSize = valid2UpperBorder-valid2LowerBorder;
 			
 			//System.out.println("Size1= "+getSequenceLength()+" Lower:"+ valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
-			//System.out.println("Size2= "+s.getSequenceLength()+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);
+			//System.out.println("Size2= "+s.getSequenceLength()+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);			
 		}
 		
 		//count percent valid shift, there must be a consensus 
