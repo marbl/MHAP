@@ -157,30 +157,30 @@ public final class Utils
 	}
 	
 	//adapted form http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
-	public final static int quickSelect(ArrayList<Integer> array, int k)
+	public final static int quickSelect(int[] array, int k, int length)
 	{
-		if (array == null || array.size() <= k)
+		if (array == null || length <= k)
 			return Integer.MAX_VALUE;
 
 		int from = 0;
-		int to = array.size() - 1;
+		int to = length - 1;
 
 		// if from == to we reached the kth element
 		while (from < to)
 		{
 			int r = from;
 			int w = to;
-			int mid = array.get((r + w) / 2);
+			int mid = array[(r + w) / 2];
 
 			// stop if the reader and writer meets
 			while (r < w)
 			{
-				if (array.get(r) >= mid)
-				{ // put the large values at the end
-					Integer tmp = array.get(w);
-					array.set(w, array.get(r));
-					array.set(r, tmp);
-					//Collections.swap(array, w, r);
+				if (array[r] >= mid)
+				{ 
+					// put the large values at the end
+					int tmp = array[w];
+					array[w] = array[r];
+					array[r] = tmp;
 					w--;
 				}
 				else
@@ -191,7 +191,7 @@ public final class Utils
 			}
 
 			// if we stepped up (r++) we need to step one down
-			if (array.get(r) > mid)
+			if (array[r] > mid)
 				r--;
 
 			// the r pointer is on the end of the first k elements
@@ -205,7 +205,7 @@ public final class Utils
 			}
 		}
 
-		return array.get(k);
+		return array[k];
 	}
 
 	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numWords,

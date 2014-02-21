@@ -18,11 +18,11 @@ public class AlignmentHashRun
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 	
-	protected static final int DEFAULT_NUM_MIN_MATCHES = 2;
+	protected static final int DEFAULT_NUM_MIN_MATCHES = 4;
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
-	private static final double DEFAULT_THRESHOLD = 0.04;
+	private static final double DEFAULT_THRESHOLD = 0.03;
 
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 
