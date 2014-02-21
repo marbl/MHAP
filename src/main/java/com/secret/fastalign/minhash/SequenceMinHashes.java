@@ -1,6 +1,5 @@
 package com.secret.fastalign.minhash;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -110,11 +109,9 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		
 		int count = 0;
 		int shift = 0;
-		ArrayList<Integer> posShift = null;
-		for (int repeat=0; repeat<1; repeat++)
+		int[] posShift = new int[Math.min(allKmerHashes.length, sAllKmerHashes.length)];
+		for (int repeat=0; repeat<2; repeat++)
 		{
-			posShift = new ArrayList<Integer>(allKmerHashes.length);
-			
 			count = 0;
 			int iter1 = 0;
 			int iter2 = 0;
@@ -127,29 +124,31 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 				if (s1[0] < s2[0] || s1[1]<valid1Lower || s1[1]>valid1Upper)
 					iter1++;
 				else
-				if (s2[0] < s1[0] || s1[1]<valid2Lower || s2[1]>valid2Upper)
+				if (s2[0] < s1[0] || s2[1]<valid2Lower || s2[1]>valid2Upper)
 					iter2++;
 				else
 				{
+					//compute the shift
+					posShift[count] = s2[1]-s1[1];
+					
 					count++;
-					
-					posShift.add(s2[1]-s1[1]);
-					
 					iter1++;
 					iter2++;
 				}
 			}
 			
 			//get the median
-			if (!posShift.isEmpty())
+			if (count>0)
 			{
-				shift = Utils.quickSelect(posShift, posShift.size()/2);
+				shift = Utils.quickSelect(posShift, count/2, count);
 			}
 			else
 				shift = 0;
 			
-			//Collections.sort(posShift);			
-			//System.out.println(posShift);
+			//int[] test = Arrays.copyOf(posShift, count);	
+			//Arrays.sort(test);
+			//System.err.println(Arrays.toString(Arrays.copyOf(posShift, count)));
+			
 
 			valid1Lower = Math.max(0, -shift-border);
 			valid1Upper = Math.min(getSequenceLength(), s.getSequenceLength()-shift+border);
@@ -166,12 +165,12 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		
 		//count percent valid shift, there must be a consensus 
 		int percentValid = 0;
-		for (int currShift : posShift)
+		for (int iter=0; iter<count; iter++)
 		{
-			if (Math.abs(currShift-shift)<=MAX_SHIFT_ALLOWED)
+			if (Math.abs(posShift[iter]-shift)<=MAX_SHIFT_ALLOWED)
 				percentValid++;
 		}
-		double validShiftPercent = (double)percentValid/(double)posShift.size();
+		double validShiftPercent = (double)percentValid/(double)count;
 		
 		double score = 0;
 		if (overlapSize>0 && validShiftPercent>SHIFT_CONSENSUS_PERCENTAGE)
