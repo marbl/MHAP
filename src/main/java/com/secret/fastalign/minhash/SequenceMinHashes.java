@@ -35,9 +35,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		}		
 	}
 	
-	public final static int MAX_SHIFT_ALLOWED = 100;
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
-	public final static int NUM_SCORING_REPEATS = 2;
 	
 	private final int completeHash[][];
 	private final int subKmerSize;
@@ -91,12 +89,12 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		return getFullHashes(this.seq, this.subKmerSize);
 	}
 
-	public Pair<Double, Integer> getFullScore(SequenceMinHashes s)
+	public Pair<Double, Integer> getFullScore(SequenceMinHashes s, int maxShift)
 	{
-		return getFullScore(getFullHashes(), s);
+		return getFullScore(getFullHashes(), s, maxShift);
 	}
 
-	public Pair<Double, Integer> getFullScore(int[][] allKmerHashes, SequenceMinHashes s)
+	public Pair<Double, Integer> getFullScore(int[][] allKmerHashes, SequenceMinHashes s, int maxShift)
 	{	
 		if (allKmerHashes==null)
 			throw new FastAlignRuntimeException("Hash input cannot be null.");
@@ -110,21 +108,28 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		int valid2Lower = 0;
 		int valid2Upper = sAllKmerHashes.length;
 		int overlapSize = 0;
-		int border = MAX_SHIFT_ALLOWED;
+		int border = maxShift;
 		
 		int count = 0;
 		int shift = 0;
 		int[] posShift = new int[Math.min(allKmerHashes.length, sAllKmerHashes.length)];
 		
+		int numScoringRepeats = 2;
+		if (maxShift<=0)
+			numScoringRepeats = 1;
+		
+		//make it positive
+		maxShift = Math.abs(maxShift);
+		
 		//refine multiple times to get better interval estimate
-		for (int repeat=0; repeat<NUM_SCORING_REPEATS; repeat++)
+		for (int repeat=0; repeat<numScoringRepeats; repeat++)
 		{
 			count = 0;
 			int iter1 = 0;
 			int iter2 = 0;
 			
 			//perform merge operation to get the shift and the kmer count
-			while (iter1<valid1Upper && iter2<valid2Upper)
+			while (iter1<allKmerHashes.length && iter2<sAllKmerHashes.length)
 			{
 				int[] s1 = allKmerHashes[iter1];
 				int[] s2 = sAllKmerHashes[iter2];
@@ -155,7 +160,7 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 			
 			//int[] test = Arrays.copyOf(posShift, count);	
 			//Arrays.sort(test);
-			//System.err.println(Arrays.toString(Arrays.copyOf(posShift, count)));
+			//System.err.println(Arrays.toString(test));
 			
 			//get the updated borders
 			valid1Lower = Math.max(0, -shift-border);
@@ -168,15 +173,16 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 			int valid2UpperBorder = Math.min(sAllKmerHashes.length, allKmerHashes.length+shift);
 			overlapSize = valid2UpperBorder-valid2LowerBorder;
 			
-			//System.out.println("Size1= "+allKmerHashes.length+" Lower:"+ valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
-			//System.out.println("Size2= "+sAllKmerHashes.length+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);			
+			//System.err.println(overlapSize);
+			//System.err.println("Size1= "+allKmerHashes.length+" Lower:"+ valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
+			//System.err.println("Size2= "+sAllKmerHashes.length+" Lower:"+ valid2Lower+" Upper:"+valid2Upper);			
 		}
 		
 		//count percent valid shift, there must be a consensus 
 		int validCount = 0;
 		for (int iter=0; iter<count; iter++)
 		{
-			if (Math.abs(posShift[iter]-shift)<=MAX_SHIFT_ALLOWED)
+			if (Math.abs(posShift[iter]-shift)<=maxShift)
 				validCount++;
 		}
 		double validShiftPercent = (double)validCount/(double)count;

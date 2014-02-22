@@ -22,7 +22,7 @@ public class AlignmentHashRun
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
-	private static final double DEFAULT_THRESHOLD = 0.025;
+	private static final double DEFAULT_THRESHOLD = 0.00;
 
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 
@@ -64,7 +64,7 @@ public class AlignmentHashRun
 		FastaData data = new FastaData(inFile);
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, numThreads, DEFAULT_LARGE_MEMORY, true, null);
+		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, numThreads, DEFAULT_LARGE_MEMORY, true, null, 800);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 		

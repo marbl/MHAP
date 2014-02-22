@@ -103,7 +103,8 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 
 	private final int numMinMatches;
 	private final int subSequenceSize;
-
+	private final int maxShift;
+	
 	private static int[] errorString(int[] s, double readError, Random generator)
 	{
 		int[] snew = s.clone();
@@ -158,7 +159,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	}
 
 	public MinHashSearch(FastaData data, int kmerSize, int numHashes, int numMinMatches, int subSequenceSize, int numThreads,
-			boolean storeKmerInMemory, boolean storeResults, HashSet<Integer> filter) throws IOException
+			boolean storeKmerInMemory, boolean storeResults, HashSet<Integer> filter, int maxShift) throws IOException
 	{
 		super(kmerSize, numHashes, numThreads, storeResults);
 
@@ -168,6 +169,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		this.numberSubSequencesHit = new AtomicLong();
 		this.numberSequencesHit = new AtomicLong();
 		this.numberSequencesFullyCompared = new AtomicLong();
+		this.maxShift = maxShift;
 		
 		//add the sequence filter
 		this.filter = filter;
@@ -326,7 +328,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				if (fullKmerMatch == null)
 					fullKmerMatch = seqMinHashes.getFullHashes();
 
-				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash);
+				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash, maxShift);
 				double matchScore = result.x;
 				int shift = result.y;
 				int shiftb = -shift - seqMinHashes.getSequenceLength() + matchedHash.getSequenceLength();

@@ -23,6 +23,8 @@ public final class FastAlignMain
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 	
+	private final static int DEFAULT_MAX_SHIFT_ALLOWED = 800;
+	
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors()*2;
@@ -49,6 +51,7 @@ public final class FastAlignMain
 		boolean noSelf = DEFAULT_NO_SELF;
 		String filterFile = null;
 		double filterThreshold = DEFAULT_FILTER_CUTOFF;
+		int maxShift = DEFAULT_MAX_SHIFT_ALLOWED;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -69,6 +72,8 @@ public final class FastAlignMain
 				numMinMatches = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--subsequence-size")) {
 				subSequenceSize = Integer.parseInt(args[++i]);
+			} else if (args[i].trim().equalsIgnoreCase("--max-shift")) {
+				maxShift = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--num-threads")) {
 				numThreads = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--memory")) {
@@ -90,6 +95,7 @@ public final class FastAlignMain
 		System.err.println("num hashed words:\t" + numWords);
 		System.err.println("num min matches:\t" + numMinMatches);
 		System.err.println("subsequence size:\t" + subSequenceSize);
+		System.err.println("max shift:\t" + maxShift);
 		System.err.println("number of threads:\t" + numThreads);
 		System.err.println("use large amount of memory:\t" + storeInMemory);
 		System.err.println("compute alignment to self of -s file:\t" + !noSelf);
@@ -115,7 +121,7 @@ public final class FastAlignMain
 		}
 
 		long processTime = System.nanoTime();
-		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, numThreads, storeInMemory, false, filter);
+		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, numThreads, storeInMemory, false, filter, maxShift);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
 
@@ -213,6 +219,7 @@ public final class FastAlignMain
 		System.err.println("\t  --memory [do not store kmers in memory]");
 		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_THRESHOLD);
+		System.err.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: " + DEFAULT_MAX_SHIFT_ALLOWED);
 		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: " + DEFAULT_NUM_MIN_MATCHES);
 		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): " + DEFAULT_NUM_THREADS);
 		System.err.println("\t  --subsequence-size [int size of maximum minhashed sequence], default: " + DEFAULT_SUB_SEQUENCE_SIZE);
