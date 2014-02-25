@@ -23,14 +23,16 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 
 	protected final int numWords;
 	protected final int numThreads;
+	protected final int minStoreLength;
 	private final boolean storeResults;
 	protected static BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(System.out), 8*1024*1024);
 
-	public AbstractHashSearch(int kmerSize, int numWords, int numThreads, boolean storeResults)
+	public AbstractHashSearch(int kmerSize, int numWords, int numThreads, int minStoreLength, boolean storeResults)
 	{
 		this.kmerSize = kmerSize;
 		this.numWords = numWords;
 		this.numThreads = numThreads;
+		this.minStoreLength = minStoreLength;
 		this.storeResults = storeResults;
 		this.matchesProcessed = new AtomicLong();
 		this.sequencesSearched = new AtomicLong();
@@ -57,7 +59,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 			    		addSequence(seq);
 
 			    		int currCount = counter.incrementAndGet();
-				    	if (currCount%10000==0)
+				    	if (currCount%5000==0)
 				    		System.err.println("Current sequences hashed: "+currCount+"...");
 				    	
 				    	seq = data.dequeue();
