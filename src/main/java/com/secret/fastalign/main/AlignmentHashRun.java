@@ -64,7 +64,8 @@ public class AlignmentHashRun
 		FastaData data = new FastaData(inFile);
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, numThreads, DEFAULT_LARGE_MEMORY, true, null, 800);
+		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, 
+				numThreads, DEFAULT_LARGE_MEMORY, true, null, 800, 0);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 		

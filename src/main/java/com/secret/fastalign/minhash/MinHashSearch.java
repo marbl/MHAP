@@ -159,9 +159,9 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	}
 
 	public MinHashSearch(FastaData data, int kmerSize, int numHashes, int numMinMatches, int subSequenceSize, int numThreads,
-			boolean storeKmerInMemory, boolean storeResults, HashSet<Integer> filter, int maxShift) throws IOException
+			boolean storeKmerInMemory, boolean storeResults, HashSet<Integer> filter, int maxShift, int minStoreLength) throws IOException
 	{
-		super(kmerSize, numHashes, numThreads, storeResults);
+		super(kmerSize, numHashes, numThreads, minStoreLength, storeResults);
 
 		this.numMinMatches = numMinMatches;
 		this.subSequenceSize = subSequenceSize;
@@ -205,6 +205,10 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 
 			throw new FastAlignRuntimeException("Number of hashes does not match.");
 		}
+
+		//only hash large sequences
+		if (seq.length()<minStoreLength)
+			return false;
 
 		// add the hashes
 		int count = 0;

@@ -13,25 +13,27 @@ import com.secret.fastalign.utils.Utils;
 
 public final class FastAlignMain 
 {	
-	private static final int DEFAULT_NUM_WORDS = 1024;
+	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
 	private static final int DEFAULT_KMER_SIZE = 14;
 
-	private static final double DEFAULT_THRESHOLD = 0.025;
+	private static final boolean DEFAULT_LARGE_MEMORY = true;
 			
-	private static final int DEFAULT_NUM_MIN_MATCHES = 4;
+	private static final int DEFAULT_MAX_SHIFT_ALLOWED = 800;
 
-	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
+	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 	
-	private final static int DEFAULT_MAX_SHIFT_ALLOWED = 800;
+	private static final boolean DEFAULT_NO_SELF = false;
 	
-	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 4;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors()*2;
 	
-	private static final boolean DEFAULT_LARGE_MEMORY = true;
+	private static final int DEFAULT_NUM_WORDS = 1024;
 
-	private static final boolean DEFAULT_NO_SELF = false;
+	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
+
+	private static final double DEFAULT_THRESHOLD = 0.025;
 
 	public static void main(String[] args) throws Exception 
 	{
@@ -52,6 +54,7 @@ public final class FastAlignMain
 		String filterFile = null;
 		double filterThreshold = DEFAULT_FILTER_CUTOFF;
 		int maxShift = DEFAULT_MAX_SHIFT_ALLOWED;
+		int minStoreLength = DEFAULT_MIN_STORE_LENGTH;
 
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].trim().equalsIgnoreCase("-k")) {
@@ -64,6 +67,8 @@ public final class FastAlignMain
 				filterFile = args[++i];
 			} else if (args[i].trim().equalsIgnoreCase("--num-hashes")) {
 				numWords = Integer.parseInt(args[++i]);
+			} else if (args[i].trim().equalsIgnoreCase("--min-store-length")) {
+				minStoreLength = Integer.parseInt(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--threshold")) {
 				threshold = Double.parseDouble(args[++i]);
 			} else if (args[i].trim().equalsIgnoreCase("--filter-threshold")) {
@@ -94,6 +99,7 @@ public final class FastAlignMain
 		System.err.println("kmer filter percent cutoff:\t" + filterThreshold);
 		System.err.println("num hashed words:\t" + numWords);
 		System.err.println("num min matches:\t" + numMinMatches);
+		System.err.println("min hashed seq length:\t" + minStoreLength);
 		System.err.println("subsequence size:\t" + subSequenceSize);
 		System.err.println("max shift:\t" + maxShift);
 		System.err.println("number of threads:\t" + numThreads);
@@ -121,7 +127,8 @@ public final class FastAlignMain
 		}
 
 		long processTime = System.nanoTime();
-		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, numThreads, storeInMemory, false, filter, maxShift);
+		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, 
+				numThreads, storeInMemory, false, filter, maxShift, minStoreLength);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
 
@@ -218,6 +225,7 @@ public final class FastAlignMain
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
 		System.err.println("\t  --memory [do not store kmers in memory]");
 		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
+		System.err.println("\t  --min-store-length [int # of minimum sequence length that is hashed], default: " + DEFAULT_MIN_STORE_LENGTH);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_THRESHOLD);
 		System.err.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: " + DEFAULT_MAX_SHIFT_ALLOWED);
 		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: " + DEFAULT_NUM_MIN_MATCHES);
