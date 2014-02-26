@@ -87,7 +87,7 @@ public class KmerStatSimulator {
 			String[] split = line.trim().split("\\s+");
 			String mer = split[0].trim();
 			int count = Integer.parseInt(split[1]);
-			skipMers.put(mer, count);
+			this.skipMers.put(mer, count);
 		}
 		bf.close();
 	}
@@ -108,7 +108,7 @@ public class KmerStatSimulator {
 
 		for (int i = 0; i <= first.length() - this.kmer; i++) {
 			String fmer = first.substring(i, i + this.kmer);
-			if (!skipMers.containsKey(fmer)) { 
+			if (!this.skipMers.containsKey(fmer)) { 
 				firstSeqs.add(fmer);
 			}
 			totalSeqs.add(fmer);
@@ -288,18 +288,18 @@ public class KmerStatSimulator {
 			// compare number of shared kmers out of total to another sequence
 			// from
 			// same position
-			int offset = (int) ((requestedLength * 2) - this.overlap);
+			int offset = (int) ((this.requestedLength * 2) - this.overlap);
 			int secondPos = (firstPos + offset) % sequence.length();
 			String secondSeq = getSequence(sequenceLength, secondPos, sequence,
 					errorRate, firstAdj, errors, insertionPercentage,
 					deletionPercentage, subPercentage, true);
-			if (verbose) {
+			if (this.verbose) {
 				System.err.println("Given seq " + firstPos + " of len " + sequence.length() + " and offset " + secondPos + " due to offset " + offset);
 				System.err.println(">" + seqID + "_" + firstPos + "\n" + firstSeq);
 				System.err.println(">" + seqID + "_" + secondPos + "\n" + secondSeq);
 			}
-			if (firstSeq.length() != secondSeq.length() || firstSeq.length() != requestedLength) {
-				System.err.println("Error wrong length first: " + firstSeq.length() + " second: " + secondSeq.length() + " requested " + requestedLength);
+			if (firstSeq.length() != secondSeq.length() || firstSeq.length() != this.requestedLength) {
+				System.err.println("Error wrong length first: " + firstSeq.length() + " second: " + secondSeq.length() + " requested " + this.requestedLength);
 				System.exit(1);
 			}
 			this.sharedJaccard.add(compareKmers(firstSeq, secondSeq));
@@ -332,7 +332,7 @@ public class KmerStatSimulator {
 				secondSeq = buildRandomSequence(sequenceLength);
 			}
 
-			if (firstSeq.length() != secondSeq.length() || firstSeq.length() != requestedLength) {
+			if (firstSeq.length() != secondSeq.length() || firstSeq.length() != this.requestedLength) {
 				System.err.println("Error wrong length " + firstSeq.length());
 				System.exit(1);
 			}

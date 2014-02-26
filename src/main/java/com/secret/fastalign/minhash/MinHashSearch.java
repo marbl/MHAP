@@ -207,8 +207,8 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		}
 
 		//only hash large sequences
-		if (seq.length()<minStoreLength)
-			return false;
+		if (seq.length()<this.minStoreLength)
+			return true;
 
 		// add the hashes
 		int count = 0;
@@ -332,7 +332,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				if (fullKmerMatch == null)
 					fullKmerMatch = seqMinHashes.getFullHashes();
 
-				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash, maxShift);
+				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash, this.maxShift);
 				double matchScore = result.x;
 				int shift = result.y;
 				int shiftb = -shift - seqMinHashes.getSequenceLength() + matchedHash.getSequenceLength();
