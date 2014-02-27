@@ -49,19 +49,6 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		}
 
 		/* (non-Javadoc)
-		 * @see java.lang.Object#hashCode()
-		 */
-		@Override
-		public int hashCode()
-		{
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((this.id == null) ? 0 : this.id.hashCode());
-			result = prime * result + this.toSubSequenceNum;
-			return result;
-		}
-
-		/* (non-Javadoc)
 		 * @see java.lang.Object#equals(java.lang.Object)
 		 */
 		@Override
@@ -85,25 +72,40 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				return false;
 			return true;
 		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((this.id == null) ? 0 : this.id.hashCode());
+			result = prime * result + this.toSubSequenceNum;
+			return result;
+		}
 		
 		
 	}
 
-	public static final int DEFAULT_SUB_KMER_SIZE = 12;
-	public final static int INITIAL_HASH_SIZE = 10000;
-
+	private final HashSet<Integer> filter;
 	private final ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>> hashes;
+
+	private final int maxKmerShiftAccepted;
+	private final AtomicLong numberSequencesFullyCompared;
+	private final AtomicLong numberSequencesHit;
+	private final AtomicLong numberSequencesMinHashed;
+	
+	private final AtomicLong numberSubSequences;
+	private final AtomicLong numberSubSequencesHit;
+	private final int numMinMatches;
 	private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
 	private final boolean storeKmerInMemory;
-	private final HashSet<Integer> filter;
-	
-	private final AtomicLong numberSubSequencesHit;
-	private final AtomicLong numberSequencesHit;
-	private final AtomicLong numberSequencesFullyCompared;
 
-	private final int numMinMatches;
-	private final int subSequenceSize;
-	private final int maxShift;
+	private final int subSequenceSplitSize;
+	public static final int DEFAULT_SUB_KMER_SIZE = 12;
+	public final static int INITIAL_HASH_SIZE = 10000;
 	
 	private static int[] errorString(int[] s, double readError, Random generator)
 	{
@@ -164,12 +166,14 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		super(kmerSize, numHashes, numThreads, minStoreLength, storeResults);
 
 		this.numMinMatches = numMinMatches;
-		this.subSequenceSize = subSequenceSize;
+		this.subSequenceSplitSize = subSequenceSize;
 		this.storeKmerInMemory = storeKmerInMemory;
 		this.numberSubSequencesHit = new AtomicLong();
 		this.numberSequencesHit = new AtomicLong();
 		this.numberSequencesFullyCompared = new AtomicLong();
-		this.maxShift = maxShift;
+		this.maxKmerShiftAccepted = maxShift;
+		this.numberSubSequences = new AtomicLong();
+		this.numberSequencesMinHashed = new AtomicLong();
 		
 		//add the sequence filter
 		this.filter = filter;
@@ -205,11 +209,11 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 
 			throw new FastAlignRuntimeException("Number of hashes does not match.");
 		}
-
+		
 		//only hash large sequences
 		if (seq.length()<this.minStoreLength)
 			return true;
-
+		
 		// add the hashes
 		int count = 0;
 		for (HashMap<Integer, ArrayList<SubSequenceId>> hash : this.hashes)
@@ -236,10 +240,16 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				{
 					currList.add(new SubSequenceId(seq.getId(), (short)subSequences));
 				}
+				
+				//add the counter 
+				this.numberSubSequences.getAndIncrement();
 			}
 
 			count++;
 		}
+		
+		//increment the counter
+		this.numberSequencesMinHashed.getAndIncrement();
 
 		return true;
 	}
@@ -253,7 +263,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 			throw new FastAlignRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
 					+ ", input size " + minHash.numHashes() + ".");
 
-		HashMap<MatchId, HitInfo> matchHitMap = new HashMap<MatchId, HitInfo>(size()/10+1);
+		HashMap<MatchId, HitInfo> matchHitMap = new HashMap<MatchId, HitInfo>(this.numberSubSequences.intValue()/5+1);
 
 		int[][] subSeqMinHashes = minHash.getSubSeqMinHashes();
 		for (int subSequence = 0; subSequence < subSeqMinHashes.length; subSequence++)
@@ -318,8 +328,9 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 			// do not store matches to yourself
 			if (match.getKey().getHeaderId() == seqMinHashes.getSequenceId().getHeaderId())
 				continue;
-			// do not store matches smaller ids
-			if (allToAll && match.getKey().getHeaderId() > seqMinHashes.getSequenceId().getHeaderId())
+			
+			// do not store matches smaller ids, unless its coming from a short read
+			if (allToAll && seqMinHashes.getSequenceLength()>=this.minStoreLength && match.getKey().getHeaderId() > seqMinHashes.getSequenceId().getHeaderId())
 				continue;
 
 			//see if the hit number is high enough
@@ -332,7 +343,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				if (fullKmerMatch == null)
 					fullKmerMatch = seqMinHashes.getFullHashes();
 
-				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash, this.maxShift);
+				Pair<Double, Integer> result = seqMinHashes.getFullScore(fullKmerMatch, matchedHash, this.maxKmerShiftAccepted);
 				double matchScore = result.x;
 				int shift = result.y;
 				int shiftb = -shift - seqMinHashes.getSequenceLength() + matchedHash.getSequenceLength();
@@ -352,10 +363,30 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		return matches;
 	}
 
+	public long getNumberSequenceHashed()
+	{
+		return this.numberSequencesMinHashed.get();
+	}
+
+	public long getNumberSequencesFullyCompared()
+	{
+		return this.numberSequencesFullyCompared.get();
+	}
+
+	public long getNumberSequencesHit()
+	{
+		return this.numberSequencesHit.get();
+	}
+
+	public long getNumberSubSequencesHit()
+	{
+		return this.numberSubSequencesHit.get();
+	}
+	
 	@Override
 	public SequenceMinHashes getSequenceHash(Sequence seq)
 	{
-		return new SequenceMinHashes(seq, this.kmerSize, this.numWords, this.subSequenceSize, DEFAULT_SUB_KMER_SIZE,
+		return new SequenceMinHashes(seq, this.kmerSize, this.numWords, this.subSequenceSplitSize, DEFAULT_SUB_KMER_SIZE,
 				this.storeKmerInMemory, this.filter);
 	}
 
@@ -366,7 +397,7 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		for (SequenceMinHashes hashes : this.sequenceVectorsHash.values())
 			if (hashes.getSequenceId().isForward())
 				seqIds.add(hashes.getSequenceId());
-
+		
 		return seqIds;
 	}
 
@@ -380,20 +411,5 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	public int size()
 	{
 		return this.sequenceVectorsHash.size();
-	}
-
-	public AtomicLong getNumberSubSequencesHit()
-	{
-		return this.numberSubSequencesHit;
-	}
-
-	public long getNumberSequencesHit()
-	{
-		return this.numberSequencesHit.get();
-	}
-
-	public long getNumberSequencesFullyCompared()
-	{
-		return this.numberSequencesFullyCompared.get();
 	}
 }
