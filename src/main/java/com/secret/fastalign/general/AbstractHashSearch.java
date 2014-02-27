@@ -137,9 +137,9 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	      		
 	      		//record search
 	      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
-
+		    		
 	      		//get next sequence
-		    		nextSequence = seqList.poll();		    		
+		    		nextSequence = seqList.poll();
 
 		    		//output stored results
 		    		if (nextSequence==null || localMatches.size()>20000)
@@ -214,10 +214,10 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	
 		      		//record search
 		      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
-
+		      		
 		      		//get the sequence hashes
-			    		nextSequence = data.dequeue();	 
-			    		
+			    		nextSequence = data.dequeue();			    		
+
 			    		//output stored results
 			    		if (nextSequence==null || localMatches.size()>20000)
 			    		{

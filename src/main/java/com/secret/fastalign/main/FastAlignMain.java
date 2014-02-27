@@ -33,7 +33,7 @@ public final class FastAlignMain
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
-	private static final double DEFAULT_THRESHOLD = 0.025;
+	private static final double DEFAULT_THRESHOLD = 0.02;
 
 	public static void main(String[] args) throws Exception 
 	{
@@ -129,7 +129,7 @@ public final class FastAlignMain
 		long processTime = System.nanoTime();
 		MinHashSearch hashSearch = new MinHashSearch(data, kmerSize, numWords, numMinMatches, subSequenceSize, 
 				numThreads, storeInMemory, false, filter, maxShift, minStoreLength);
-		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
+		System.err.println("Processed "+data.getNumberProcessed()+" sequences, and MinHashed "+hashSearch.getNumberSequenceHashed()+" unique sequences.");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
 
 		long startTotalScoringTime = System.nanoTime();
@@ -208,6 +208,7 @@ public final class FastAlignMain
 
 		System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
 		System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
+		System.err.println("Total sequences searched: " + hashSearch.getNumberSequencesSearched());
 		System.err.println("Total matches found: "+hashSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double)hashSearch.getMatchesProcessed()/(double)hashSearch.getNumberSequencesSearched()*100.0);
 		System.err.println("Average % of hashed sequences hit per lookup: " + (double)hashSearch.getNumberSequencesHit()/(double)(hashSearch.size()*hashSearch.getNumberSequencesSearched())*100.0);
