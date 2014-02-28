@@ -215,10 +215,12 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 			return true;
 		
 		// add the hashes
-		int count = 0;
-		for (HashMap<Integer, ArrayList<SubSequenceId>> hash : this.hashes)
+		for (int subSequences = 0; subSequences < currMinHashes.length; subSequences++)
 		{
-			for (int subSequences = 0; subSequences < currMinHashes.length; subSequences++)
+			SubSequenceId subId = new SubSequenceId(seq.getId(), (short)subSequences);
+			
+			int count = 0;
+			for (HashMap<Integer, ArrayList<SubSequenceId>> hash : this.hashes)
 			{
 				ArrayList<SubSequenceId> currList;
 				final int hashVal = currMinHashes[subSequences][count];
@@ -238,14 +240,14 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 				// add the element
 				synchronized (currList)
 				{
-					currList.add(new SubSequenceId(seq.getId(), (short)subSequences));
+					currList.add(subId);
 				}
 				
-				//add the counter 
-				this.numberSubSequences.getAndIncrement();
+				count++;
 			}
 
-			count++;
+			//increment the subsequence counter 
+			this.numberSubSequences.getAndIncrement();
 		}
 		
 		//increment the counter

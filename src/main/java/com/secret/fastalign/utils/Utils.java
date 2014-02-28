@@ -269,7 +269,7 @@ public final class Utils
 
 	public final static int[] computeRabinHashes(final String seq, final int kmerSize)
 	{
-		RabinKarpSeqHash rabinHash = new RabinKarpSeqHash(kmerSize);
+		RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
 		final int[] rabinHashes = rabinHash.hashInt(seq);
 
 		// HashFunction hf = Hashing.murmur3_32(0);

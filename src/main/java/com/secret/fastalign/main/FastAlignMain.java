@@ -110,7 +110,6 @@ public final class FastAlignMain
 
 		// read and index the kmers
 		FastaData data = new FastaData(inFile);
-		//System.err.println("Read in "+data.currentCacheSize()+" sequences.");
 		
 		//System.err.println("Press Enter");
 		//System.in.read();
