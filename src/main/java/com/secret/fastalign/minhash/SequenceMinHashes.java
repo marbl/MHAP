@@ -26,12 +26,14 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		@Override
 		public int compareTo(SortableIntPair p)
 		{
-			int result = Integer.compare(this.x, p.x);
+			return Integer.compare(this.x, p.x);
 			
-			if (result!=0)
-				return result;
+			//int result = Integer.compare(this.x, p.x);
 			
-			return Integer.compare(this.y, p.y);
+			//if (result!=0)
+			//	return result;
+			
+			//return Integer.compare(this.y, p.y);
 		}		
 	}
 	
@@ -67,13 +69,14 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		for (int iter=0; iter<hashes.length; iter++)
 			completeHashAsPair[iter] = new SortableIntPair(hashes[iter][0],iter);
 		
-		//sort the results
+		//sort the results, sort is in place so no need to look at second
 		Arrays.sort(completeHashAsPair);
 		
 		//store in array to reduce memory
-		int[][] completeHash = new int[completeHashAsPair.length][2];
+		int[][] completeHash = new int[completeHashAsPair.length][];
 		for (int iter=0; iter<completeHashAsPair.length; iter++)
 		{
+			completeHash[iter] = new int[2];
 			completeHash[iter][0] = completeHashAsPair[iter].x;
 			completeHash[iter][1] = completeHashAsPair[iter].y;
 		}		
