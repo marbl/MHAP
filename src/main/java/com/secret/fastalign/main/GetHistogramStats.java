@@ -27,10 +27,10 @@ public class GetHistogramStats {
 				String[] split = line.trim().split("\\s+");
 				int val = Integer.parseInt(split[0]);
 				long count = Long.parseLong(split[1]);
-				histogram.put(val, count);
+				this.histogram.put(val, count);
 			}
 			bf.close();
-			percent = p;
+			this.percent = p;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -42,24 +42,24 @@ public class GetHistogramStats {
 		int total = 0;
 
 		for (int val : histogram.keySet()) {
-			long count = histogram.get(val);
+			long count = this.histogram.get(val);
 			for (int i = 0; i < count; i++) {
 				total++;
-				double delta = (val - mean);
-				mean += (delta / total);
-				variance += delta * (val - mean);
+				double delta = (val - this.mean);
+				this.mean += (delta / total);
+				variance += delta * (val - this.mean);
 				sum += val;
 			}
 		}
 		variance /= total;
-		stdev = Math.sqrt(variance);
+		this.stdev = Math.sqrt(variance);
 
 		double runningSum = 0;
-		for (int val : histogram.keySet()) {
-			long count = histogram.get(val);
+		for (int val : this.histogram.keySet()) {
+			long count = this.histogram.get(val);
 			runningSum += (double) val * count;
-			if ((runningSum / sum) > percent) {
-				cut = val;
+			if ((runningSum / sum) > this.percent) {
+				this.cut = val;
 				break;
 			}
 		}
@@ -67,8 +67,8 @@ public class GetHistogramStats {
 
 	@Override
 	public String toString() {
-		return nf.format(mean) + "\t" + nf.format(stdev) + "\t" + "\t" + cut
-				+ "\t" + nf.format(mean + NUM_SD * stdev);
+		return nf.format(this.mean) + "\t" + nf.format(this.stdev) + "\t" + "\t" + this.cut
+				+ "\t" + nf.format(this.mean + NUM_SD * this.stdev);
 	}
 	
 	public static void main(String[] args) throws NumberFormatException, IOException {
