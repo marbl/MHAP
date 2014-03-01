@@ -50,7 +50,7 @@ public final class Utils
 
 	public enum Translate
 	{
-		A("T"), C("G"), G("C"), N("N"), T("A");
+		A("T"), C("G"), G("C"), T("A"), N("N"), Y("R"), R("Y"), W("W"), S("S"), K("M"), M("K"), D("H"), V("B"), H("D"), B("V");
 
 		private String other;
 
