@@ -12,7 +12,7 @@ public class GetHistogramStats {
 	private static final NumberFormat nf = new DecimalFormat(
 			"############.####");
 	private static final int NUM_SD = 7;
-	private TreeMap<Integer, Integer> histogram = new TreeMap<Integer, Integer>();
+	private TreeMap<Integer, Long> histogram = new TreeMap<Integer, Long>();
 	private double percent = 0.99;
 	private double mean = 0;
 	private double stdev = 0;
@@ -26,7 +26,7 @@ public class GetHistogramStats {
 			while ((line = bf.readLine()) != null) {
 				String[] split = line.trim().split("\\s+");
 				int val = Integer.parseInt(split[0]);
-				int count = Integer.parseInt(split[1]);
+				long count = Long.parseLong(split[1]);
 				histogram.put(val, count);
 			}
 			bf.close();
@@ -42,7 +42,7 @@ public class GetHistogramStats {
 		int total = 0;
 
 		for (int val : histogram.keySet()) {
-			int count = histogram.get(val);
+			long count = histogram.get(val);
 			for (int i = 0; i < count; i++) {
 				total++;
 				double delta = (val - mean);
@@ -56,7 +56,7 @@ public class GetHistogramStats {
 
 		double runningSum = 0;
 		for (int val : histogram.keySet()) {
-			int count = histogram.get(val);
+			long count = histogram.get(val);
 			runningSum += (double) val * count;
 			if ((runningSum / sum) > percent) {
 				cut = val;
