@@ -1,15 +1,20 @@
 package com.secret.fastalign.minhash;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import com.secret.fastalign.general.AbstractReducedSequence;
 import com.secret.fastalign.general.Sequence;
+import com.secret.fastalign.general.SequenceId;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Pair;
 import com.secret.fastalign.utils.Utils;
 
-public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,SequenceMinHashes>
+public final class SequenceMinHashes 
 {
 	private static final class SortableIntPair implements Comparable<SortableIntPair>
 	{
@@ -37,29 +42,107 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		}		
 	}
 	
+	private final int[][] completeHash;
+	//private final int subKmerSize;
+	//private final Sequence seq;
+	
+	private final SequenceId id;
+	private final MinHash mainHashes;
+	
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
 	
-	private final int completeHash[][];
-	private final int subKmerSize;
-	private final Sequence seq;
-	
-	public SequenceMinHashes(Sequence seq, int kmerSize, int numWords, int subSequenceSize, int subKmerSize, boolean storeHashes, HashSet<Integer> filter)
+	public static SequenceMinHashes fromByteStream(DataInputStream input) throws IOException
 	{
-		super(seq.getId(), new MinHash(seq, kmerSize, numWords, subSequenceSize, filter));
-		this.subKmerSize = subKmerSize;
-		
+		try
+		{
+			//dos.writeInt(this.id.getHeaderId());
+			//dos.writeBoolean(this.id.isForward());
+			SequenceId id = new SequenceId(input.readInt(), input.readBoolean());
+			
+			//dos.write(this.mainHashes.getAsByteArray());
+			MinHash mainHashes = MinHash.fromByteStream(input);
+			
+			if (mainHashes==null)
+				throw new FastAlignRuntimeException("Unexpected hash read error.");
+			
+			//dos.writeInt(this.completeHash.length);
+			int hashLength = input.readInt();			
+			
+			int[][] completeHash = new int[hashLength][]; 
+			for (int iter=0; iter<hashLength; iter++)
+			{
+				//dos.writeInt(this.completeHash[iter][iter2]);
+				completeHash[iter] = new int[2];
+				completeHash[iter][0] = input.readInt();
+				completeHash[iter][1] = input.readInt();					
+			}
+			
+			return new SequenceMinHashes(id, mainHashes, completeHash);
+			
+		}
+		catch (EOFException e)
+		{
+			return null;
+		}
+	}
+	
+	public SequenceMinHashes(Sequence seq, int kmerSize, int numHashes, int subSequenceSize, int subKmerSize, boolean storeHashes, HashSet<Integer> filter)
+	{
+		this.id = seq.getId();
+		this.mainHashes = new MinHash(seq, kmerSize, numHashes, subSequenceSize, filter);
+			
 		if (storeHashes)
 		{
 			this.completeHash = getFullHashes(seq, subKmerSize);
-			this.seq = null;
+			//this.seq = null;
 		}
 		else
 		{
-			this.completeHash = null;
-			this.seq = seq;
+			this.completeHash = getFullHashes(seq, subKmerSize);
+			//this.seq = null;
 		}
 	}
-
+	
+	private SequenceMinHashes(SequenceId id, MinHash mainHashes, int[][] completeHash)
+	{
+		this.id = id;
+		this.mainHashes = mainHashes;
+		this.completeHash = completeHash;
+	}
+	
+	public byte[] getAsByteArray()
+	{
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    DataOutputStream dos = new DataOutputStream(bos);
+    
+    try
+		{
+      dos.writeInt(this.id.getHeaderId());
+      dos.writeBoolean(this.id.isForward());
+			dos.write(this.mainHashes.getAsByteArray());
+			
+			dos.writeInt(this.completeHash.length);
+	    for (int iter=0; iter<this.completeHash.length; iter++)
+	    	for (int iter2=0; iter2<2; iter2++)
+	    		dos.writeInt(this.completeHash[iter][iter2]);
+    
+	    dos.flush();
+	    return bos.toByteArray();
+		}
+    catch (IOException e)
+    {
+    	throw new FastAlignRuntimeException("Unexpected IO error.");
+    }
+	}
+	
+	public int[][] getFullHashes()
+	{
+		//if (this.completeHash!=null)
+		return this.completeHash;
+		
+		//return getFullHashes(this.seq, this.subKmerSize);
+	}
+	
 	private int[][] getFullHashes(Sequence seq, int subKmerSize)
 	{
 		//compute just direct hash of sequence
@@ -84,19 +167,6 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 		return completeHash;
 	}
 	
-	public int[][] getFullHashes()
-	{
-		if (this.completeHash!=null)
-			return this.completeHash;
-		
-		return getFullHashes(this.seq, this.subKmerSize);
-	}
-
-	public Pair<Double, Integer> getFullScore(SequenceMinHashes s, int maxShift)
-	{
-		return getFullScore(getFullHashes(), s, maxShift);
-	}
-
 	public Pair<Double, Integer> getFullScore(int[][] allKmerHashes, SequenceMinHashes s, int maxShift)
 	{	
 		if (allKmerHashes==null)
@@ -195,5 +265,25 @@ public final class SequenceMinHashes extends AbstractReducedSequence<MinHash,Seq
 			score = (double)count/(double)(overlapSize);
 
 		return new Pair<Double, Integer>(score, shift);
+	}
+
+	public Pair<Double, Integer> getFullScore(SequenceMinHashes s, int maxShift)
+	{
+		return getFullScore(getFullHashes(), s, maxShift);
+	}
+	
+	public MinHash getMainHashes()
+	{
+		return this.mainHashes;
+	}
+	
+	public SequenceId getSequenceId()
+	{
+		return this.id;
+	}
+
+	public int getSequenceLength()
+	{
+		return this.mainHashes.getSequenceLength();
 	}
 }

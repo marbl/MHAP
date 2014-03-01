@@ -51,7 +51,7 @@ public final class SequenceId
 		return this.isFwd;
 	}
 	
-	public long getHeaderId()
+	public int getHeaderId()
 	{
 		return this.id;
 	}

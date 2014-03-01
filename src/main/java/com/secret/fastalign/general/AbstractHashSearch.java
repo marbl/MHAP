@@ -13,24 +13,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.secret.fastalign.minhash.SequenceMinHashes;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T extends AbstractReducedSequence<H,T>>
+public abstract class AbstractHashSearch
 {
-	protected final int kmerSize;
 	private final AtomicLong matchesProcessed;
 	private final AtomicLong sequencesSearched;
 
-	protected final int numWords;
 	protected final int numThreads;
 	protected final int minStoreLength;
 	private final boolean storeResults;
 	protected static BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(System.out), 8*1024*1024);
 
-	public AbstractHashSearch(int kmerSize, int numWords, int numThreads, int minStoreLength, boolean storeResults)
+	public AbstractHashSearch(int numThreads, int minStoreLength, boolean storeResults)
 	{
-		this.kmerSize = kmerSize;
-		this.numWords = numWords;
 		this.numThreads = numThreads;
 		this.minStoreLength = minStoreLength;
 		this.storeResults = storeResults;
@@ -38,7 +35,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		this.sequencesSearched = new AtomicLong();
 	}
 	
-	protected void addData(final FastaData data)
+	protected void addData(final SequenceMinHashStreamer data)
 	{
 		//figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
@@ -53,16 +50,16 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 				{
 					try
 					{
-			    	Sequence seq = data.dequeue();
-				    while(seq != null)
+			    	SequenceMinHashes seqHashes = data.dequeue(false);
+				    while(seqHashes != null)
 				    {
-			    		addSequence(seq);
+			    		addSequence(seqHashes);
 
 			    		int currCount = counter.incrementAndGet();
 				    	if (currCount%5000==0)
-				    		System.err.println("Current sequences hashed: "+currCount+"...");
+				    		System.err.println("Current # sequences stored: "+currCount+"...");
 				    	
-				    	seq = data.dequeue();
+				    	seqHashes = data.dequeue(false);
 				    }
 			    }
 					catch (IOException e)
@@ -89,22 +86,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	  }
 	}
 
-	protected abstract boolean addDirectionalSequence(Sequence seq);
-
-	protected boolean addSequence(Sequence seq)
-	{
-		//add forward sequence
-		boolean success = addDirectionalSequence(seq);
-		
-		//add reverse sequence
-		if (success)
-		{
-			Sequence reverse = seq.getReverseCompliment();		
-			success = addDirectionalSequence(reverse);
-		}
-	
-		return success;
-	}
+	protected abstract boolean addSequence(SequenceMinHashes seqHashes);
 	
 	public ArrayList<MatchResult> findMatches(final double acceptScore)
 	{
@@ -130,7 +112,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 
 	  			while (nextSequence!=null)
 			    {		    		
-		    		T sequenceHashes = getStoredSequenceHash(nextSequence);
+		    		SequenceMinHashes sequenceHashes = getStoredSequenceHash(nextSequence);
 		    		
 		    		//only search the forward sequences
 	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, true));
@@ -183,7 +165,7 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		return combinedList;
 	}
 	
-	public ArrayList<MatchResult> findMatches(final FastaData data, final double acceptScore)
+	public ArrayList<MatchResult> findMatches(final SequenceMinHashStreamer data, final double acceptScore)
 	{
 		//figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
@@ -203,12 +185,10 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 	  			
 	  			try
 	  			{
-		  			Sequence nextSequence = data.dequeue();
+		  			SequenceMinHashes sequenceHashes = data.dequeue(true);
 	
-		  			while (nextSequence!=null)
+		  			while (sequenceHashes!=null)
 				    {		    		
-			    		T sequenceHashes = getSequenceHash(nextSequence);
-			    		
 			    		//only search the forward sequences
 		      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
 	
@@ -216,10 +196,10 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
 		      		
 		      		//get the sequence hashes
-			    		nextSequence = data.dequeue();			    		
+		      		sequenceHashes = data.dequeue(true);			    		
 
 			    		//output stored results
-			    		if (nextSequence==null || localMatches.size()>20000)
+			    		if (sequenceHashes==null || localMatches.size()>20000)
 			    		{
 				    		//count the number of matches
 				  			AbstractHashSearch.this.matchesProcessed.getAndAdd(localMatches.size());
@@ -265,18 +245,16 @@ public abstract class AbstractHashSearch<H extends AbstractSequenceHashes<H>, T 
 		return combinedList;	
 	}
 
-	protected abstract List<MatchResult> findMatches(T hashes, double acceptScore, boolean allToAll);
+	protected abstract List<MatchResult> findMatches(SequenceMinHashes hashes, double acceptScore, boolean allToAll);
 
 	public long getMatchesProcessed()
 	{
 		return this.matchesProcessed.get();
 	}
 	
-	public abstract T getSequenceHash(Sequence seq);
-
 	public abstract Collection<SequenceId> getStoredForwardSequenceIds();
 	
-	public abstract T getStoredSequenceHash(SequenceId id);
+	public abstract SequenceMinHashes getStoredSequenceHash(SequenceId id);
 
 	protected void outputResults(List<MatchResult> matches)
 	{

@@ -65,7 +65,7 @@ public final class Utils
 		}
 	}
 
-	public static final int BUFFER_BYTE_SIZE = 800000;
+	public static final int BUFFER_BYTE_SIZE = 67108864; //64MB
 	public static final int FASTA_LINE_LENGTH = 60;
 
 	public static MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
@@ -208,10 +208,10 @@ public final class Utils
 		return array[k];
 	}
 
-	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numWords,
+	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numHashes,
 			HashSet<Integer> filter)
 	{
-		if (numWords % 2 != 0)
+		if (numHashes % 2 != 0)
 			throw new FastAlignRuntimeException("Number of words must be multiple of 2.");
 
 		final int numberKmers = seq.length() - kmerSize + 1;
@@ -222,11 +222,11 @@ public final class Utils
 		// get the rabin hashes
 		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
 
-		final int[] hashes = new int[Math.max(1,numWords)];
+		final int[] hashes = new int[Math.max(1,numHashes)];
 		
 		Arrays.fill(hashes, Integer.MAX_VALUE);
 
-		int numWordsBy2 = numWords / 2;
+		int numWordsBy2 = numHashes / 2;
 
 		// Random rand = new Random(0);
 		for (int iter = 0; iter < rabinHashes.length; iter++)
@@ -236,7 +236,7 @@ public final class Utils
 				continue;
 
 			// set it in case requesting 0
-			if (numWords==0)
+			if (numHashes==0)
 			{
 				hashes[0] = rabinHashes[iter];
 				continue;

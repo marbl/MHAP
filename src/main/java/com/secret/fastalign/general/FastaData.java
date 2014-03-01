@@ -70,12 +70,17 @@ public class FastaData
 	public synchronized Sequence dequeue() throws IOException
 	{
 		if (this.sequenceList.isEmpty())
+		{
 			enqueueNextSequenceInFile();
+		}
 
-		return this.sequenceList.poll();
+		//get the sequence
+		Sequence seq = this.sequenceList.poll();
+		
+		return seq;
 	}
 
-	public synchronized void enqueue(Sequence seq)
+	private synchronized void enqueue(Sequence seq)
 	{
 		this.sequenceList.add(seq);
 		this.numberProcessed.getAndIncrement();

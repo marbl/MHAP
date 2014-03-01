@@ -10,6 +10,7 @@ import java.util.logging.LogManager;
 import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.general.Sequence;
+import com.secret.fastalign.general.SequenceMinHashStreamer;
 import com.secret.fastalign.minhash.MinHashSearch;
 
 public class AlignmentHashRun 
@@ -26,8 +27,6 @@ public class AlignmentHashRun
 
 	private static final double DEFAULT_DATA_ERROR = 0.15;
 
-	private static final boolean DEFAULT_LARGE_MEMORY = true;
-	
 	public static void main(String[] args) throws Exception {
 		String inFile = null;
 		int kmerSize = DEFAULT_KMER_SIZE;
@@ -64,8 +63,9 @@ public class AlignmentHashRun
 		FastaData data = new FastaData(inFile);
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, 
-				numThreads, DEFAULT_LARGE_MEMORY, true, null, 800, 0);
+		SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, MinHashSearch.DEFAULT_SUB_KMER_SIZE, null);
+
+		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numWords, DEFAULT_NUM_MIN_MATCHES, numThreads, true, 800, 0);
 		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 		
