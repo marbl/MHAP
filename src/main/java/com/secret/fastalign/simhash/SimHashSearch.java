@@ -22,7 +22,7 @@ public final class SimHashSearch extends AbstractHashSearch<SimHash,SequenceSimH
 	
 	public SimHashSearch(int kmerSize, int numWords, int numThreads) 
 	{
-		super(kmerSize, numWords, numThreads, true);
+		super(kmerSize, numWords, numThreads, 0, true);
 
 		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceSimHashes>();
 	}
