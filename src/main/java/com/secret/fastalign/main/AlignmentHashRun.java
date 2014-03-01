@@ -60,16 +60,16 @@ public class AlignmentHashRun
 		// read and index the kmers
 		long startTime = System.nanoTime();
 
-		FastaData data = new FastaData(inFile);
+		FastaData data = new FastaData(inFile, 0);
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, MinHashSearch.DEFAULT_SUB_KMER_SIZE, null);
+		SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, MinHashSearch.DEFAULT_SUB_KMER_SIZE, null, 0);
 
 		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numWords, DEFAULT_NUM_MIN_MATCHES, numThreads, true, 800, 0);
-		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
+		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 		
-		System.out.println("Read in and processed "+data.getNumberProcessed()+" sequences.");
+		System.out.println("Read in and processed "+seqStreamer.getNumberProcessed()+" sequences.");
 
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches

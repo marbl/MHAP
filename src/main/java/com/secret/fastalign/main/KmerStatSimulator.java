@@ -244,7 +244,7 @@ public class KmerStatSimulator {
 		FastaData data = null;
 		String[] sequences = null;
 		if (this.reference != null) {
-			data = new FastaData(this.reference);
+			data = new FastaData(this.reference, 0);
 			data.enqueueFullFile();
 			Sequence[] dataSeq = data.toArray();
 			sequences = new String[dataSeq.length];

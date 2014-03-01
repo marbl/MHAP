@@ -12,6 +12,7 @@ import com.secret.fastalign.utils.Utils;
 public class FastaData
 {
 	private final BufferedReader fileReader;
+	private final int offset; 
 	private String lastLine;
 	private AtomicLong numberProcessed;
 	private boolean readFullFile;
@@ -27,9 +28,10 @@ public class FastaData
 		this.lastLine = null;
 		this.readFullFile = true;
 		this.numberProcessed = new AtomicLong(this.sequenceList.size());
+		this.offset = 0;
 	}
 
-	public FastaData(String file) throws IOException
+	public FastaData(String file, int offset) throws IOException
 	{
 		try
 		{
@@ -40,6 +42,7 @@ public class FastaData
 			throw new FastAlignRuntimeException(e);
 		}
 
+		this.offset = offset;
 		this.lastLine = null;
 		this.readFullFile = false;
 		this.numberProcessed = new AtomicLong(0);
@@ -80,12 +83,6 @@ public class FastaData
 		return seq;
 	}
 
-	private synchronized void enqueue(Sequence seq)
-	{
-		this.sequenceList.add(seq);
-		this.numberProcessed.getAndIncrement();
-	}
-
 	public synchronized void enqueueFullFile() throws IOException
 	{
 		while (enqueueNextSequenceInFile())	{}
@@ -117,7 +114,7 @@ public class FastaData
 		// process the current header
 		// parse the new header
 		// header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
-		String header = "";
+		//String header = "";
 		this.lastLine = this.fileReader.readLine();
 
 		StringBuilder fastaSeq = new StringBuilder();
@@ -126,7 +123,10 @@ public class FastaData
 			if (this.lastLine == null || this.lastLine.startsWith(">"))
 			{
 				// enqueue sequence
-				enqueue(new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), new SequenceId(header)));
+				SequenceId id = new SequenceId(this.numberProcessed.intValue()+this.offset+1);
+				Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
+				this.sequenceList.add(seq);
+				this.numberProcessed.getAndIncrement();
 
 				if (this.lastLine == null)
 				{

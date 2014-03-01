@@ -51,13 +51,13 @@ public final class SequenceMinHashes
 	
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
 	
-	public static SequenceMinHashes fromByteStream(DataInputStream input) throws IOException
+	public static SequenceMinHashes fromByteStream(DataInputStream input, int offset) throws IOException
 	{
 		try
 		{
 			//dos.writeInt(this.id.getHeaderId());
 			//dos.writeBoolean(this.id.isForward());
-			SequenceId id = new SequenceId(input.readInt(), input.readBoolean());
+			SequenceId id = new SequenceId(input.readInt()+offset, input.readBoolean());
 			
 			//dos.write(this.mainHashes.getAsByteArray());
 			MinHash mainHashes = MinHash.fromByteStream(input);

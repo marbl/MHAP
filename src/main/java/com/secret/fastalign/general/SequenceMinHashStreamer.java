@@ -35,8 +35,9 @@ public final class SequenceMinHashStreamer
 	private final int subKmerSize;
 	private final int subSequenceSize;
 	private boolean readClosed;
+	private final int offset;
 
-	public SequenceMinHashStreamer(String file) throws FileNotFoundException
+	public SequenceMinHashStreamer(String file, int offset) throws FileNotFoundException
 	{
   	this.readingFasta = false;
 		this.sequenceHashList = new ConcurrentLinkedQueue<SequenceMinHashes>();
@@ -49,14 +50,15 @@ public final class SequenceMinHashStreamer
 		this.numberProcessed = new AtomicLong();
 		this.numberSubSequencesProcessed = new AtomicLong();
 		this.readClosed = false;
+		this.offset = offset;
 
 		this.buffInput = new DataInputStream(new BufferedInputStream(new FileInputStream(file), Utils.BUFFER_BYTE_SIZE));  	
 	}
 	
-	public SequenceMinHashStreamer(String file, int kmerSize, int numHashes, int subSequenceSize, int subKmerSize, HashSet<Integer> filter) throws IOException
+	public SequenceMinHashStreamer(String file, int kmerSize, int numHashes, int subSequenceSize, int subKmerSize, HashSet<Integer> filter, int offset) throws IOException
 	{	
 		this.sequenceHashList = new ConcurrentLinkedQueue<SequenceMinHashes>();
-		this.fastaData = new FastaData(file);
+		this.fastaData = new FastaData(file, offset);
 		this.kmerSize = kmerSize;
 		this.numHashes = numHashes;
 		this.subSequenceSize = subSequenceSize;
@@ -67,6 +69,7 @@ public final class SequenceMinHashStreamer
 		this.readingFasta = true;
 		this.buffInput = null;
 		this.readClosed = false;
+		this.offset = offset;
 	}
 	
 	public SequenceMinHashes dequeue(boolean fwdOnly) throws IOException
@@ -234,7 +237,7 @@ public final class SequenceMinHashStreamer
 		}
 			
 		//get as byte array stream
-  	SequenceMinHashes seqHashes = SequenceMinHashes.fromByteStream(new DataInputStream(new ByteArrayInputStream(byteArray)));
+  	SequenceMinHashes seqHashes = SequenceMinHashes.fromByteStream(new DataInputStream(new ByteArrayInputStream(byteArray)), this.offset);
 
   	return seqHashes;
   }

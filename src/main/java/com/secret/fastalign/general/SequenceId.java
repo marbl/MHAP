@@ -1,27 +1,24 @@
 package com.secret.fastalign.general;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 public final class SequenceId
 {
-	//private static ConcurrentHashMap<Long, String> indicies = new ConcurrentHashMap<Long, String>();
-	private static AtomicInteger globalCounter = new AtomicInteger(0);
-	
 	private final int id;
 	private final boolean isFwd;
 	
-	public SequenceId(String id)
+	public SequenceId(int id)
 	{
-		this.id = globalCounter.addAndGet(1);
-		//indicies.put(this.id, id);
-		
-		this.isFwd = true;
+		this(id, true);
 	}
 	
 	public SequenceId(int id, boolean isFwd)
 	{
 		this.id = id;
 		this.isFwd = isFwd;
+	}
+	
+	public SequenceId createOffset(int offset)
+	{
+		return new SequenceId(this.id+offset, this.isFwd);
 	}
 	
 	public SequenceId complimentId()
