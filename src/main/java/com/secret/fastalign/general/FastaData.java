@@ -18,7 +18,7 @@ public class FastaData
 	// length of sequences loaded
 	private final ConcurrentLinkedQueue<Sequence> sequenceList;
 
-	private static final String[] fastaSuffix = { "fna", "contigs", "final", "fasta", "fa" };
+	private static final String[] fastaSuffix = { "fna", "contigs", "contig", "final", "fasta", "fa" };
 
 	private FastaData(ConcurrentLinkedQueue<Sequence> seqList)
 	{
