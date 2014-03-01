@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -12,15 +11,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.general.AbstractHashSearch;
-import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
-import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.general.SequenceId;
+import com.secret.fastalign.general.SequenceMinHashStreamer;
 import com.secret.fastalign.general.SubSequenceId;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Pair;
 
-public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMinHashes>
+public final class MinHashSearch extends AbstractHashSearch
 {
 	public static final class HitInfo
 	{
@@ -89,7 +87,6 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		
 	}
 
-	private final HashSet<Integer> filter;
 	private final ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>> hashes;
 
 	private final int maxKmerShiftAccepted;
@@ -101,11 +98,8 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 	private final AtomicLong numberSubSequencesHit;
 	private final int numMinMatches;
 	private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
-	private final boolean storeKmerInMemory;
-
-	private final int subSequenceSplitSize;
 	public static final int DEFAULT_SUB_KMER_SIZE = 12;
-	public final static int INITIAL_HASH_SIZE = 10000;
+	public static final int INITIAL_HASH_SIZE = 10000;
 	
 	private static int[] errorString(int[] s, double readError, Random generator)
 	{
@@ -160,14 +154,11 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		return ratio;
 	}
 
-	public MinHashSearch(FastaData data, int kmerSize, int numHashes, int numMinMatches, int subSequenceSize, int numThreads,
-			boolean storeKmerInMemory, boolean storeResults, HashSet<Integer> filter, int maxShift, int minStoreLength) throws IOException
+	public MinHashSearch(SequenceMinHashStreamer data, int numHashes, int numMinMatches, int numThreads, boolean storeResults, int maxShift, int minStoreLength) throws IOException
 	{
-		super(kmerSize, numHashes, numThreads, minStoreLength, storeResults);
+		super(numThreads, minStoreLength, storeResults);
 
 		this.numMinMatches = numMinMatches;
-		this.subSequenceSplitSize = subSequenceSize;
-		this.storeKmerInMemory = storeKmerInMemory;
 		this.numberSubSequencesHit = new AtomicLong();
 		this.numberSequencesHit = new AtomicLong();
 		this.numberSequencesFullyCompared = new AtomicLong();
@@ -175,49 +166,44 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		this.numberSubSequences = new AtomicLong();
 		this.numberSequencesMinHashed = new AtomicLong();
 		
-		//add the sequence filter
-		this.filter = filter;
+		// enqueue full file, since have to know full size
+		data.enqueueFullFile(false, numThreads);
 
-		// enqueue full file
-		data.enqueueFullFile();
-
-		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceMinHashes>(
-				(int) data.getNumberProcessed() * 2 + 100, (float) 0.75, this.numThreads);
+		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceMinHashes>(data.getNumberProcessed() + 100, (float) 0.75, this.numThreads);
 
 		this.hashes = new ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>>(numHashes);
 		for (int iter = 0; iter < numHashes; iter++)
-			this.hashes.add(new HashMap<Integer, ArrayList<SubSequenceId>>((int) data.getNumberProcessed() * 2 * 10));
+			this.hashes.add(new HashMap<Integer, ArrayList<SubSequenceId>>(data.getNumberSubSequencesProcessed()+100));
 
 		addData(data);
 	}
 
 	@Override
-	public boolean addDirectionalSequence(Sequence seq)
+	public boolean addSequence(SequenceMinHashes currHash)
 	{
-		SequenceMinHashes currHash = getSequenceHash(seq);
 		int[][] currMinHashes = currHash.getMainHashes().getSubSeqMinHashes();
 
 		if (currMinHashes[0].length != this.hashes.size())
 			throw new FastAlignRuntimeException("Number of hashes does not match.");
 
 		// put the result into the hashmap
-		SequenceMinHashes minHash = this.sequenceVectorsHash.put(seq.getId(), currHash);
+		SequenceMinHashes minHash = this.sequenceVectorsHash.put(currHash.getSequenceId(), currHash);
 		if (minHash != null)
 		{
 			// put back the original value, WARNING: not thread safe
-			this.sequenceVectorsHash.put(seq.getId(), minHash);
+			this.sequenceVectorsHash.put(currHash.getSequenceId(), minHash);
 
 			throw new FastAlignRuntimeException("Number of hashes does not match.");
 		}
 		
 		//only hash large sequences
-		if (seq.length()<this.minStoreLength)
+		if (currHash.getSequenceLength()<this.minStoreLength)
 			return true;
 		
 		// add the hashes
 		for (int subSequences = 0; subSequences < currMinHashes.length; subSequences++)
 		{
-			SubSequenceId subId = new SubSequenceId(seq.getId(), (short)subSequences);
+			SubSequenceId subId = new SubSequenceId(currHash.getSequenceId(), (short)subSequences);
 			
 			int count = 0;
 			for (HashMap<Integer, ArrayList<SubSequenceId>> hash : this.hashes)
@@ -385,13 +371,6 @@ public final class MinHashSearch extends AbstractHashSearch<MinHash, SequenceMin
 		return this.numberSubSequencesHit.get();
 	}
 	
-	@Override
-	public SequenceMinHashes getSequenceHash(Sequence seq)
-	{
-		return new SequenceMinHashes(seq, this.kmerSize, this.numWords, this.subSequenceSplitSize, DEFAULT_SUB_KMER_SIZE,
-				this.storeKmerInMemory, this.filter);
-	}
-
 	@Override
 	public Collection<SequenceId> getStoredForwardSequenceIds()
 	{
