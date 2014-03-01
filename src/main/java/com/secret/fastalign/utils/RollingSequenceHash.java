@@ -1,20 +1,21 @@
 package com.secret.fastalign.utils;
 
-public class RabinKarpSeqHash
+public final class RollingSequenceHash
 {
 	private final int kmerSize;
 
-	public RabinKarpSeqHash(int kmerSize)
+	public RollingSequenceHash(int kmerSize)
 	{
 		this.kmerSize = kmerSize;
 	}
 	
-	public int[] hashInt(String seq)
+	public final int[] hashInt(final String seq)
 	{
 		//get the string
-		char[] seqArray = seq.toCharArray();
+		final char[] seqArray = seq.toCharArray();
 		
-		RabinKarpHash ch = new RabinKarpHash(this.kmerSize);
+		//RabinKarpHash ch = new RabinKarpHash(this.kmerSize);
+		CyclicHash ch = new CyclicHash(this.kmerSize);
 		
 		//allocate hashes
 		int[] hashes = new int[seqArray.length-this.kmerSize+1];
