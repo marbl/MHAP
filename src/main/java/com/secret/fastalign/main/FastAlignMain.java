@@ -110,8 +110,8 @@ public final class FastAlignMain
 		System.err.println("use large amount of memory:\t" + storeInMemory);
 		System.err.println("compute alignment to self of -s file:\t" + !noSelf);
 		
-		//System.err.println("Press Enter");
-		//System.in.read();
+		System.err.println("Press Enter");
+		System.in.read();
 		
 		long startTotalTime = System.nanoTime();		
 		long startTime = System.nanoTime();
@@ -172,7 +172,7 @@ public final class FastAlignMain
 			{
 				startTime = System.nanoTime();
 				
-				SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(pf.getAbsolutePath(), kmerSize, numHashes, subSequenceSize, MinHashSearch.DEFAULT_SUB_KMER_SIZE, filter);
+				SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(pf.getAbsolutePath(), kmerSize, numHashes, subSequenceSize, MinHashSearch.DEFAULT_SUB_KMER_SIZE, filter, 0);
 				
 				String outputString = pf.getName();
 				int i = outputString.lastIndexOf('.');
@@ -195,15 +195,18 @@ public final class FastAlignMain
 		}
 		
 		// read and index the kmers
+		int seqNumberProcessed = 0;
+		
 		SequenceMinHashStreamer seqStreamer;
 		if (inFile.endsWith(".dat"))
-		  seqStreamer = new SequenceMinHashStreamer(inFile);		
+		  seqStreamer = new SequenceMinHashStreamer(inFile, 0);		
 		else
-	  seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numHashes, subSequenceSize, MinHashSearch.DEFAULT_SUB_KMER_SIZE, filter);
+	  seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numHashes, subSequenceSize, MinHashSearch.DEFAULT_SUB_KMER_SIZE, filter, 0);
 		
 		//create search object
 		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numHashes, numMinMatches, numThreads, false, maxShift, minStoreLength);
 
+		seqNumberProcessed += seqStreamer.getNumberProcessed()/2;
 		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" unique sequences (fwd and rev).");
 		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
 
@@ -266,9 +269,9 @@ public final class FastAlignMain
 			{			
 				// read and index the kmers
 				if (cf.getName().endsWith(".dat"))
-					seqStreamer = new SequenceMinHashStreamer(cf.getCanonicalPath());
+					seqStreamer = new SequenceMinHashStreamer(cf.getCanonicalPath(), seqNumberProcessed);
 				else
-					seqStreamer = new SequenceMinHashStreamer(cf.getCanonicalPath(), kmerSize, numHashes, subSequenceSize, MinHashSearch.DEFAULT_SUB_KMER_SIZE, filter);
+					seqStreamer = new SequenceMinHashStreamer(cf.getCanonicalPath(), kmerSize, numHashes, subSequenceSize, MinHashSearch.DEFAULT_SUB_KMER_SIZE, filter, seqNumberProcessed);
 				System.err.println("Opened fasta file "+cf.getCanonicalPath()+".");
 	
 				//match the file
@@ -276,6 +279,7 @@ public final class FastAlignMain
 				hashSearch.findMatches(seqStreamer, threshold);
 				
 				System.out.flush();
+				seqNumberProcessed += seqStreamer.getNumberProcessed();
 				System.err.println("Processed "+seqStreamer.getNumberProcessed()+" to sequences.");
 				System.err.println("Time (s) to score, hash to-file, and output: " + (System.nanoTime() - startTime)*1.0e-9);
 			}
@@ -299,7 +303,7 @@ public final class FastAlignMain
 		if (error != null) {
 			System.err.println(error);
 		}
-		System.err.println("Usage 1 FastAlignMain -s<fasta from/self file> [-q<fasta to file] [-f<kmer filter list]");
+		System.err.println("Usage 1 FastAlignMain -s<fasta/dat from/self file> [-q<fasta/dat to file] [-f<kmer filter list]");
 		System.err.println("Usage 2 FastAlignMain -p<directory of fasta files> -q <output directory> [-f<kmer filter list]");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);

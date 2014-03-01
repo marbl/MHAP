@@ -65,7 +65,7 @@ public final class Utils
 		}
 	}
 
-	public static final int BUFFER_BYTE_SIZE = 67108864; //64MB
+	public static final int BUFFER_BYTE_SIZE = 8388608; //8MB
 	public static final int FASTA_LINE_LENGTH = 60;
 
 	public static MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
