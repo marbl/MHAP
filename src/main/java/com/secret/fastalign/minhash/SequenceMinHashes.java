@@ -29,7 +29,7 @@ public final class SequenceMinHashes implements SequenceHashes
 	{
 		try
 		{
-			input.
+			//input.
 			
 			//dos.writeInt(this.id.getHeaderId());
 			//dos.writeBoolean(this.id.isForward());
