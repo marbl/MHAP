@@ -9,8 +9,8 @@ public final class RabinKarpHash
 
 	int n;
 
-	// final static int B = 31;
-	final static int B = 1664525;
+	final static int B = 31;
+	//final static int B = 1664525;
 
 	static CharacterHash hasher = CharacterHash.getInstance();
 

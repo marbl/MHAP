@@ -47,10 +47,10 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 			seqHashes = null;
 			if (seq!=null)
 				seqHashes = getHashes(seq);		
-			processAddition(seqHashes);
 
 			if (seqHashes==null)
 				return false;
+			processAddition(seqHashes);
 			
 			this.sequenceHashList.add(seqHashes);
 	
@@ -75,10 +75,10 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 			
 			//do nothing and return
 			//record
-			processAddition(seqHashes);
-
 			if (seqHashes==null)
 				return false;
+
+			processAddition(seqHashes);
 			
 			this.sequenceHashList.add(seqHashes);
 
@@ -87,7 +87,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		return true;
 	}
 	
-	public void enqueueFullFile(final boolean fwdOnly, int numThreads) throws IOException
+	public synchronized void enqueueFullFile(final boolean fwdOnly, int numThreads) throws IOException
 	{
 		//figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
@@ -128,7 +128,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 	  	execSvc.shutdownNow();
 	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
 	  }
-	 }
+	}
 	
 	public long getFastaProcessed()
 	{
