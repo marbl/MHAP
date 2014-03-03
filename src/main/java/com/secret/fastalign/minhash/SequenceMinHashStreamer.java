@@ -76,7 +76,8 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 	protected void processAddition(SequenceMinHashes seqHashes)
 	{
 		super.processAddition(seqHashes);
-		this.numberSubSequencesProcessed.getAndAdd(seqHashes.getMinHashes().numSubSequences());
+		if (seqHashes!=null)
+			this.numberSubSequencesProcessed.getAndAdd(seqHashes.getMinHashes().numSubSequences());
 	}
 
 	@Override

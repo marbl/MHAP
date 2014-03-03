@@ -167,7 +167,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 	
 	protected abstract H readFromBinary() throws IOException;
 
-	public void writeToBinary(String file, final boolean fwdOnly) throws IOException
+	public void writeToBinary(String file, final boolean fwdOnly, int numThreads) throws IOException
 	{
     OutputStream output = null;
     try 
@@ -176,10 +176,10 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
       final OutputStream finalOutput = output;
       
   		//figure out number of cores
-  		ExecutorService execSvc = Executors.newFixedThreadPool(1);
+  		ExecutorService execSvc = Executors.newFixedThreadPool(numThreads);
   		
   		//for each thread create a task
-  	  for (int iter=0; iter<1; iter++)
+  	  for (int iter=0; iter<numThreads; iter++)
   		{
   			Runnable task = new Runnable()
   			{ 			
@@ -193,8 +193,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 							seqHashes = dequeue(fwdOnly);
 	  	        while (seqHashes!=null)
 	  	        {
-  	        		//byte[] byteArray = seqHashes.getAsByteArray();
-	  	        	byte[] byteArray = new byte[2];
+  	        		byte[] byteArray = seqHashes.getAsByteArray();
   	        		int arraySize = byteArray.length;
   	        		
   	        		//store the size as byte array

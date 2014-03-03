@@ -23,8 +23,6 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private final int numMinMatches;
 
-	private final int numThreads;
-
 	private final int subSequenceSize;
 
 	private final double acceptScore;
@@ -213,12 +211,11 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 			int numHashes, int kmerSize, int numMinMatches, int numThreads, HashSet<Integer> filter, int minStoreLength,
 			int maxShift, double acceptScore)
 	{
-		super(processFile, inFile, toFile, noSelf);
+		super(processFile, inFile, toFile, noSelf, numThreads);
 		this.subSequenceSize = subSequenceSize;
 		this.numHashes = numHashes;
 		this.kmerSize = kmerSize;
 		this.numMinMatches = numMinMatches;
-		this.numThreads = numThreads;
 		this.minStoreLength = minStoreLength;
 		this.filter = filter;
 		this.maxShift = maxShift;
