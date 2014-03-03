@@ -1,7 +1,5 @@
 package com.secret.fastalign.utils;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -12,6 +10,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.FileReader;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.secret.fastalign.general.Sequence;
 
 public final class Utils
@@ -68,8 +69,6 @@ public final class Utils
 	public static final int BUFFER_BYTE_SIZE = 8388608; //8MB
 	public static final int FASTA_LINE_LENGTH = 60;
 
-	public static MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
-
 	public static final int MBYTES = 1048576;
 
 	public static int checkForEnd(String line, int brackets)
@@ -98,7 +97,7 @@ public final class Utils
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 
 		// get the rabin hashes
-		final int[] rabinHashes = computeRabinHashes(seq.getString(), kmerSize);
+		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
 
 		final long[][] hashes = new long[rabinHashes.length][numWords];
 
@@ -131,7 +130,7 @@ public final class Utils
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 
 		// get the rabin hashes
-		final int[] rabinHashes = computeRabinHashes(seq.getString(), kmerSize);
+		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
 
 		final int[][] hashes = new int[rabinHashes.length][numWords];
 
@@ -220,7 +219,7 @@ public final class Utils
 			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
 
 		// get the rabin hashes
-		final int[] rabinHashes = computeRabinHashes(seq, kmerSize);
+		final int[] rabinHashes = computeSequenceHashes(seq, kmerSize);
 
 		final int[] hashes = new int[Math.max(1,numHashes)];
 		
@@ -267,23 +266,23 @@ public final class Utils
 		return hashes;
 	}
 
-	public final static int[] computeRabinHashes(final String seq, final int kmerSize)
+	public final static int[] computeSequenceHashes(final String seq, final int kmerSize)
 	{
-		RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
-		final int[] rabinHashes = rabinHash.hashInt(seq);
+		//RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
+		//final int[] rabinHashes = rabinHash.hashInt(seq);
 
-		// HashFunction hf = Hashing.murmur3_32(0);
+		HashFunction hf = Hashing.murmur3_32(0);
+		
+		int[] hashes = new int[seq.length()-kmerSize+1];
+		for (int iter=0; iter<hashes.length; iter++)
+		{
+			HashCode hc = hf.newHasher()
+					.putUnencodedChars(seq.substring(iter, iter+kmerSize))
+		       .hash();
+			hashes[iter] = hc.asInt();
+		}
 
-		// final int[] rabinHashes = new int[seq.numKmers(kmerSize)];
-		// for (int iter=0; iter<seq.numKmers(kmerSize); iter++)
-		// {
-		// String kmer = seq.getKmer(iter, kmerSize);
-
-		// rabinHashes[iter] =
-		// hf.newHasher(0).putUnencodedChars(kmer).hash().asInt();
-		// }
-
-		return rabinHashes;
+		return hashes;
 	}
 
 	// add new line breaks every FASTA_LINE_LENGTH characters

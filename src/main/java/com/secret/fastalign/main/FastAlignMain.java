@@ -47,9 +47,9 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
-	private static final int DEFAULT_NUM_WORDS = 1024;
+	private static final int DEFAULT_NUM_WORDS = 512;
 
-	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
+	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 2500;
 
 	private static final double DEFAULT_ACCEPT_SCORE = 0.03;
 
