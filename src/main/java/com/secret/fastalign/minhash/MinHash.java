@@ -3,6 +3,7 @@ package com.secret.fastalign.minhash;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -10,8 +11,12 @@ import java.util.HashSet;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.Utils;
 
-public final class MinHash
+public final class MinHash implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8846482698636860862L;
 	private final int[][] minHashes;
 	private final int seqLength;
 	
@@ -102,7 +107,7 @@ public final class MinHash
 	/**
 	 * @return the minHashes
 	 */
-	public final int[][] getSubSeqMinHashes()
+	public final int[][] getSubSeqMinHashArray()
 	{
 		return this.minHashes;
 	}

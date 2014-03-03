@@ -1,7 +1,13 @@
 package com.secret.fastalign.general;
 
-public final class SequenceId
+import java.io.Serializable;
+
+public final class SequenceId implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2181572437818064822L;
 	private final int id;
 	private final boolean isFwd;
 	

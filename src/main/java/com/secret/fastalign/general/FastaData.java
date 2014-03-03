@@ -12,7 +12,7 @@ import com.secret.fastalign.utils.Utils;
 public class FastaData
 {
 	private final BufferedReader fileReader;
-	private final int offset; 
+	private final int offset;
 	private String lastLine;
 	private AtomicLong numberProcessed;
 	private boolean readFullFile;
@@ -70,76 +70,85 @@ public class FastaData
 		return new FastaData(this.sequenceList);
 	}
 
-	public synchronized Sequence dequeue() throws IOException
+	public Sequence dequeue() throws IOException
 	{
-		if (this.sequenceList.isEmpty())
+		Sequence seq;
+		synchronized (this.sequenceList)
 		{
-			enqueueNextSequenceInFile();
+			if (this.sequenceList.isEmpty())
+			{
+				enqueueNextSequenceInFile();
+			}
+	
+			// get the sequence
+			seq = this.sequenceList.poll();		
 		}
 
-		//get the sequence
-		Sequence seq = this.sequenceList.poll();
-		
 		return seq;
 	}
 
-	public synchronized void enqueueFullFile() throws IOException
+	public void enqueueFullFile() throws IOException
 	{
-		while (enqueueNextSequenceInFile())	{}
+		while (enqueueNextSequenceInFile())
+		{
+		}
 	}
 
-	private synchronized boolean enqueueNextSequenceInFile() throws IOException
+	private boolean enqueueNextSequenceInFile() throws IOException
 	{
-		if (this.readFullFile)
-			return false;
-
-		// try to read the next line
-		if (this.lastLine == null)
+		synchronized (this.fileReader)
 		{
-			this.lastLine = this.fileReader.readLine();
+			if (this.readFullFile)
+				return false;
 
-			// there is no next line
+			// try to read the next line
 			if (this.lastLine == null)
 			{
-				this.fileReader.close();
-				this.readFullFile = true;
-				return false;
-			}
-		}
+				this.lastLine = this.fileReader.readLine();
 
-		// process the header
-		if (!this.lastLine.startsWith(">"))
-			throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
-
-		// process the current header
-		// parse the new header
-		// header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
-		//String header = "";
-		this.lastLine = this.fileReader.readLine();
-
-		StringBuilder fastaSeq = new StringBuilder();
-		while (true)
-		{
-			if (this.lastLine == null || this.lastLine.startsWith(">"))
-			{
-				// enqueue sequence
-				SequenceId id = new SequenceId(this.numberProcessed.intValue()+this.offset+1);
-				Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
-				this.sequenceList.add(seq);
-				this.numberProcessed.getAndIncrement();
-
+				// there is no next line
 				if (this.lastLine == null)
 				{
 					this.fileReader.close();
 					this.readFullFile = true;
+					return false;
 				}
-
-				return true;
 			}
 
-			// append the last line
-			fastaSeq.append(this.lastLine);
+			// process the header
+			if (!this.lastLine.startsWith(">"))
+				throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
+
+			// process the current header
+			// parse the new header
+			// header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
+			// String header = "";
 			this.lastLine = this.fileReader.readLine();
+
+			StringBuilder fastaSeq = new StringBuilder();
+			while (true)
+			{
+				if (this.lastLine == null || this.lastLine.startsWith(">"))
+				{
+					// enqueue sequence
+					SequenceId id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1);
+					Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
+					this.sequenceList.add(seq);
+					this.numberProcessed.getAndIncrement();
+
+					if (this.lastLine == null)
+					{
+						this.fileReader.close();
+						this.readFullFile = true;
+					}
+
+					return true;
+				}
+
+				// append the last line
+				fastaSeq.append(this.lastLine);
+				this.lastLine = this.fileReader.readLine();
+			}
 		}
 
 	}
@@ -166,12 +175,25 @@ public class FastaData
 		return null;
 	}
 
-        public Sequence[] toArray() {
-           return this.sequenceList.toArray(new Sequence[(int)this.getNumberProcessed()]);
-        }
+	public Sequence[] toArray()
+	{
+		return this.sequenceList.toArray(new Sequence[(int) this.getNumberProcessed()]);
+	}
 
 	public boolean isEmpty()
 	{
 		return this.sequenceList.isEmpty() && this.readFullFile;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#finalize()
+	 */
+	@Override
+	protected void finalize() throws Throwable
+	{
+		super.finalize();
+		this.fileReader.close();
 	}
 }
