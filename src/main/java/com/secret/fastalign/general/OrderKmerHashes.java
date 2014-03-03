@@ -1,5 +1,10 @@
 package com.secret.fastalign.general;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -11,12 +16,12 @@ public class OrderKmerHashes
 {
 	private static final class SortableIntPair implements Comparable<SortableIntPair>, Serializable
 	{
+		public final int x;
+		public final int y;
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 2525278831423582446L;
-		public final int x;
-		public final int y;
 
 		public SortableIntPair(int x, int y)
 		{
@@ -37,11 +42,41 @@ public class OrderKmerHashes
 			// return Integer.compare(this.y, p.y);
 		}
 	}
-
+	
 	private final int[][] orderedHashes;
 
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
 
+	public static OrderKmerHashes fromByteStream(DataInputStream input) throws IOException
+	{
+		try
+		{
+			//dos.writeInt(this.completeHash.length);
+			int hashLength = input.readInt();			
+			
+			int[][] orderedHashes = new int[hashLength][]; 
+			for (int iter=0; iter<hashLength; iter++)
+			{
+				//dos.writeInt(this.completeHash[iter][iter2]);
+				orderedHashes[iter] = new int[2];
+				orderedHashes[iter][0] = input.readInt();
+				orderedHashes[iter][1] = input.readInt();					
+			}
+			
+			return new OrderKmerHashes(orderedHashes);
+			
+		}
+		catch (EOFException e)
+		{
+			return null;
+		}
+	}
+
+	public OrderKmerHashes(int[][] orderedHashes)
+	{
+		this.orderedHashes = orderedHashes;
+	}
+	
 	public OrderKmerHashes(Sequence seq, int kmerSize)
 	{
 		this.orderedHashes = getFullHashes(seq, kmerSize);
@@ -49,9 +84,26 @@ public class OrderKmerHashes
 
 	public byte[] getAsByteArray()
 	{
-		return null;
-	}
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    DataOutputStream dos = new DataOutputStream(bos);
+    
+    try
+		{
+			dos.writeInt(this.orderedHashes.length);
+	    for (int iter=0; iter<this.orderedHashes.length; iter++)
+	    	for (int iter2=0; iter2<2; iter2++)
+	    		dos.writeInt(this.orderedHashes[iter][iter2]);
 
+			
+	    dos.flush();
+	    return bos.toByteArray();
+		}
+    catch (IOException e)
+    {
+    	throw new FastAlignRuntimeException("Unexpected IO error.");
+    }
+	}
+	
 	private int[][] getFullHashes(Sequence seq, int subKmerSize)
 	{
 		// compute just direct hash of sequence

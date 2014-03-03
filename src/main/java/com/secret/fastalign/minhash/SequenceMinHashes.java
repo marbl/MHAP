@@ -39,21 +39,14 @@ public final class SequenceMinHashes implements SequenceHashes
 			MinHash mainHashes = MinHash.fromByteStream(input);
 			
 			if (mainHashes==null)
-				throw new FastAlignRuntimeException("Unexpected hash read error.");
+				throw new FastAlignRuntimeException("Unexpected data read error.");
 			
-			//dos.writeInt(this.completeHash.length);
-			int hashLength = input.readInt();			
+			//dos.write(this.orderedHashes.getAsByteArray());
+			OrderKmerHashes orderedHashes = OrderKmerHashes.fromByteStream(input);
+			if (orderedHashes==null)
+				throw new FastAlignRuntimeException("Unexpected data read error.");
 			
-			int[][] completeHash = new int[hashLength][]; 
-			for (int iter=0; iter<hashLength; iter++)
-			{
-				//dos.writeInt(this.completeHash[iter][iter2]);
-				completeHash[iter] = new int[2];
-				completeHash[iter][0] = input.readInt();
-				completeHash[iter][1] = input.readInt();					
-			}
-			
-			return new SequenceMinHashes(id, mainHashes, null);
+			return new SequenceMinHashes(id, mainHashes, orderedHashes);
 			
 		}
 		catch (EOFException e)
@@ -82,6 +75,7 @@ public final class SequenceMinHashes implements SequenceHashes
 		return new SequenceMinHashes(this.id.createOffset(offset), this.mainHashes, this.orderedHashes);
 	}
 	
+	@Override
 	public byte[] getAsByteArray()
 	{
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -92,7 +86,8 @@ public final class SequenceMinHashes implements SequenceHashes
       dos.writeInt(this.id.getHeaderId());
       dos.writeBoolean(this.id.isForward());
 			dos.write(this.mainHashes.getAsByteArray());
-			  
+			dos.write(this.orderedHashes.getAsByteArray());
+			
 	    dos.flush();
 	    return bos.toByteArray();
 		}

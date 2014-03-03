@@ -14,17 +14,19 @@ public abstract class AbstractSequenceSearchMain<S extends AbstractMatchSearch<H
 	private final String inFile;
 	private final String toFile;
 	private final boolean noSelf;
+	protected final int numThreads;
 	
 	protected abstract AbstractSequenceHashStreamer<H> getSequenceHashStreamer(String file, int offset) throws IOException;
 	protected abstract S getMatchSearch(AbstractSequenceHashStreamer<H> matchSearch) throws IOException;
 	protected abstract void outputFinalStat(S matchSearch);
 	
-	public AbstractSequenceSearchMain(String processFile, String inFile, String toFile, boolean noSelf)
+	public AbstractSequenceSearchMain(String processFile, String inFile, String toFile, boolean noSelf, int numThreads)
 	{
 		this.processFile = processFile;
 		this.inFile = inFile;
 		this.toFile = toFile;
 		this.noSelf = noSelf;
+		this.numThreads = numThreads;
 	}
 	
 	public void computeMain() throws IOException
@@ -90,7 +92,7 @@ public abstract class AbstractSequenceSearchMain<S extends AbstractMatchSearch<H
 				outputString = toDirectory.getPath()+File.separator+outputString+".dat";
 				
 				//store the file to disk
-				seqStreamer.writeToBinary(outputString, false);
+				seqStreamer.writeToBinary(outputString, false, this.numThreads);
 				
 				System.err.println("Read, hashed, and stored file "+pf.getPath()+" to "+outputString+".");
 				System.err.println("Time (s): " + (System.nanoTime() - startTime)*1.0e-9);
