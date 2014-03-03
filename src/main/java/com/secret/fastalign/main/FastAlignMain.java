@@ -31,7 +31,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
-	private static final int DEFAULT_KMER_SIZE = 14;
+	private static final int DEFAULT_KMER_SIZE = 16;
 
 	private static final int DEFAULT_ORDERED_KMER_SIZE = 12;
 
@@ -43,7 +43,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private static final boolean DEFAULT_NO_SELF = false;
 
-	private static final int DEFAULT_NUM_MIN_MATCHES = 4;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 

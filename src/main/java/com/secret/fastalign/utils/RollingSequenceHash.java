@@ -1,5 +1,10 @@
 package com.secret.fastalign.utils;
 
+import com.google.common.base.Charsets;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+
 public final class RollingSequenceHash
 {
 	private final int kmerSize;
@@ -11,6 +16,18 @@ public final class RollingSequenceHash
 	
 	public final int[] hashInt(final String seq)
 	{
+		HashFunction hf = Hashing.murmur3_32(0);
+		
+		int[] hashes = new int[seq.length()-this.kmerSize+1];
+		for (int iter=0; iter<hashes.length; iter++)
+		{
+			HashCode hc = hf.newHasher()
+		       .putString(seq.substring(iter, iter+this.kmerSize), Charsets.UTF_8)
+		       .hash();
+			hashes[iter] = hc.asInt();
+		}
+		
+		/*
 		//get the string
 		final char[] seqArray = seq.toCharArray();
 		
@@ -37,6 +54,7 @@ public final class RollingSequenceHash
 			hash = ch.update(seqArray[kmerIndex-this.kmerSize], seqArray[kmerIndex]);			
 			hashes[count++] = hash;
 		}
+		*/
 		
 		return hashes;
 	}

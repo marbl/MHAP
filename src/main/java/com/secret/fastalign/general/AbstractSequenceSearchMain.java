@@ -94,6 +94,7 @@ public abstract class AbstractSequenceSearchMain<S extends AbstractMatchSearch<H
 				//store the file to disk
 				seqStreamer.writeToBinary(outputString, false, this.numThreads);
 				
+				System.err.println("Processed "+seqStreamer.getNumberProcessed()+" sequences (fwd and rev).");
 				System.err.println("Read, hashed, and stored file "+pf.getPath()+" to "+outputString+".");
 				System.err.println("Time (s): " + (System.nanoTime() - startTime)*1.0e-9);
 			}
