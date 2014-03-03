@@ -342,7 +342,6 @@
   <target name="main" depends="jar-fastalign">
   </target>
 
-  <!--Creates independent version of ROTDIF  -->
   <target name="jar-fastalign" depends="compile">
 
     <copy file="LICENSE.txt" tofile="${build.home}/classes/META-INF/LICENSE.txt"/>

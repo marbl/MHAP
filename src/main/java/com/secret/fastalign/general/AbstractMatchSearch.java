@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -13,29 +12,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.secret.fastalign.minhash.SequenceMinHashes;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public abstract class AbstractHashSearch
+public abstract class AbstractMatchSearch<H extends SequenceHashes>
 {
 	private final AtomicLong matchesProcessed;
 	private final AtomicLong sequencesSearched;
 
 	protected final int numThreads;
-	protected final int minStoreLength;
 	private final boolean storeResults;
 	protected static BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(System.out), 8*1024*1024);
 
-	public AbstractHashSearch(int numThreads, int minStoreLength, boolean storeResults)
+	public AbstractMatchSearch(int numThreads, boolean storeResults)
 	{
 		this.numThreads = numThreads;
-		this.minStoreLength = minStoreLength;
 		this.storeResults = storeResults;
 		this.matchesProcessed = new AtomicLong();
 		this.sequencesSearched = new AtomicLong();
 	}
 	
-	protected void addData(final SequenceMinHashStreamer data)
+	protected void addData(final AbstractSequenceHashStreamer<H> data)
 	{
 		//figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
@@ -50,7 +46,7 @@ public abstract class AbstractHashSearch
 				{
 					try
 					{
-			    	SequenceMinHashes seqHashes = data.dequeue(false);
+			    	H seqHashes = data.dequeue(false);
 				    while(seqHashes != null)
 				    {
 			    		addSequence(seqHashes);
@@ -86,9 +82,9 @@ public abstract class AbstractHashSearch
 	  }
 	}
 
-	protected abstract boolean addSequence(SequenceMinHashes seqHashes);
+	protected abstract boolean addSequence(H seqHashes);
 	
-	public ArrayList<MatchResult> findMatches(final double acceptScore)
+	public ArrayList<MatchResult> findMatches()
 	{
 		//figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
@@ -112,13 +108,13 @@ public abstract class AbstractHashSearch
 
 	  			while (nextSequence!=null)
 			    {		    		
-		    		SequenceMinHashes sequenceHashes = getStoredSequenceHash(nextSequence);
+		    		H sequenceHashes = getStoredSequenceHash(nextSequence);
 		    		
 		    		//only search the forward sequences
-	      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, true));
+	      		localMatches.addAll(findMatches(sequenceHashes, true));
 	      		
 	      		//record search
-	      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
+	      		AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
 		    		
 	      		//get next sequence
 		    		nextSequence = seqList.poll();
@@ -127,9 +123,9 @@ public abstract class AbstractHashSearch
 		    		if (nextSequence==null || localMatches.size()>20000)
 		    		{
 			    		//count the number of matches
-			  			AbstractHashSearch.this.matchesProcessed.getAndAdd(localMatches.size());
+			  			AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
 				    	
-			  			if (AbstractHashSearch.this.storeResults)
+			  			if (AbstractMatchSearch.this.storeResults)
 			  			{	  			
 				    		//combine the results
 				    		synchronized (combinedList)
@@ -161,11 +157,13 @@ public abstract class AbstractHashSearch
 	  	execSvc.shutdownNow();
 	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
 	  }
-		
-		return combinedList;
+	  
+	  flushOutput();
+
+	  return combinedList;
 	}
 	
-	public ArrayList<MatchResult> findMatches(final SequenceMinHashStreamer data, final double acceptScore)
+	public ArrayList<MatchResult> findMatches(final AbstractSequenceHashStreamer<H> data) throws IOException
 	{
 		//figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
@@ -185,15 +183,15 @@ public abstract class AbstractHashSearch
 	  			
 	  			try
 	  			{
-		  			SequenceMinHashes sequenceHashes = data.dequeue(true);
+		  			H sequenceHashes = data.dequeue(true);
 	
 		  			while (sequenceHashes!=null)
 				    {		    		
 			    		//only search the forward sequences
-		      		localMatches.addAll(findMatches(sequenceHashes, acceptScore, false));
+		      		localMatches.addAll(findMatches(sequenceHashes, false));
 	
 		      		//record search
-		      		AbstractHashSearch.this.sequencesSearched.getAndIncrement();
+		      		AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
 		      		
 		      		//get the sequence hashes
 		      		sequenceHashes = data.dequeue(true);			    		
@@ -202,9 +200,9 @@ public abstract class AbstractHashSearch
 			    		if (sequenceHashes==null || localMatches.size()>20000)
 			    		{
 				    		//count the number of matches
-				  			AbstractHashSearch.this.matchesProcessed.getAndAdd(localMatches.size());
+				  			AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
 					    	
-				  			if (AbstractHashSearch.this.storeResults)
+				  			if (AbstractMatchSearch.this.storeResults)
 				  			{	  			
 					    		//combine the results
 					    		synchronized (combinedList)
@@ -242,19 +240,33 @@ public abstract class AbstractHashSearch
 	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
 	  }
 		
+	  flushOutput();
+	  
 		return combinedList;	
 	}
 
-	protected abstract List<MatchResult> findMatches(SequenceMinHashes hashes, double acceptScore, boolean allToAll);
+	protected abstract List<MatchResult> findMatches(H hashes, boolean allToAll);
 
 	public long getMatchesProcessed()
 	{
 		return this.matchesProcessed.get();
 	}
 	
-	public abstract Collection<SequenceId> getStoredForwardSequenceIds();
+	public abstract List<SequenceId> getStoredForwardSequenceIds();
 	
-	public abstract SequenceMinHashes getStoredSequenceHash(SequenceId id);
+	public abstract H getStoredSequenceHash(SequenceId id);
+
+	protected void flushOutput()
+	{
+		try
+		{
+			outWriter.flush();
+		}
+		catch (IOException e)
+		{
+			throw new FastAlignRuntimeException(e);
+		}
+	}
 
 	protected void outputResults(List<MatchResult> matches)
 	{
@@ -295,7 +307,7 @@ public abstract class AbstractHashSearch
 	 */
 	public static void setOutWriter(BufferedWriter outWriter)
 	{
-		AbstractHashSearch.outWriter = outWriter;
+		AbstractMatchSearch.outWriter = outWriter;
 	}
 
 }
