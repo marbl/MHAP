@@ -78,7 +78,7 @@ public final class SequenceMinHashes implements SequenceHashes
 	@Override
 	public byte[] getAsByteArray()
 	{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(this.mainHashes.numHashes()*4+this.orderedHashes.size()*2);
     DataOutputStream dos = new DataOutputStream(bos);
     
     try

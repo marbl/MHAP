@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
+import com.secret.fastalign.utils.ReadBuffer;
 
 public abstract class AbstractMatchSearch<H extends SequenceHashes>
 {
@@ -46,7 +47,8 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 				{
 					try
 					{
-			    	H seqHashes = data.dequeue(false);
+						ReadBuffer buf = new ReadBuffer();
+			    	H seqHashes = data.dequeue(false, buf);
 				    while(seqHashes != null)
 				    {
 			    		addSequence(seqHashes);
@@ -55,7 +57,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 				    	if (currCount%5000==0)
 				    		System.err.println("Current # sequences stored: "+currCount+"...");
 				    	
-				    	seqHashes = data.dequeue(false);
+				    	seqHashes = data.dequeue(false, buf);
 				    }
 			    }
 					catch (IOException e)
@@ -183,7 +185,9 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 	  			
 	  			try
 	  			{
-		  			H sequenceHashes = data.dequeue(true);
+	  				ReadBuffer buf = new ReadBuffer();
+	  				
+		  			H sequenceHashes = data.dequeue(true, buf);
 	
 		  			while (sequenceHashes!=null)
 				    {		    		
@@ -194,7 +198,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		      		AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
 		      		
 		      		//get the sequence hashes
-		      		sequenceHashes = data.dequeue(true);			    		
+		      		sequenceHashes = data.dequeue(true, buf);			    		
 
 			    		//output stored results
 			    		if (sequenceHashes==null || localMatches.size()>20000)
