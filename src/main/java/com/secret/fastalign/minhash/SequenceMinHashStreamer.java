@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.secret.fastalign.general.AbstractSequenceHashStreamer;
 import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.Sequence;
+import com.secret.fastalign.utils.ReadBuffer;
 import com.secret.fastalign.utils.Utils;
 
 public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<SequenceMinHashes>
@@ -81,7 +82,7 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 	}
 
 	@Override
-	protected SequenceMinHashes readFromBinary() throws IOException
+	protected SequenceMinHashes readFromBinary(ReadBuffer buf) throws IOException
 	{
 		byte[] byteArray = null;
 		synchronized (this.buffInput)
@@ -95,10 +96,11 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 				int byteSize = this.buffInput.readInt();
 				
 				//allocate the array
-				byteArray = new byte[byteSize];
+				byteArray = buf.getBuffer(byteSize);
+				//byteArray = new byte[byteSize];				
 				
 				//read that many bytes
-				this.buffInput.read(byteArray);
+				this.buffInput.read(byteArray, 0, byteSize);
 			}
 			catch(EOFException e)
 			{

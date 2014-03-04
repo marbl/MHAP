@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
+import com.secret.fastalign.utils.ReadBuffer;
 import com.secret.fastalign.utils.Utils;
 
 public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
@@ -20,7 +22,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 	private final AtomicLong numberProcessed;
 	private final boolean readingFasta;
 	private final ConcurrentLinkedQueue<H> sequenceHashList;
-
+	
 	public AbstractSequenceHashStreamer(FastaData data, boolean readingFasta)
 	{
 		this.fastaData = data;
@@ -29,14 +31,14 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		this.numberProcessed = new AtomicLong();
 	}
 	
-	public H dequeue(boolean fwdOnly) throws IOException
+	public H dequeue(boolean fwdOnly, ReadBuffer buf) throws IOException
 	{
-		enqueue(fwdOnly);
+		enqueue(fwdOnly, buf);
 
 		return this.sequenceHashList.poll();
 	}
 	
-	private boolean enqueue(boolean fwdOnly) throws IOException
+	private boolean enqueue(boolean fwdOnly, ReadBuffer buf) throws IOException
 	{
 		H seqHashes;
 		if (this.readingFasta)
@@ -65,12 +67,12 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 			}
 		}
 		else
-		{			
+		{
 			//read the binary file
-			seqHashes = readFromBinary();
+			seqHashes = readFromBinary(buf);
 			while (seqHashes!=null && fwdOnly && !seqHashes.getSequenceId().isForward())
 			{
-				seqHashes = readFromBinary();
+				seqHashes = readFromBinary(buf);
 			}
 			
 			//do nothing and return
@@ -100,9 +102,11 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 				@Override
 				public void run()
 				{
+					ReadBuffer buf = new ReadBuffer();
+					
 	        try
 					{
-						while (enqueue(fwdOnly))
+						while (enqueue(fwdOnly, buf))
 						{
 						}
 					}
@@ -165,7 +169,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		return this.getNumberProcessed();
 	}
 	
-	protected abstract H readFromBinary() throws IOException;
+	protected abstract H readFromBinary(ReadBuffer buf) throws IOException;
 
 	public void writeToBinary(String file, final boolean fwdOnly, int numThreads) throws IOException
 	{
@@ -187,21 +191,19 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
   				public void run()
   				{
   	        H seqHashes;
+  	        ReadBuffer buf = new ReadBuffer();
+  	        
 
   	        try
 						{
-							seqHashes = dequeue(fwdOnly);
+							seqHashes = dequeue(fwdOnly, buf);
 	  	        while (seqHashes!=null)
 	  	        {
   	        		byte[] byteArray = seqHashes.getAsByteArray();
   	        		int arraySize = byteArray.length;
   	        		
   	        		//store the size as byte array
-  	        		byte[] byteSize = new byte[] {
-  	                (byte)(arraySize >>> 24),
-  	                (byte)(arraySize >>> 16),
-  	                (byte)(arraySize >>> 8),
-  	                (byte)arraySize};
+  	        		byte[] byteSize = ByteBuffer.allocate(4).putInt(arraySize).array();
   	        		
 	  	        	synchronized (finalOutput)
 								{	  	        		
@@ -209,7 +211,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		  	        	finalOutput.write(byteArray);									
 								}
 	  	        	
-	  	        	seqHashes = dequeue(fwdOnly);
+	  	        	seqHashes = dequeue(fwdOnly, buf);
 	  	        }
 						}
 						catch (IOException e)

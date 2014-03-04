@@ -72,7 +72,7 @@ public class OrderKmerHashes
 	{
 		try
 		{
-			//dos.writeInt(this.completeHash.length);
+			//dos.writeInt(size());
 			int hashLength = input.readInt();			
 			
 			int[][][] orderedHashes = allocateMemory(hashLength);
@@ -81,7 +81,7 @@ public class OrderKmerHashes
 			int i = 0;
 			for (int iter=0; iter<hashLength; iter++)
 			{
-				if (i>=orderedHashes[division].length)
+				if (orderedHashes[division].length<=i)
 				{
 					division++;
 					i = 0;
@@ -115,7 +115,7 @@ public class OrderKmerHashes
 
 	public byte[] getAsByteArray()
 	{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(size()*2);
     DataOutputStream dos = new DataOutputStream(bos);
     
     try
