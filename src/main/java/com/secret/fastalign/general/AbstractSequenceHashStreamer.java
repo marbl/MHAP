@@ -69,10 +69,10 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		else
 		{
 			//read the binary file
-			seqHashes = readFromBinary(buf);
+			seqHashes = readFromBinary(buf, fwdOnly);
 			while (seqHashes!=null && fwdOnly && !seqHashes.getSequenceId().isForward())
 			{
-				seqHashes = readFromBinary(buf);
+				seqHashes = readFromBinary(buf, fwdOnly);
 			}
 			
 			//do nothing and return
@@ -169,7 +169,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		return this.getNumberProcessed();
 	}
 	
-	protected abstract H readFromBinary(ReadBuffer buf) throws IOException;
+	protected abstract H readFromBinary(ReadBuffer buf, boolean fwdOnly) throws IOException;
 
 	public void writeToBinary(String file, final boolean fwdOnly, int numThreads) throws IOException
 	{
@@ -201,12 +201,13 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 	  	        {
   	        		byte[] byteArray = seqHashes.getAsByteArray();
   	        		int arraySize = byteArray.length;
+  	        		byte isFwd = seqHashes.getSequenceId().isForward() ? (byte)1 :(byte)0;
   	        		
   	        		//store the size as byte array
-  	        		byte[] byteSize = ByteBuffer.allocate(4).putInt(arraySize).array();
+  	        		byte[] byteSize = ByteBuffer.allocate(5).put(isFwd).putInt(arraySize).array();
   	        		
 	  	        	synchronized (finalOutput)
-								{	  	        		
+								{
 	  	        		finalOutput.write(byteSize);
 		  	        	finalOutput.write(byteArray);									
 								}

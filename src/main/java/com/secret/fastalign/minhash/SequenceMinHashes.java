@@ -31,9 +31,11 @@ public final class SequenceMinHashes implements SequenceHashes
 		{
 			//input.
 			
-			//dos.writeInt(this.id.getHeaderId());
 			//dos.writeBoolean(this.id.isForward());
-			SequenceId id = new SequenceId(input.readInt()+offset, input.readBoolean());
+			boolean isFwd = input.readBoolean();
+			
+			//dos.writeInt(this.id.getHeaderId());
+			SequenceId id = new SequenceId(input.readInt()+offset, isFwd);
 			
 			//dos.write(this.mainHashes.getAsByteArray());
 			MinHash mainHashes = MinHash.fromByteStream(input);
@@ -83,8 +85,8 @@ public final class SequenceMinHashes implements SequenceHashes
     
     try
 		{
-      dos.writeInt(this.id.getHeaderId());
       dos.writeBoolean(this.id.isForward());
+      dos.writeInt(this.id.getHeaderId());
 			dos.write(this.mainHashes.getAsByteArray());
 			dos.write(this.orderedHashes.getAsByteArray());
 			

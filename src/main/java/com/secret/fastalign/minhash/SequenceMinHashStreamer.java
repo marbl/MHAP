@@ -82,7 +82,7 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 	}
 
 	@Override
-	protected SequenceMinHashes readFromBinary(ReadBuffer buf) throws IOException
+	protected SequenceMinHashes readFromBinary(ReadBuffer buf, boolean fwdOnly) throws IOException
 	{
 		byte[] byteArray = null;
 		synchronized (this.buffInput)
@@ -92,15 +92,24 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 			
 			try
 			{
-				//get the size in bytes
-				int byteSize = this.buffInput.readInt();
-				
-				//allocate the array
-				byteArray = buf.getBuffer(byteSize);
-				//byteArray = new byte[byteSize];				
-				
-				//read that many bytes
-				this.buffInput.read(byteArray, 0, byteSize);
+				boolean keepReading = true;
+				while(keepReading)
+				{
+					byte isFwd = this.buffInput.readByte();
+					
+					if (!fwdOnly || isFwd==1)
+						keepReading = false;
+					
+					//get the size in bytes
+					int byteSize = this.buffInput.readInt();
+					
+					//allocate the array
+					byteArray = buf.getBuffer(byteSize);
+					//byteArray = new byte[byteSize];				
+					
+					//read that many bytes
+					this.buffInput.read(byteArray, 0, byteSize);
+				}
 			}
 			catch(EOFException e)
 			{
