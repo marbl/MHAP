@@ -43,7 +43,6 @@ public class EstimateROC {
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>();
 	private HashSet<String> ovlNames = new HashSet<String>();
 	private HashMap<Integer, String> ovlToName = new HashMap<Integer, String>();
-	//private String[] ovlToName = null;
 	
 	private int minOvlLen = DEFAULT_MIN_OVL;
 	private int numTrials = DEFAULT_NUM_TRIALS;
@@ -69,6 +68,10 @@ public class EstimateROC {
 			printUsage();
 			System.exit(1);
 		}
+		boolean full = false;
+		if (args.length > 4 && Boolean.parseBoolean(args[4])) {
+			full = true;
+		}
 		EstimateROC g = null;
 		if (args.length > 3) {
 			g = new EstimateROC(Integer.parseInt(args[2]), Integer.parseInt(args[3]));
@@ -78,28 +81,49 @@ public class EstimateROC {
 			g = new EstimateROC();
 		}
 		
+		System.err.println("Running, reference: " + args[0] + " matches: " + args[1]);
+		System.err.println("Number trials:  " + (full ? "all" : g.numTrials));
+		System.err.println("Minimum ovl:  " + g.minOvlLen);
+		
 		// load and cluster reference
 		System.err.print("Loading reference...");
+		long startTime = System.nanoTime();
+		long totalTime = startTime;
 		g.processReference(args[0]);
-		System.err.println("done.");
+		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 
 		// load matches
 		System.err.print("Loading matches...");
+		startTime = System.nanoTime();
 		g.processOverlaps(args[1]);
-		System.err.println("done");
+		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 
-		System.err.println("Computing sensitivity...");
-		g.estimateSensitivity();
-
-		// now estimate FP/TN by picking random match and checking reference
-		// mapping
-		System.err.println("Computing specificity...");
-		g.estimateSpecificity();
-
-		// last but not least PPV, pick random subset of our matches and see what percentage are true
-		System.err.println("Computing PPV...");
-		g.estimatePPV();
-
+		if (args.length > 4 && Boolean.parseBoolean(args[4])) {
+			System.err.print("Computing full statistics O(" + g.seqToName.size() + "^2) operations!...");
+			startTime = System.nanoTime();
+			g.fullEstimate();
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
+		} else {
+			System.err.print("Computing sensitivity...");
+			startTime = System.nanoTime();
+			g.estimateSensitivity();
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
+	
+			// now estimate FP/TN by picking random match and checking reference
+			// mapping
+			System.err.print("Computing specificity...");
+			startTime = System.nanoTime();
+			g.estimateSpecificity();
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
+	
+			// last but not least PPV, pick random subset of our matches and see what percentage are true
+			System.err.print("Computing PPV...");
+			startTime = System.nanoTime();
+			g.estimatePPV();
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
+		}
+		System.err.println("Total time: " + (System.nanoTime() - totalTime) * 1.0e-9 + "s.");
+		
 		System.out.println("Estimated sensitivity:\t"
 				+ Utils.DECIMAL_FORMAT.format((double) g.tp / (g.tp + g.fn)));
 		System.out.println("Estimated specificity:\t"
@@ -107,7 +131,7 @@ public class EstimateROC {
 		System.out.println("Estimated PPV:\t "
 				+ Utils.DECIMAL_FORMAT.format(g.ppv));
 	}
-	
+
 	public EstimateROC() {
 		this(DEFAULT_MIN_OVL, DEFAULT_NUM_TRIALS);
 	}
@@ -146,6 +170,19 @@ public class EstimateROC {
 	private String pickRandomMatch() {
 		int val = generator.nextInt(ovlToName.size());
 		return ovlToName.get(val);
+	}
+	
+	private int getOverlapSize(String id, String id2) {
+		String chr = seqToChr.get(id);
+		String chr2 = seqToChr.get(id2);
+		Pair p1 = seqToPosition.get(id);
+		Pair p2 = seqToPosition.get(id2);
+		if (!chr.equalsIgnoreCase(chr2)) {
+			System.err.println("Error: comparing wrong chromosomes!");
+			System.exit(1);
+		}
+		return Utils.getRangeOverlap(p1.first, (int) p1.second,
+				p2.first, (int) p2.second);
 	}
 
 	private HashSet<String> getSequenceMatches(String id, int min) {
@@ -297,7 +334,7 @@ public class EstimateROC {
 	private void estimateSpecificity() {
 		long numFPCompared = 0;
 
-		// we estimate FP/TN by randomly picking two seqeunces
+		// we estimate FP/TN by randomly picking two sequences
 		for (int i = 0; i < numTrials; i++) {
 			// pick cluster
 			String id = pickRandomSequence();
@@ -336,5 +373,31 @@ public class EstimateROC {
 		
 		// now our formula for PPV. Estimate percent of our matches which are true
 		ppv = (double)numTP / numTrials;
+	}
+	
+	private void fullEstimate() {
+		for (int i = 0; i < seqToName.size(); i++) {
+			String id = seqToName.get(i);
+			for (int j = i+1; j < seqToName.size(); j++) {
+				String id2 = seqToName.get(j);
+				if (id == null || id2 == null) { continue; }
+				HashSet<String> matches = getSequenceMatches(id, 0);
+
+				if (!overlapExists(id, id2)) {
+					if (!matches.contains(id2)) {
+						tn++;
+					} else if (getOverlapSize(id, id2) > minOvlLen) {
+						fn++;
+					}
+				} else {
+					if (matches.contains(id2)) {
+						tp++;
+					} else {
+						fp++;
+					}
+				}
+			}
+		}
+		ppv = (double)tp / (tp+fp);
 	}
 }
