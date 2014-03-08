@@ -3,12 +3,12 @@ package com.secret.fastalign.simhash;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.Utils;
 
-public final class SimHash extends AbstractSequenceBitHash<SimHash>
+public final class SimHash
 {
+	private long[] bits;
+	
 	public SimHash(Sequence seq, int kmerSize, int numberWords)
 	{
-		super(seq);
-		
 		//compute the hashes
 		long[][] hashes = Utils.computeKmerHashes(seq, kmerSize, numberWords);
 		

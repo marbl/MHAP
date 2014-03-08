@@ -41,7 +41,7 @@ public class GetHistogramStats {
 		double sum = 0;
 		int total = 0;
 
-		for (int val : histogram.keySet()) {
+		for (int val : this.histogram.keySet()) {
 			long count = this.histogram.get(val);
 			for (int i = 0; i < count; i++) {
 				total++;

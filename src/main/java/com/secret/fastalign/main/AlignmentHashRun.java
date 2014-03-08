@@ -11,6 +11,7 @@ import com.secret.fastalign.general.FastaData;
 import com.secret.fastalign.general.MatchResult;
 import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.minhash.MinHashSearch;
+import com.secret.fastalign.minhash.SequenceMinHashStreamer;
 
 public class AlignmentHashRun 
 {	
@@ -24,10 +25,6 @@ public class AlignmentHashRun
 
 	private static final double DEFAULT_THRESHOLD = 0.00;
 
-	private static final double DEFAULT_DATA_ERROR = 0.15;
-
-	private static final boolean DEFAULT_LARGE_MEMORY = true;
-	
 	public static void main(String[] args) throws Exception {
 		String inFile = null;
 		int kmerSize = DEFAULT_KMER_SIZE;
@@ -53,29 +50,26 @@ public class AlignmentHashRun
 		System.err.println("num hashes\t" + numWords);
 
 		LogManager.getLogManager().reset();
-		
-		double kmerError = MinHashSearch.probabilityKmerMatches(DEFAULT_DATA_ERROR, kmerSize);
-		
-		System.out.println("Probability of shared kmer in equal string: "+kmerError);
-		
+				
 		// read and index the kmers
 		long startTime = System.nanoTime();
 
-		FastaData data = new FastaData(inFile);
+		FastaData data = new FastaData(inFile, 0);
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		MinHashSearch hashSearch = new MinHashSearch(data.clone(), kmerSize, numWords, DEFAULT_NUM_MIN_MATCHES, DEFAULT_SUB_SEQUENCE_SIZE, 
-				numThreads, DEFAULT_LARGE_MEMORY, true, null, 800, 0);
-		System.err.println("Processed "+data.getNumberProcessed()+" sequences.");
+		SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, 0);
+
+		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numWords, DEFAULT_NUM_MIN_MATCHES, numThreads, true, 0, 800, DEFAULT_THRESHOLD);
+		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" sequences.");
 		System.err.println("Time (s) to hash: " + (System.nanoTime() - startTime)*1.0e-9);
 		
-		System.out.println("Read in and processed "+data.getNumberProcessed()+" sequences.");
+		System.out.println("Read in and processed "+seqStreamer.getNumberProcessed()+" sequences.");
 
 
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
 		startTime = System.nanoTime();
 		
-		ArrayList<MatchResult> results = hashSearch.findMatches(DEFAULT_THRESHOLD);
+		ArrayList<MatchResult> results = hashSearch.findMatches();
 		
 		System.err.println("Time (s) to score: " + (System.nanoTime() - startTime)*1.0e-9);
 		
