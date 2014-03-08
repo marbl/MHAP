@@ -1,18 +1,11 @@
 package com.secret.fastalign.simhash;
 
-import com.secret.fastalign.general.AbstractSequenceHashes;
-import com.secret.fastalign.general.Sequence;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 
-public abstract class AbstractSequenceBitHash<T extends AbstractSequenceBitHash<T>> extends AbstractSequenceHashes<T> implements VectorHash<T>, Comparable<T>
+public abstract class AbstractSequenceBitHash<T extends AbstractSequenceBitHash<T>> implements VectorHash<T>, Comparable<T>
 {
 	protected long bits[];
 	
-	public AbstractSequenceBitHash(Sequence seq)
-	{
-		super(seq);
-	}
-
 	public final double adjScore(T sh)
 	{
 		double score = jaccord(sh);

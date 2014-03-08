@@ -12,6 +12,7 @@ import com.secret.fastalign.utils.Utils;
 public class FastaData
 {
 	private final BufferedReader fileReader;
+	private final int offset;
 	private String lastLine;
 	private AtomicLong numberProcessed;
 	private boolean readFullFile;
@@ -27,9 +28,10 @@ public class FastaData
 		this.lastLine = null;
 		this.readFullFile = true;
 		this.numberProcessed = new AtomicLong(this.sequenceList.size());
+		this.offset = 0;
 	}
 
-	public FastaData(String file) throws IOException
+	public FastaData(String file, int offset) throws IOException
 	{
 		try
 		{
@@ -40,6 +42,7 @@ public class FastaData
 			throw new FastAlignRuntimeException(e);
 		}
 
+		this.offset = offset;
 		this.lastLine = null;
 		this.readFullFile = false;
 		this.numberProcessed = new AtomicLong(0);
@@ -67,74 +70,85 @@ public class FastaData
 		return new FastaData(this.sequenceList);
 	}
 
-	public synchronized Sequence dequeue() throws IOException
+	public Sequence dequeue() throws IOException
 	{
-		if (this.sequenceList.isEmpty())
-			enqueueNextSequenceInFile();
-
-		return this.sequenceList.poll();
-	}
-
-	public synchronized void enqueue(Sequence seq)
-	{
-		this.sequenceList.add(seq);
-		this.numberProcessed.getAndIncrement();
-	}
-
-	public synchronized void enqueueFullFile() throws IOException
-	{
-		while (enqueueNextSequenceInFile())	{}
-	}
-
-	private synchronized boolean enqueueNextSequenceInFile() throws IOException
-	{
-		if (this.readFullFile)
-			return false;
-
-		// try to read the next line
-		if (this.lastLine == null)
+		Sequence seq;
+		synchronized (this.sequenceList)
 		{
-			this.lastLine = this.fileReader.readLine();
-
-			// there is no next line
-			if (this.lastLine == null)
+			if (this.sequenceList.isEmpty())
 			{
-				this.fileReader.close();
-				this.readFullFile = true;
-				return false;
+				enqueueNextSequenceInFile();
 			}
+	
+			// get the sequence
+			seq = this.sequenceList.poll();		
 		}
 
-		// process the header
-		if (!this.lastLine.startsWith(">"))
-			throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
+		return seq;
+	}
 
-		// process the current header
-		// parse the new header
-		// header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
-		String header = "";
-		this.lastLine = this.fileReader.readLine();
-
-		StringBuilder fastaSeq = new StringBuilder();
-		while (true)
+	public void enqueueFullFile() throws IOException
+	{
+		while (enqueueNextSequenceInFile())
 		{
-			if (this.lastLine == null || this.lastLine.startsWith(">"))
-			{
-				// enqueue sequence
-				enqueue(new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), new SequenceId(header)));
+		}
+	}
 
+	private boolean enqueueNextSequenceInFile() throws IOException
+	{
+		synchronized (this.fileReader)
+		{
+			if (this.readFullFile)
+				return false;
+
+			// try to read the next line
+			if (this.lastLine == null)
+			{
+				this.lastLine = this.fileReader.readLine();
+
+				// there is no next line
 				if (this.lastLine == null)
 				{
 					this.fileReader.close();
 					this.readFullFile = true;
+					return false;
 				}
-
-				return true;
 			}
 
-			// append the last line
-			fastaSeq.append(this.lastLine);
+			// process the header
+			if (!this.lastLine.startsWith(">"))
+				throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
+
+			// process the current header
+			// parse the new header
+			// header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
+			// String header = "";
 			this.lastLine = this.fileReader.readLine();
+
+			StringBuilder fastaSeq = new StringBuilder();
+			while (true)
+			{
+				if (this.lastLine == null || this.lastLine.startsWith(">"))
+				{
+					// enqueue sequence
+					SequenceId id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1);
+					Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
+					this.sequenceList.add(seq);
+					this.numberProcessed.getAndIncrement();
+
+					if (this.lastLine == null)
+					{
+						this.fileReader.close();
+						this.readFullFile = true;
+					}
+
+					return true;
+				}
+
+				// append the last line
+				fastaSeq.append(this.lastLine);
+				this.lastLine = this.fileReader.readLine();
+			}
 		}
 
 	}
@@ -161,12 +175,25 @@ public class FastaData
 		return null;
 	}
 
-        public Sequence[] toArray() {
-           return this.sequenceList.toArray(new Sequence[(int)this.getNumberProcessed()]);
-        }
+	public Sequence[] toArray()
+	{
+		return this.sequenceList.toArray(new Sequence[(int) this.getNumberProcessed()]);
+	}
 
 	public boolean isEmpty()
 	{
 		return this.sequenceList.isEmpty() && this.readFullFile;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#finalize()
+	 */
+	@Override
+	protected void finalize() throws Throwable
+	{
+		super.finalize();
+		this.fileReader.close();
 	}
 }
