@@ -15,6 +15,9 @@ import com.secret.fastalign.utils.IntervalTree;
 import com.secret.fastalign.utils.Utils;
 
 public class EstimateROC {
+	private static final int DEFAULT_NUM_TRIALS = 1000;
+	private static final int DEFAULT_MIN_OVL = 500;
+	
 	private static class Pair {
 		public int first;
 		public int second;
@@ -37,13 +40,13 @@ public class EstimateROC {
 	private HashMap<String, IntervalTree<Integer>> clusters = new HashMap<String, IntervalTree<Integer>>();
 	private HashMap<String, String> seqToChr = new HashMap<String, String>();
 	private HashMap<String, Pair> seqToPosition = new HashMap<String, Pair>();
-	//private String[] seqToName = null;
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>();
 	private HashSet<String> ovlNames = new HashSet<String>();
-	private String[] ovlToName = null;
+	private HashMap<Integer, String> ovlToName = new HashMap<Integer, String>();
+	//private String[] ovlToName = null;
 	
-	private int minOvlLen = 500;
-	private int numTrials = 1000;
+	private int minOvlLen = DEFAULT_MIN_OVL;
+	private int numTrials = DEFAULT_NUM_TRIALS;
 	private long tp = 0;
 	private long fn = 0;
 	private long tn = 0;
@@ -62,17 +65,19 @@ public class EstimateROC {
 	}
 
 	public static void main(String[] args) throws Exception {
-		int numTrials = 5000;
-
-		if (args.length < 3) {
+		if (args.length < 2) {
 			printUsage();
 			System.exit(1);
 		}
+		EstimateROC g = null;
 		if (args.length > 3) {
-			numTrials = Integer.parseInt(args[3]);
+			g = new EstimateROC(Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+		} else if (args.length > 2) {
+			g = new EstimateROC(Integer.parseInt(args[2]));
+		} else {
+			g = new EstimateROC();
 		}
-		EstimateROC g = new EstimateROC(Integer.parseInt(args[2]), numTrials);
-
+		
 		// load and cluster reference
 		System.err.print("Loading reference...");
 		g.processReference(args[0]);
@@ -102,7 +107,15 @@ public class EstimateROC {
 		System.out.println("Estimated PPV:\t "
 				+ Utils.DECIMAL_FORMAT.format(g.ppv));
 	}
+	
+	public EstimateROC() {
+		this(DEFAULT_MIN_OVL, DEFAULT_NUM_TRIALS);
+	}
 
+	public EstimateROC(int minOvlLen) {
+		this(minOvlLen, DEFAULT_NUM_TRIALS);
+	}
+	
 	@SuppressWarnings("unused")
 	public EstimateROC(int minOvlLen, int numTrials) {
 		this.minOvlLen = minOvlLen;
@@ -131,8 +144,8 @@ public class EstimateROC {
 	}
 	
 	private String pickRandomMatch() {
-		int val = generator.nextInt(ovlToName.length);
-		return ovlToName[val];
+		int val = generator.nextInt(ovlToName.size());
+		return ovlToName.get(val);
 	}
 
 	private HashSet<String> getSequenceMatches(String id, int min) {
@@ -208,9 +221,10 @@ public class EstimateROC {
 				continue;
 			}
 			ovlNames.add(ovlName);
+			ovlToName.put(counter, ovlName);
 			counter++;
 		}
-		ovlToName = ovlNames.toArray(new String[counter]);
+//		ovlToName = ovlNames.toArray(new String[counter]);
 	}
 
 	/**
