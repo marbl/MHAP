@@ -19,6 +19,7 @@ public class EstimateROC {
 	private static class Pair {
 		public int first;
 		public int second;
+
 		public Pair(int first, int second) {
 			this.first = first;
 			this.second = second;
@@ -39,7 +40,6 @@ public class EstimateROC {
 	private HashSet<String> chrs = new HashSet<String>();
 	private TreeMap<String, Pair> seqToPosition = new TreeMap<String, Pair>();
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>();
-	private HashMap<String, HashSet<String>> overlaps = new HashMap<String, HashSet<String>>();
 	private HashSet<String> ovlNames = new HashSet<String>();
 
 	private int minOvlLen = 500;
@@ -73,15 +73,21 @@ public class EstimateROC {
 		EstimateROC g = new EstimateROC(Integer.parseInt(args[2]));
 
 		// load and cluster reference
+		System.err.print("Loading reference...");
 		g.processReference(args[0]);
+		System.err.println("done.");
 
 		// load matches
+		System.err.print("Loading matches...");
 		g.processOverlaps(args[1]);
+		System.err.println("done");
 
+		System.err.println("Computing sensitivity...");
 		g.estimateSensitivity(NUM_TP_TRIALS);
 
 		// now estimate FP/TN by picking random match and checking reference
 		// mapping
+		System.err.println("Computing specificity...");
 		g.estimateSpecificity(NUM_FP_TRIALS);
 
 		System.out.println("Estimated sensitivity:\t"
@@ -109,6 +115,10 @@ public class EstimateROC {
 		generator = new Random(seed);
 	}
 
+	private String getOvlName(String id, String id2) {
+		return (id.compareTo(id2) <= 0 ? id + "_" + id2 : id2
+				+ "_" + id);
+	}
 	private String pickRandomSequence() {
 		int val = generator.nextInt(seqToName.size());
 		return seqToName.get(val);
@@ -126,7 +136,10 @@ public class EstimateROC {
 			String id2 = seqToName.get(it.next());
 			Pair p2 = seqToPosition.get(id2);
 			String chr2 = seqToChr.get(id2);
-			if (!chr.equalsIgnoreCase(chr2)) { System.err.println("Error: comparing wrong chromosomes!"); System.exit(1); }
+			if (!chr.equalsIgnoreCase(chr2)) {
+				System.err.println("Error: comparing wrong chromosomes!");
+				System.exit(1);
+			}
 			int overlap = Utils.getRangeOverlap(p1.first, (int) p1.second,
 					p2.first, (int) p2.second);
 			if (overlap >= min && !id.equalsIgnoreCase(id2)) {
@@ -138,30 +151,36 @@ public class EstimateROC {
 	}
 
 	@SuppressWarnings("unused")
+	private String[] getOverlapInfo(String line) {
+		String[] result = new String[2];
+		String[] splitLine = line.trim().split("\\s+");
+
+		if (splitLine.length == 7) {
+			result[0]= splitLine[0];
+			result[1] = splitLine[1];
+			double score = Double.parseDouble(splitLine[5]) * 5;
+			int aoffset = Integer.parseInt(splitLine[3]);
+			int boffset = Integer.parseInt(splitLine[4]);
+			boolean isFwd = ("N".equals(splitLine[2]));
+		} else if (splitLine.length == 13) {
+			result[0] = splitLine[0];
+			if (result[0].indexOf("/") != -1) {
+				result[0] = result[0].substring(0, splitLine[0].indexOf("/"));
+			}
+			result[1] = splitLine[1];
+		}
+		
+		return result;
+	}
 	private void processOverlaps(String file) throws Exception {
 		BufferedReader bf = new BufferedReader(new InputStreamReader(
 				new FileInputStream(file)));
 
 		String line = null;
 		while ((line = bf.readLine()) != null) {
-			String[] splitLine = line.trim().split("\\s+");
-
-			String id = null;
-			String id2 = null;
-			if (splitLine.length == 7) {
-				id = splitLine[0];
-				id2 = splitLine[1];
-				double score = Double.parseDouble(splitLine[5]) * 5;
-				int aoffset = Integer.parseInt(splitLine[3]);
-				int boffset = Integer.parseInt(splitLine[4]);
-				boolean isFwd = ("N".equals(splitLine[2]));
-			} else if (splitLine.length == 13) {
-				id = splitLine[0];
-				if (id.indexOf("/") != -1) {
-					id = id.substring(0, splitLine[0].indexOf("/"));
-				}
-				id2 = splitLine[1];
-			}
+			String[] result = getOverlapInfo(line);
+			String id = result[0];
+			String id2 = result[1];
 
 			if (id == null || id2 == null) {
 				continue;
@@ -172,21 +191,12 @@ public class EstimateROC {
 			if (seqToChr.get(id) == null || seqToChr.get(id2) == null) {
 				continue;
 			}
-			String ovlName = (id.compareTo(id2) <= 0 ? id + "_" + id2 : id2
-					+ "_" + id);
+			String ovlName = getOvlName(id, id2);
 			if (ovlNames.contains(ovlName)) {
 				continue;
 			}
 			ovlNames.add(ovlName);
 			numMatches++;
-			if (overlaps.get(id) == null) {
-				overlaps.put(id, new HashSet<String>());
-			}
-			overlaps.get(id).add(id2);
-			if (overlaps.get(id2) == null) {
-				overlaps.put(id2, new HashSet<String>());
-			}
-			overlaps.get(id2).add(id);
 		}
 	}
 
@@ -233,10 +243,14 @@ public class EstimateROC {
 		}
 	}
 
+	private boolean overlapExists(String id, String id2) {
+		return ovlNames.contains(getOvlName(id, id2));
+	}
+
 	private void checkMatches(String id, HashSet<String> matches) {
 		for (String m : matches) {
 			numCompared++;
-			if (overlaps.get(id).contains(m) || overlaps.get(m).contains(id)) {
+			if (overlapExists(id, m)) {
 				tp++;
 			} else {
 				fn++;
@@ -268,8 +282,7 @@ public class EstimateROC {
 			}
 			HashSet<String> matches = getSequenceMatches(id, 0);
 
-			if (overlaps.get(id).contains(other)
-					|| overlaps.get(other).contains(id)) {
+			if (overlapExists(id, other)) {
 				if (!matches.contains(other)) {
 					fp++;
 				}
