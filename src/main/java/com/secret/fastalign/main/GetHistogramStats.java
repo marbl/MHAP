@@ -2,15 +2,11 @@ package com.secret.fastalign.main;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.TreeMap;
 
 import com.secret.fastalign.utils.Utils;
 
 public class GetHistogramStats {
-	private static final NumberFormat nf = new DecimalFormat(
-			"############.####");
 	private static final int NUM_SD = 7;
 	private TreeMap<Integer, Long> histogram = new TreeMap<Integer, Long>();
 	private double percent = 0.99;
@@ -67,8 +63,8 @@ public class GetHistogramStats {
 
 	@Override
 	public String toString() {
-		return nf.format(this.mean) + "\t" + nf.format(this.stdev) + "\t" + "\t" + this.cut
-				+ "\t" + nf.format(this.mean + NUM_SD * this.stdev);
+		return Utils.DECIMAL_FORMAT.format(this.mean) + "\t" + Utils.DECIMAL_FORMAT.format(this.stdev) + "\t" + "\t" + this.cut
+				+ "\t" + Utils.DECIMAL_FORMAT.format(this.mean + NUM_SD * this.stdev);
 	}
 	
 	public static void main(String[] args) throws NumberFormatException, IOException {

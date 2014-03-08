@@ -1,19 +1,16 @@
 package com.secret.fastalign.main;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.GregorianCalendar;
-import java.util.Calendar;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.TreeMap;
 import java.util.HashSet;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+import java.util.TreeMap;
 
 import com.secret.fastalign.utils.IntervalTree;
 import com.secret.fastalign.utils.Utils;
@@ -22,19 +19,12 @@ public class EstimateROC {
 	private static class Pair {
 		public int first;
 		public int second;
-		public String identifier;
-
 		public Pair(int first, int second) {
 			this.first = first;
 			this.second = second;
 		}
 
-		public Pair(int first, int second, String third) {
-			this.first = first;
-			this.second = second;
-			this.identifier = third;
-		}
-
+		@SuppressWarnings("unused")
 		public int size() {
 			return (Math.max(first, (int) second)
 					- Math.min(first, (int) second) + 1);
@@ -136,6 +126,7 @@ public class EstimateROC {
 			String id2 = seqToName.get(it.next());
 			Pair p2 = seqToPosition.get(id2);
 			String chr2 = seqToChr.get(id2);
+			if (!chr.equalsIgnoreCase(chr2)) { System.err.println("Error: comparing wrong chromosomes!"); System.exit(1); }
 			int overlap = Utils.getRangeOverlap(p1.first, (int) p1.second,
 					p2.first, (int) p2.second);
 			if (overlap >= min && !id.equalsIgnoreCase(id2)) {
