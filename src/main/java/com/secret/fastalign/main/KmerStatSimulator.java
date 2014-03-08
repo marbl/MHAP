@@ -14,7 +14,7 @@ import com.secret.fastalign.utils.Utils;
 
 public class KmerStatSimulator {
 	private boolean verbose = false;
-	private int kmer = 12;
+	private int kmer = -1;
 	private int overlap = 100;
 
 	private ArrayList<Double> randomJaccard = new ArrayList<Double>();
@@ -33,34 +33,53 @@ public class KmerStatSimulator {
 	public static int seed = 0;
 
 	public static void main(String[] args) throws Exception {
-		if (args.length < 3) {
+		boolean usage1 = true;
+		if (args.length >= 5 && args.length <= 6) {
+			usage1=false;
+		} else if (args.length >= 7) {
+			usage1 = true;
+		} else {
 			printUsage();
 			System.exit(1);
 		}
 
 		KmerStatSimulator f = new KmerStatSimulator();
+		
 		f.totalTrials = Integer.parseInt(args[0]);
-		f.requestedLength = Double.parseDouble(args[2]);
-		f.kmer = Integer.parseInt(args[1]);
-		f.overlap = Integer.parseInt(args[3]);
-		if (args.length > 7) {
-			f.reference = args[7];
-		}
-		if (f.overlap > f.requestedLength) {
-			System.err.println("Cannot have overlap > sequence length");
-			System.exit(1);
-		}
-		if (args.length > 8) {
-			f.loadSkipMers(args[8]);
-		}
+		if (usage1) {
+			f.requestedLength = Double.parseDouble(args[2]);
+			f.kmer = Integer.parseInt(args[1]);
+			f.overlap = Integer.parseInt(args[3]);
+			if (args.length > 7) {
+				f.reference = args[7];
+			}
+			if (f.overlap > f.requestedLength) {
+				System.err.println("Cannot have overlap > sequence length");
+				System.exit(1);
+			}
+			if (args.length > 8) {
+				f.loadSkipMers(args[8]);
+			}
 
-		f.simulate(Double.parseDouble(args[4]), Double.parseDouble(args[5]),
-				Double.parseDouble(args[6]));
+			f.simulate(Double.parseDouble(args[4]), Double.parseDouble(args[5]),
+					Double.parseDouble(args[6]));
+
+		} else {
+			f.requestedLength = Double.parseDouble(args[1]);
+			if (args.length > 5) {
+				f.reference = args[5];
+			}
+
+			f.simulate(Double.parseDouble(args[2]), Double.parseDouble(args[3]),
+					Double.parseDouble(args[4]));			
+		}
 	}
 
 	public static void printUsage() {
 		System.err
 				.println("Example usage: simulateSharedKmers <#trials> <kmer size> <seq length> <overlap length> <insertion> <subst> <del> [reference genome] [kmers to ignore]");
+		System.err
+		.println("Usage 2: simulateSharedKmers <#trials> <seq length> <insertion> <subst> <del> [reference genome]");
 	}
 
 	@SuppressWarnings("unused")
@@ -285,6 +304,12 @@ public class KmerStatSimulator {
 					errorRate, firstAdj, errors, insertionPercentage,
 					deletionPercentage, subPercentage, false);
 
+			if (kmer < 0) { // we were only asked to simulate sequences not compare
+				System.out.println(">s" + i);
+				System.out.println(Utils.convertToFasta(firstSeq));
+				continue;
+			}
+			
 			// compare number of shared kmers out of total to another sequence
 			// from
 			// same position
@@ -349,6 +374,10 @@ public class KmerStatSimulator {
 			System.err.println("Error trial number not consistent!");
 		}
 
+		if (this.sharedMerCounts.size() == 0) { 
+			return;
+		}
+		
 		for (int i = 0; i < this.totalTrials; i++) {
 			System.out.println(this.sharedMerCounts.get(i) + "\t"
 					+ this.sharedJaccard.get(i) + "\t"
