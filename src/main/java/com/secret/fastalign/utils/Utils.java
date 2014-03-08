@@ -1,5 +1,7 @@
 package com.secret.fastalign.utils;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -68,6 +70,7 @@ public final class Utils
 
 	public static final int BUFFER_BYTE_SIZE = 8388608; //8MB
 	public static final int FASTA_LINE_LENGTH = 60;
+	public static final NumberFormat DECIMAL_FORMAT = new DecimalFormat("############.####");
 
 	public static final int MBYTES = 1048576;
 
