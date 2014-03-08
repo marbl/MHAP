@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.TreeMap;
 
 import com.secret.fastalign.utils.IntervalTree;
 import com.secret.fastalign.utils.Utils;
@@ -37,19 +36,19 @@ public class EstimateROC {
 
 	private HashMap<String, IntervalTree<Integer>> clusters = new HashMap<String, IntervalTree<Integer>>();
 	private HashMap<String, String> seqToChr = new HashMap<String, String>();
-	private HashSet<String> chrs = new HashSet<String>();
-	private TreeMap<String, Pair> seqToPosition = new TreeMap<String, Pair>();
+	private HashMap<String, Pair> seqToPosition = new HashMap<String, Pair>();
+	//private String[] seqToName = null;
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>();
 	private HashSet<String> ovlNames = new HashSet<String>();
-
+	private String[] ovlToName = null;
+	
 	private int minOvlLen = 500;
+	private int numTrials = 1000;
 	private long tp = 0;
 	private long fn = 0;
 	private long tn = 0;
 	private long fp = 0;
 	private double ppv = 0;
-	private long numMatches = 0;
-	private long numCompared = 0;
 
 	public static void printUsage() {
 		System.err
@@ -63,14 +62,16 @@ public class EstimateROC {
 	}
 
 	public static void main(String[] args) throws Exception {
-		int NUM_TP_TRIALS = 5000;
-		int NUM_FP_TRIALS = NUM_TP_TRIALS;
+		int numTrials = 5000;
 
 		if (args.length < 3) {
 			printUsage();
 			System.exit(1);
 		}
-		EstimateROC g = new EstimateROC(Integer.parseInt(args[2]));
+		if (args.length > 3) {
+			numTrials = Integer.parseInt(args[3]);
+		}
+		EstimateROC g = new EstimateROC(Integer.parseInt(args[2]), numTrials);
 
 		// load and cluster reference
 		System.err.print("Loading reference...");
@@ -83,12 +84,16 @@ public class EstimateROC {
 		System.err.println("done");
 
 		System.err.println("Computing sensitivity...");
-		g.estimateSensitivity(NUM_TP_TRIALS);
+		g.estimateSensitivity();
 
 		// now estimate FP/TN by picking random match and checking reference
 		// mapping
 		System.err.println("Computing specificity...");
-		g.estimateSpecificity(NUM_FP_TRIALS);
+		g.estimateSpecificity();
+
+		// last but not least PPV, pick random subset of our matches and see what percentage are true
+		System.err.println("Computing PPV...");
+		g.estimatePPV();
 
 		System.out.println("Estimated sensitivity:\t"
 				+ Utils.DECIMAL_FORMAT.format((double) g.tp / (g.tp + g.fn)));
@@ -99,8 +104,9 @@ public class EstimateROC {
 	}
 
 	@SuppressWarnings("unused")
-	public EstimateROC(int minOvlLen) {
+	public EstimateROC(int minOvlLen, int numTrials) {
 		this.minOvlLen = minOvlLen;
+		this.numTrials = numTrials;
 		if (false) {
 			GregorianCalendar t = new GregorianCalendar();
 			int t1 = t.get(Calendar.SECOND);
@@ -122,6 +128,11 @@ public class EstimateROC {
 	private String pickRandomSequence() {
 		int val = generator.nextInt(seqToName.size());
 		return seqToName.get(val);
+	}
+	
+	private String pickRandomMatch() {
+		int val = generator.nextInt(ovlToName.length);
+		return ovlToName[val];
 	}
 
 	private HashSet<String> getSequenceMatches(String id, int min) {
@@ -177,6 +188,7 @@ public class EstimateROC {
 				new FileInputStream(file)));
 
 		String line = null;
+		int counter = 0;
 		while ((line = bf.readLine()) != null) {
 			String[] result = getOverlapInfo(line);
 			String id = result[0];
@@ -196,8 +208,9 @@ public class EstimateROC {
 				continue;
 			}
 			ovlNames.add(ovlName);
-			numMatches++;
+			counter++;
 		}
+		ovlToName = ovlNames.toArray(new String[counter]);
 	}
 
 	/**
@@ -233,7 +246,6 @@ public class EstimateROC {
 					counter);
 			seqToPosition.put(id, new Pair(startInRef, endInRef));
 			seqToChr.put(id, chr);
-			chrs.add(chr);
 			seqToName.put(counter, id);
 			counter++;
 		}
@@ -249,7 +261,6 @@ public class EstimateROC {
 
 	private void checkMatches(String id, HashSet<String> matches) {
 		for (String m : matches) {
-			numCompared++;
 			if (overlapExists(id, m)) {
 				tp++;
 			} else {
@@ -258,7 +269,7 @@ public class EstimateROC {
 		}
 	}
 
-	private void estimateSensitivity(int numTrials) {
+	private void estimateSensitivity() {
 		// we estimate TP/FN by randomly picking a sequence, getting its
 		// cluster, and checking our matches
 		for (int i = 0; i < numTrials; i++) {
@@ -269,7 +280,7 @@ public class EstimateROC {
 		}
 	}
 
-	private void estimateSpecificity(int numTrials) {
+	private void estimateSpecificity() {
 		long numFPCompared = 0;
 
 		// we estimate FP/TN by randomly picking two seqeunces
@@ -293,12 +304,23 @@ public class EstimateROC {
 				}
 			}
 		}
-
-		// now our formula for PPV. We want to estimate the number of true
-		// matches of our total matches
-		// we know # total matches
-		double numEstimatedTP = ((double) tp / numCompared) * numMatches;
-		double numEstimatedFP = ((double) fp / numFPCompared) * numMatches;
-		ppv = numEstimatedTP / (numEstimatedTP + numEstimatedFP);
+	}
+	
+	private void estimatePPV() {
+		int numTP = 0;
+		for (int i = 0; i < numTrials; i++) {
+			// pick an overlap
+			String[] ovl = pickRandomMatch().split("_");
+			String id = ovl[0];
+			String id2 = ovl[1];
+			
+			HashSet<String> matches = getSequenceMatches(id, 0);
+			if (matches.contains(id2)) {
+				numTP++;
+			}
+		}
+		
+		// now our formula for PPV. Estimate percent of our matches which are true
+		ppv = (double)numTP / numTrials;
 	}
 }
