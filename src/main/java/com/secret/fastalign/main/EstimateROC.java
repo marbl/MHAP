@@ -185,49 +185,59 @@ public class EstimateROC {
 	}
 
 	private int getOverlapSize(String id, String id2) {
-		String chr = seqToChr.get(id);
-		String chr2 = seqToChr.get(id2);
 		Pair p1 = seqToPosition.get(id);
 		Pair p2 = seqToPosition.get(id2);
-		if (!chr.equalsIgnoreCase(chr2)) {
-			System.err.println("Error: comparing wrong chromosomes!");
-			System.exit(1);
-		}
-		return Utils.getRangeOverlap(p1.first, (int) p1.second, p2.first,
+		
+		int result = Utils.getRangeOverlap(p1.first, (int) p1.second, p2.first,
 				(int) p2.second);
+		if (seqToCount.get(id) > 1 || seqToCount.get(id2) > 1) {
+			for (int i = 0; i < seqToCount.get(id); i++ ) {
+				String id1Multi = (i == 0 ? id : id + "_" + i);
+				String chr = seqToChr.get(id1Multi);
+				for (int j = 0; j < seqToCount.get(id2); j++ ) {
+					String id2Multi = (j == 0 ? id2 : id2 + "_" + j);
+					String chr2 = seqToChr.get(id2Multi);
+					
+					if (! chr.equalsIgnoreCase(chr2)) { continue; }
+					int val = Utils.getRangeOverlap(seqToPosition.get(id1Multi).first, seqToPosition.get(id1Multi).second, 
+							seqToPosition.get(id2Multi).first, seqToPosition.get(id2Multi).second);
+					if (val > result) { 
+						result = val;
+					}
+				}
+			}
+		}
+			
+		return result;
 	}
 
 	private HashSet<String> getSequenceMatches(String id, int min) {
-		String chr = seqToChr.get(id);
-		Pair p1 = seqToPosition.get(id);
-		List<Integer> intersect = clusters.get(chr).get(p1.first,
-				(long) p1.second);
 		HashSet<String> result = new HashSet<String>();
 
-		Iterator<Integer> it = intersect.iterator();
-		while (it.hasNext()) {
-			String id2 = seqToName.get(it.next());
-			String idToAdd = id2;
-			if (seqToCount.get(id2) > 1) {
-				if (!id2.contains("_")) {
-					System.err.println("Error: non-uniq sequence but it only has count of 1!");
-					System.exit(1);
+		for (int i = 0; i < seqToCount.get(id); i++) {
+			String id1Multi = (i == 0 ? id : id + "_" + i);
+
+			String chr = seqToChr.get(id1Multi);
+			Pair p1 = seqToPosition.get(id1Multi);
+			List<Integer> intersect = clusters.get(chr).get(p1.first,
+					(long) p1.second);
+			Iterator<Integer> it = intersect.iterator();
+			while (it.hasNext()) {
+				String id2 = seqToName.get(it.next());
+				String idToAdd = id2;
+				if (seqToCount.get(id2) > 1) {
+					if (!id2.contains("_")) {
+						System.err.println("Error: non-uniq sequence but it only has count of 1!");
+						System.exit(1);
+					}
+					idToAdd = id2.substring(0, id2.indexOf("_"));
 				}
-				idToAdd = id2.substring(0, id2.indexOf("_"));
-			}
-			Pair p2 = seqToPosition.get(id2);
-			String chr2 = seqToChr.get(id2);
-			if (!chr.equalsIgnoreCase(chr2)) {
-				System.err.println("Error: comparing wrong chromosomes!");
-				System.exit(1);
-			}
-			int overlap = Utils.getRangeOverlap(p1.first, (int) p1.second,
-					p2.first, (int) p2.second);
-			if (overlap >= min && !id.equalsIgnoreCase(id2)) {
-				result.add(idToAdd);
+				int overlap = getOverlapSize(id, id2);
+				if (overlap >= min && !id.equalsIgnoreCase(id2)) {
+					result.add(idToAdd);
+				}
 			}
 		}
-
 		return result;
 	}
 
