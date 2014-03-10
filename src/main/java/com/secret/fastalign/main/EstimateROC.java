@@ -17,7 +17,7 @@ import com.secret.fastalign.utils.Utils;
 public class EstimateROC {
 	private static final int DEFAULT_NUM_TRIALS = 1000;
 	private static final int DEFAULT_MIN_OVL = 500;
-
+	
 	private static class Pair {
 		public int first;
 		public int second;
@@ -40,11 +40,10 @@ public class EstimateROC {
 	private HashMap<String, IntervalTree<Integer>> clusters = new HashMap<String, IntervalTree<Integer>>();
 	private HashMap<String, String> seqToChr = new HashMap<String, String>();
 	private HashMap<String, Pair> seqToPosition = new HashMap<String, Pair>();
-	private HashMap<String, Integer> seqToCount = new HashMap<String, Integer>();
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>();
 	private HashSet<String> ovlNames = new HashSet<String>();
 	private HashMap<Integer, String> ovlToName = new HashMap<Integer, String>();
-
+	
 	private int minOvlLen = DEFAULT_MIN_OVL;
 	private int numTrials = DEFAULT_NUM_TRIALS;
 	private long tp = 0;
@@ -75,67 +74,56 @@ public class EstimateROC {
 		}
 		EstimateROC g = null;
 		if (args.length > 3) {
-			g = new EstimateROC(Integer.parseInt(args[2]),
-					Integer.parseInt(args[3]));
+			g = new EstimateROC(Integer.parseInt(args[2]), Integer.parseInt(args[3]));
 		} else if (args.length > 2) {
 			g = new EstimateROC(Integer.parseInt(args[2]));
 		} else {
 			g = new EstimateROC();
 		}
-
-		System.err.println("Running, reference: " + args[0] + " matches: "
-				+ args[1]);
+		
+		System.err.println("Running, reference: " + args[0] + " matches: " + args[1]);
 		System.err.println("Number trials:  " + (full ? "all" : g.numTrials));
 		System.err.println("Minimum ovl:  " + g.minOvlLen);
-
+		
 		// load and cluster reference
 		System.err.print("Loading reference...");
 		long startTime = System.nanoTime();
 		long totalTime = startTime;
 		g.processReference(args[0]);
-		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9
-				+ "s.");
+		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 
 		// load matches
 		System.err.print("Loading matches...");
 		startTime = System.nanoTime();
 		g.processOverlaps(args[1]);
-		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9
-				+ "s.");
+		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 
 		if (args.length > 4 && Boolean.parseBoolean(args[4])) {
-			System.err.print("Computing full statistics O("
-					+ g.seqToName.size() + "^2) operations!...");
+			System.err.print("Computing full statistics O(" + g.seqToName.size() + "^2) operations!...");
 			startTime = System.nanoTime();
 			g.fullEstimate();
-			System.err.println("done " + (System.nanoTime() - startTime)
-					* 1.0e-9 + "s.");
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 		} else {
 			System.err.print("Computing sensitivity...");
 			startTime = System.nanoTime();
 			g.estimateSensitivity();
-			System.err.println("done " + (System.nanoTime() - startTime)
-					* 1.0e-9 + "s.");
-
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
+	
 			// now estimate FP/TN by picking random match and checking reference
 			// mapping
 			System.err.print("Computing specificity...");
 			startTime = System.nanoTime();
 			g.estimateSpecificity();
-			System.err.println("done " + (System.nanoTime() - startTime)
-					* 1.0e-9 + "s.");
-
-			// last but not least PPV, pick random subset of our matches and see
-			// what percentage are true
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
+	
+			// last but not least PPV, pick random subset of our matches and see what percentage are true
 			System.err.print("Computing PPV...");
 			startTime = System.nanoTime();
 			g.estimatePPV();
-			System.err.println("done " + (System.nanoTime() - startTime)
-					* 1.0e-9 + "s.");
+			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 		}
-		System.err.println("Total time: " + (System.nanoTime() - totalTime)
-				* 1.0e-9 + "s.");
-
+		System.err.println("Total time: " + (System.nanoTime() - totalTime) * 1.0e-9 + "s.");
+		
 		System.out.println("Estimated sensitivity:\t"
 				+ Utils.DECIMAL_FORMAT.format((double) g.tp / (g.tp + g.fn)));
 		System.out.println("Estimated specificity:\t"
@@ -151,7 +139,7 @@ public class EstimateROC {
 	public EstimateROC(int minOvlLen) {
 		this(minOvlLen, DEFAULT_NUM_TRIALS);
 	}
-
+	
 	@SuppressWarnings("unused")
 	public EstimateROC(int minOvlLen, int numTrials) {
 		this.minOvlLen = minOvlLen;
@@ -171,73 +159,55 @@ public class EstimateROC {
 	}
 
 	private String getOvlName(String id, String id2) {
-		return (id.compareTo(id2) <= 0 ? id + "_" + id2 : id2 + "_" + id);
+		return (id.compareTo(id2) <= 0 ? id + "_" + id2 : id2
+				+ "_" + id);
 	}
-
 	private String pickRandomSequence() {
 		int val = generator.nextInt(seqToName.size());
 		return seqToName.get(val);
 	}
-
+	
 	private String pickRandomMatch() {
 		int val = generator.nextInt(ovlToName.size());
 		return ovlToName.get(val);
 	}
-
+	
 	private int getOverlapSize(String id, String id2) {
+		String chr = seqToChr.get(id);
+		String chr2 = seqToChr.get(id2);
 		Pair p1 = seqToPosition.get(id);
 		Pair p2 = seqToPosition.get(id2);
-		
-		int result = Utils.getRangeOverlap(p1.first, (int) p1.second, p2.first,
-				(int) p2.second);
-		if (seqToCount.get(id) > 1 || seqToCount.get(id2) > 1) {
-			for (int i = 0; i < seqToCount.get(id); i++ ) {
-				String id1Multi = (i == 0 ? id : id + "_" + i);
-				String chr = seqToChr.get(id1Multi);
-				for (int j = 0; j < seqToCount.get(id2); j++ ) {
-					String id2Multi = (j == 0 ? id2 : id2 + "_" + j);
-					String chr2 = seqToChr.get(id2Multi);
-					
-					if (! chr.equalsIgnoreCase(chr2)) { continue; }
-					int val = Utils.getRangeOverlap(seqToPosition.get(id1Multi).first, seqToPosition.get(id1Multi).second, 
-							seqToPosition.get(id2Multi).first, seqToPosition.get(id2Multi).second);
-					if (val > result) { 
-						result = val;
-					}
-				}
-			}
+		if (!chr.equalsIgnoreCase(chr2)) {
+			System.err.println("Error: comparing wrong chromosomes!");
+			System.exit(1);
 		}
-			
-		return result;
+		return Utils.getRangeOverlap(p1.first, (int) p1.second,
+				p2.first, (int) p2.second);
 	}
 
 	private HashSet<String> getSequenceMatches(String id, int min) {
+		String chr = seqToChr.get(id);
+		Pair p1 = seqToPosition.get(id);
+		List<Integer> intersect = clusters.get(chr).get(p1.first,
+				(long) p1.second);
 		HashSet<String> result = new HashSet<String>();
 
-		for (int i = 0; i < seqToCount.get(id); i++) {
-			String id1Multi = (i == 0 ? id : id + "_" + i);
-
-			String chr = seqToChr.get(id1Multi);
-			Pair p1 = seqToPosition.get(id1Multi);
-			List<Integer> intersect = clusters.get(chr).get(p1.first,
-					(long) p1.second);
-			Iterator<Integer> it = intersect.iterator();
-			while (it.hasNext()) {
-				String id2 = seqToName.get(it.next());
-				String idToAdd = id2;
-				if (seqToCount.get(id2) > 1) {
-					if (!id2.contains("_")) {
-						System.err.println("Error: non-uniq sequence but it only has count of 1!");
-						System.exit(1);
-					}
-					idToAdd = id2.substring(0, id2.indexOf("_"));
-				}
-				int overlap = getOverlapSize(id, id2);
-				if (overlap >= min && !id.equalsIgnoreCase(id2)) {
-					result.add(idToAdd);
-				}
+		Iterator<Integer> it = intersect.iterator();
+		while (it.hasNext()) {
+			String id2 = seqToName.get(it.next());
+			Pair p2 = seqToPosition.get(id2);
+			String chr2 = seqToChr.get(id2);
+			if (!chr.equalsIgnoreCase(chr2)) {
+				System.err.println("Error: comparing wrong chromosomes!");
+				System.exit(1);
+			}
+			int overlap = Utils.getRangeOverlap(p1.first, (int) p1.second,
+					p2.first, (int) p2.second);
+			if (overlap >= min && !id.equalsIgnoreCase(id2)) {
+				result.add(id2);
 			}
 		}
+
 		return result;
 	}
 
@@ -245,35 +215,24 @@ public class EstimateROC {
 	private String[] getOverlapInfo(String line) {
 		String[] result = new String[2];
 		String[] splitLine = line.trim().split("\\s+");
-		try {
-			if (splitLine.length == 7 || splitLine.length == 6) {
-				result[0] = splitLine[0];
-				result[1] = splitLine[1];
-				double score = Double.parseDouble(splitLine[5]) * 5;
-				int aoffset = Integer.parseInt(splitLine[3]);
-				int boffset = Integer.parseInt(splitLine[4]);
-				boolean isFwd = ("N".equals(splitLine[2]));
-			} else if (splitLine.length == 13) {
-				result[0] = splitLine[0];
-				if (result[0].indexOf("/") != -1) {
-					result[0] = result[0].substring(0,
-							splitLine[0].indexOf("/"));
-				}
-				if (result[0].indexOf(",") != -1) {
-					result[0] = result[0].split(",")[1];
-				}
-				result[1] = splitLine[1];
-				if (result[1].indexOf(",") != -1) {
-					result[1] = result[1].split(",")[1];
-				}
+
+		if (splitLine.length == 7) {
+			result[0]= splitLine[0];
+			result[1] = splitLine[1];
+			double score = Double.parseDouble(splitLine[5]) * 5;
+			int aoffset = Integer.parseInt(splitLine[3]);
+			int boffset = Integer.parseInt(splitLine[4]);
+			boolean isFwd = ("N".equals(splitLine[2]));
+		} else if (splitLine.length == 13) {
+			result[0] = splitLine[0];
+			if (result[0].indexOf("/") != -1) {
+				result[0] = result[0].substring(0, splitLine[0].indexOf("/"));
 			}
-		} catch (NumberFormatException e) {
-			System.err.println("Warning: could not parse input line: " + line
-					+ " " + e.getMessage());
+			result[1] = splitLine[1];
 		}
+		
 		return result;
 	}
-
 	private void processOverlaps(String file) throws Exception {
 		BufferedReader bf = new BufferedReader(new InputStreamReader(
 				new FileInputStream(file)));
@@ -302,12 +261,7 @@ public class EstimateROC {
 			ovlToName.put(counter, ovlName);
 			counter++;
 		}
-		System.err.print("Processed " + ovlNames.size() + " overlaps");
-		if (ovlNames.isEmpty()) {
-			System.err
-					.println("Error: No sequence matches to reference loaded!");
-			System.exit(1);
-		}
+//		ovlToName = ovlNames.toArray(new String[counter]);
 	}
 
 	/**
@@ -339,32 +293,16 @@ public class EstimateROC {
 			if (!clusters.containsKey(chr)) {
 				clusters.put(chr, new IntervalTree<Integer>());
 			}
-			if (seqToPosition.containsKey(id)) {
-				// duplicate append to it
-				id = id + "_" + seqToCount.get(id);
-			}
 			clusters.get(chr).addInterval((long) startInRef, (long) endInRef,
 					counter);
 			seqToPosition.put(id, new Pair(startInRef, endInRef));
 			seqToChr.put(id, chr);
 			seqToName.put(counter, id);
-			if (seqToCount.get(id) == null) {
-				seqToCount.put(id, 0);
-			}
-			seqToCount.put(id, seqToCount.get(id) + 1);
 			counter++;
 		}
 		bf.close();
 		for (String chr : clusters.keySet()) {
 			clusters.get(chr).build();
-		}
-
-		System.err.print("Processed " + clusters.size() + " chromosomes, "
-				+ seqToPosition.size() + " sequences matching ref");
-		if (seqToPosition.isEmpty()) {
-			System.err
-					.println("Error: No sequence matches to reference loaded!");
-			System.exit(1);
 		}
 	}
 
@@ -418,7 +356,7 @@ public class EstimateROC {
 			}
 		}
 	}
-
+	
 	private void estimatePPV() {
 		int numTP = 0;
 		for (int i = 0; i < numTrials; i++) {
@@ -426,26 +364,23 @@ public class EstimateROC {
 			String[] ovl = pickRandomMatch().split("_");
 			String id = ovl[0];
 			String id2 = ovl[1];
-
+			
 			HashSet<String> matches = getSequenceMatches(id, 0);
 			if (matches.contains(id2)) {
 				numTP++;
 			}
 		}
-
-		// now our formula for PPV. Estimate percent of our matches which are
-		// true
-		ppv = (double) numTP / numTrials;
+		
+		// now our formula for PPV. Estimate percent of our matches which are true
+		ppv = (double)numTP / numTrials;
 	}
-
+	
 	private void fullEstimate() {
 		for (int i = 0; i < seqToName.size(); i++) {
 			String id = seqToName.get(i);
-			for (int j = i + 1; j < seqToName.size(); j++) {
+			for (int j = i+1; j < seqToName.size(); j++) {
 				String id2 = seqToName.get(j);
-				if (id == null || id2 == null) {
-					continue;
-				}
+				if (id == null || id2 == null) { continue; }
 				HashSet<String> matches = getSequenceMatches(id, 0);
 
 				if (!overlapExists(id, id2)) {
@@ -463,6 +398,6 @@ public class EstimateROC {
 				}
 			}
 		}
-		ppv = (double) tp / (tp + fp);
+		ppv = (double)tp / (tp+fp);
 	}
 }
