@@ -25,17 +25,16 @@ import com.secret.fastalign.utils.IntervalTree;
 import com.secret.fastalign.utils.Utils;
 
 public class EstimateROC {
-	private static final double MIN_IDENTITY = 0.70;
-	private static final int DEFAULT_NUM_TRIALS = 1000;
+	private static final double MIN_IDENTITY = 0.60;
+	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 500;
 	
 	private static class Pair {
 		public int first;
 		public int second;
 
-		public Pair(int first, int second) {
-			this.first = first;
-			this.second = second;
+		public Pair(int startInRef, int endInRef) {
+			// TODO Auto-generated constructor stub
 		}
 
 		@SuppressWarnings("unused")
@@ -334,6 +333,8 @@ public class EstimateROC {
 					.println("Error: No sequence matches to reference loaded!");
 			System.exit(1);
 		}
+		
+		bf.close();
 	}
 
 	/**
@@ -438,8 +439,6 @@ public class EstimateROC {
 	}
 
 	private void estimateSpecificity() {
-		long numFPCompared = 0;
-
 		// we estimate FP/TN by randomly picking two sequences
 		for (int i = 0; i < this.numTrials; i++) {
 			// pick cluster
@@ -454,7 +453,6 @@ public class EstimateROC {
 				if (!matches.contains(other)) {
 					this.fp++;
 				}
-				numFPCompared++;
 			} else {
 				if (!matches.contains(other)) {
 					this.tn++;

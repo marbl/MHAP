@@ -192,7 +192,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	}
 
 	@Override
-	public List<MatchResult> findMatches(SequenceMinHashes seqMinHashes, boolean allToAll)
+	public List<MatchResult> findMatches(SequenceMinHashes seqMinHashes, boolean toSelf)
 	{
 		MinHash minHash = seqMinHashes.getMinHashes();
 
@@ -261,12 +261,17 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 
 		for (Entry<SequenceId, Integer> match : bestSequenceHit.entrySet())
 		{
+			//get the match id
+			SequenceId matchId = match.getKey();
+			
 			// do not store matches to yourself
-			if (match.getKey().getHeaderId() == seqMinHashes.getSequenceId().getHeaderId())
+			if (matchId.getHeaderId() == seqMinHashes.getSequenceId().getHeaderId())
 				continue;
 			
-			// do not store matches smaller ids, unless its coming from a short read
-			if (allToAll && seqMinHashes.getSequenceLength()>=this.minStoreLength && match.getKey().getHeaderId() > seqMinHashes.getSequenceId().getHeaderId())
+			// do not store matches with smaller ids, unless its coming from a short read
+			if (toSelf 
+					&& matchId.getHeaderId() > seqMinHashes.getSequenceId().getHeaderId() 
+					&& seqMinHashes.getSequenceLength()>=this.minStoreLength)
 				continue;
 
 			//see if the hit number is high enough
@@ -287,7 +292,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 				
 				if (matchScore >= this.acceptScore)
 				{
-					MatchResult currResult = new MatchResult(seqMinHashes.getSequenceId(), match.getKey(), matchScore, -shift, shiftb);
+					MatchResult currResult = new MatchResult(seqMinHashes.getSequenceId(), matchId, matchScore, -shift, shiftb);
 
 					// add to list
 					matches.add(currResult);

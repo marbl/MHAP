@@ -19,7 +19,7 @@ public class Interval<Type> implements Comparable<Interval<Type>> {
 	}
 
 	public long getStart() {
-		return start;
+		return this.start;
 	}
 
 	public void setStart(long start) {
@@ -27,7 +27,7 @@ public class Interval<Type> implements Comparable<Interval<Type>> {
 	}
 
 	public long getEnd() {
-		return end;
+		return this.end;
 	}
 
 	public void setEnd(long end) {
@@ -35,7 +35,7 @@ public class Interval<Type> implements Comparable<Interval<Type>> {
 	}
 
 	public Type getData() {
-		return data;
+		return this.data;
 	}
 
 	public void setData(Type data) {
@@ -47,7 +47,7 @@ public class Interval<Type> implements Comparable<Interval<Type>> {
 	 * @return	true if this interval contains time (invlusive)
 	 */
 	public boolean contains(long time) {
-		return time < end && time > start;
+		return time < this.end && time > this.start;
 	}
 	
 	/**
@@ -55,7 +55,7 @@ public class Interval<Type> implements Comparable<Interval<Type>> {
 	 * @return	return true if this interval intersects other
 	 */
 	public boolean intersects(Interval<?> other) {
-		return other.getEnd() > start && other.getStart() < end;
+		return other.getEnd() > this.start && other.getStart() < this.end;
 	}
 	
 	/**
@@ -64,14 +64,15 @@ public class Interval<Type> implements Comparable<Interval<Type>> {
 	 * @param other
 	 * @return 1 or -1
 	 */
+	@Override
 	public int compareTo(Interval<Type> other) {		
-		if(start < other.getStart())
+		if(this.start < other.getStart())
 			return -1;
-		else if(start > other.getStart())
+		else if(this.start > other.getStart())
 			return 1;
-		else if(end < other.getEnd())
+		else if(this.end < other.getEnd())
 			return -1;
-		else if(end > other.getEnd())
+		else if(this.end > other.getEnd())
 			return 1;
 		else
 			return 0;

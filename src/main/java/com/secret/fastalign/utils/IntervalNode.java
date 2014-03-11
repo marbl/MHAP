@@ -21,15 +21,15 @@ public class IntervalNode<Type> {
 	private IntervalNode<Type> rightNode;
 	
 	public IntervalNode() {
-		intervals = new TreeMap<Interval<Type>, List<Interval<Type>>>();
-		center = 0;
-		leftNode = null;
-		rightNode = null;
+		this.intervals = new TreeMap<Interval<Type>, List<Interval<Type>>>();
+		this.center = 0;
+		this.leftNode = null;
+		this.rightNode = null;
 	}
 	
 	public IntervalNode(List<Interval<Type>> intervalList) {
 		
-		intervals = new TreeMap<Interval<Type>, List<Interval<Type>>>();
+		this.intervals = new TreeMap<Interval<Type>, List<Interval<Type>>>();
 		
 		SortedSet<Long> endpoints = new TreeSet<Long>();
 		
@@ -39,7 +39,7 @@ public class IntervalNode<Type> {
 		}
 		
 		long median = getMedian(endpoints);
-		center = median;
+		this.center = median;
 		
 		List<Interval<Type>> left = new ArrayList<Interval<Type>>();
 		List<Interval<Type>> right = new ArrayList<Interval<Type>>();
@@ -50,19 +50,19 @@ public class IntervalNode<Type> {
 			else if(interval.getStart() > median)
 				right.add(interval);
 			else {
-				List<Interval<Type>> posting = intervals.get(interval);
+				List<Interval<Type>> posting = this.intervals.get(interval);
 				if(posting == null) {
 					posting = new ArrayList<Interval<Type>>();
-					intervals.put(interval, posting);
+					this.intervals.put(interval, posting);
 				}
 				posting.add(interval);
 			}
 		}
 
 		if(left.size() > 0)
-			leftNode = new IntervalNode<Type>(left);
+			this.leftNode = new IntervalNode<Type>(left);
 		if(right.size() > 0)
-			rightNode = new IntervalNode<Type>(right);
+			this.rightNode = new IntervalNode<Type>(right);
 	}
 
 	/**
@@ -73,7 +73,7 @@ public class IntervalNode<Type> {
 	public List<Interval<Type>> stab(long time) {		
 		List<Interval<Type>> result = new ArrayList<Interval<Type>>();
 
-		for(Entry<Interval<Type>, List<Interval<Type>>> entry : intervals.entrySet()) {
+		for(Entry<Interval<Type>, List<Interval<Type>>> entry : this.intervals.entrySet()) {
 			if(entry.getKey().contains(time))
 				for(Interval<Type> interval : entry.getValue())
 					result.add(interval);
@@ -81,10 +81,10 @@ public class IntervalNode<Type> {
 				break;
 		}
 		
-		if(time < center && leftNode != null)
-			result.addAll(leftNode.stab(time));
-		else if(time > center && rightNode != null)
-			result.addAll(rightNode.stab(time));
+		if(time < this.center && this.leftNode != null)
+			result.addAll(this.leftNode.stab(time));
+		else if(time > this.center && this.rightNode != null)
+			result.addAll(this.rightNode.stab(time));
 		return result;
 	}
 	
@@ -96,7 +96,7 @@ public class IntervalNode<Type> {
 	public List<Interval<Type>> query(Interval<?> target) {
 		List<Interval<Type>> result = new ArrayList<Interval<Type>>();
 		
-		for(Entry<Interval<Type>, List<Interval<Type>>> entry : intervals.entrySet()) {
+		for(Entry<Interval<Type>, List<Interval<Type>>> entry : this.intervals.entrySet()) {
 			if(entry.getKey().intersects(target))
 				for(Interval<Type> interval : entry.getValue())
 					result.add(interval);
@@ -104,15 +104,15 @@ public class IntervalNode<Type> {
 				break;
 		}
 		
-		if(target.getStart() < center && leftNode != null)
-			result.addAll(leftNode.query(target));
-		if(target.getEnd() > center && rightNode != null)
-			result.addAll(rightNode.query(target));
+		if(target.getStart() < this.center && this.leftNode != null)
+			result.addAll(this.leftNode.query(target));
+		if(target.getEnd() > this.center && this.rightNode != null)
+			result.addAll(this.rightNode.query(target));
 		return result;
 	}
 	
 	public long getCenter() {
-		return center;
+		return this.center;
 	}
 
 	public void setCenter(long center) {
@@ -120,7 +120,7 @@ public class IntervalNode<Type> {
 	}
 
 	public IntervalNode<Type> getLeft() {
-		return leftNode;
+		return this.leftNode;
 	}
 
 	public void setLeft(IntervalNode<Type> left) {
@@ -128,7 +128,7 @@ public class IntervalNode<Type> {
 	}
 
 	public IntervalNode<Type> getRight() {
-		return rightNode;
+		return this.rightNode;
 	}
 
 	public void setRight(IntervalNode<Type> right) {
@@ -153,8 +153,8 @@ public class IntervalNode<Type> {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		sb.append(center + ": ");
-		for(Entry<Interval<Type>, List<Interval<Type>>> entry : intervals.entrySet()) {
+		sb.append(this.center + ": ");
+		for(Entry<Interval<Type>, List<Interval<Type>>> entry : this.intervals.entrySet()) {
 			sb.append("[" + entry.getKey().getStart() + "," + entry.getKey().getEnd() + "]:{");
 			for(Interval<Type> interval : entry.getValue()) {
 				sb.append("("+interval.getStart()+","+interval.getEnd()+","+interval.getData()+")");
