@@ -175,6 +175,7 @@ public class KmerStatSimulator {
 				realErrorStr, 0.792, 0.122, 0.086, true);
 	}
 
+	@SuppressWarnings("unused")
 	private String getSequence(int seqLength, int firstPos, String sequence,
 			double errorRate, StringBuilder profile,
 			StringBuilder realErrorStr, double insertionRate,
@@ -219,9 +220,8 @@ public class KmerStatSimulator {
 		realErrorStr.append((double) realError / seqLength);
 		if (trimRight) {
 			return firstSeq.substring(0, seqLength).toString();
-		} else {
-			return firstSeq.substring(firstSeq.length()-seqLength, firstSeq.length()).toString();
 		}
+		return firstSeq.substring(firstSeq.length()-seqLength, firstSeq.length()).toString();
 	}
 
 	private void outputStats(ArrayList<Double> values, PrintStream out) {
@@ -233,7 +233,7 @@ public class KmerStatSimulator {
 			N++;
 			mean += d;
 		}
-		mean = mean/(double)N;
+		mean = mean/N;
 		
 		N = 0;
 		for (double d : values) {
@@ -241,7 +241,7 @@ public class KmerStatSimulator {
 			variance += (d-mean)*(d-mean);
 		}
 		
-		variance /= (double) (N-1);
+		variance /= (N-1);
 		
 		double stdev = Math.sqrt(variance);
 		out.print(mean + "\t" + stdev);
@@ -304,7 +304,7 @@ public class KmerStatSimulator {
 					errorRate, firstAdj, errors, insertionPercentage,
 					deletionPercentage, subPercentage, false);
 
-			if (kmer < 0) { // we were only asked to simulate sequences not compare
+			if (this.kmer < 0) { // we were only asked to simulate sequences not compare
 				System.out.println(">s" + i);
 				System.out.println(Utils.convertToFasta(firstSeq));
 				continue;
