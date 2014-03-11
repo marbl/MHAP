@@ -145,10 +145,6 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 			throw new FastAlignRuntimeException("Sequence id already exists in the hashtable.");
 		}
 		
-		//only hash large sequences
-		if (currHash.getSequenceLength()<this.minStoreLength)
-			return true;
-		
 		// add the hashes
 		for (int subSequences = 0; subSequences < currMinHashes.length; subSequences++)
 		{
@@ -264,24 +260,26 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 			//get the match id
 			SequenceId matchId = match.getKey();
 			
-			// do not store matches to yourself
-			if (matchId.getHeaderId() == seqMinHashes.getSequenceId().getHeaderId())
-				continue;
-			
 			// do not store matches with smaller ids, unless its coming from a short read
-			if (toSelf 
-					&& matchId.getHeaderId() > seqMinHashes.getSequenceId().getHeaderId() 
-					&& seqMinHashes.getSequenceLength()>=this.minStoreLength)
+			if (toSelf && matchId.getHeaderId() == seqMinHashes.getSequenceId().getHeaderId())
 				continue;
 
-			//see if the hit number is high enough
-			
+			//see if the hit number is high enough			
 			if (match.getValue() >= this.numMinMatches)
 			{
 				SequenceMinHashes matchedHashes = this.sequenceVectorsHash.get(match.getKey());
-				
 				if (matchedHashes==null)
 					throw new FastAlignRuntimeException("Hashes not found for given id.");
+				
+				//never process short to short
+				if (seqMinHashes.getSequenceLength()<this.minStoreLength && matchedHashes.getSequenceLength()<this.minStoreLength)
+					continue;
+				//never process long to long in self, with greater id
+				if (toSelf 
+						&& matchId.getHeaderId() > seqMinHashes.getSequenceId().getHeaderId()
+						&& seqMinHashes.getSequenceLength()>=this.minStoreLength
+						&& matchedHashes.getSequenceLength()>=this.minStoreLength)
+					continue;
 				
 				Pair<Double, Integer> result = seqMinHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
 				double matchScore = result.x;
