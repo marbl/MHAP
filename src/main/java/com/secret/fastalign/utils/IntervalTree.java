@@ -62,7 +62,7 @@ public class IntervalTree<Type> {
 	 */
 	public List<Interval<Type>> getIntervals(long time) {
 		build();
-		return head.stab(time);
+		return this.head.stab(time);
 	}
 	
 	/**
@@ -89,7 +89,7 @@ public class IntervalTree<Type> {
 	 */
 	public List<Interval<Type>> getIntervals(long start, long end) {
 		build();
-		return head.query(new Interval<Type>(start, end, null));
+		return this.head.query(new Interval<Type>(start, end, null));
 	}
 	
 	/**
@@ -98,8 +98,8 @@ public class IntervalTree<Type> {
 	 * @param interval the interval object to add
 	 */
 	public void addInterval(Interval<Type> interval) {
-		intervalList.add(interval);
-		inSync = false;
+		this.intervalList.add(interval);
+		this.inSync = false;
 	}
 	
 	/**
@@ -110,8 +110,8 @@ public class IntervalTree<Type> {
 	 * @param data	the data to associate
 	 */
 	public void addInterval(long begin, long end, Type data) {
-		intervalList.add(new Interval<Type>(begin, end, data));
-		inSync = false;
+		this.intervalList.add(new Interval<Type>(begin, end, data));
+		this.inSync = false;
 	}
 	
 	/**
@@ -119,7 +119,7 @@ public class IntervalTree<Type> {
 	 * @return true if no changes have been made since the last build
 	 */
 	public boolean inSync() {
-		return inSync;
+		return this.inSync;
 	}
 	
 	/**
@@ -127,10 +127,10 @@ public class IntervalTree<Type> {
 	 * Will not run if this is currently in sync
 	 */
 	public void build() {
-		if(!inSync) {
-			head = new IntervalNode<Type>(intervalList);
-			inSync = true;
-			size = intervalList.size();
+		if(!this.inSync) {
+			this.head = new IntervalNode<Type>(this.intervalList);
+			this.inSync = true;
+			this.size = this.intervalList.size();
 		}
 	}
 	
@@ -138,19 +138,19 @@ public class IntervalTree<Type> {
 	 * @return the number of entries in the currently built interval tree
 	 */
 	public int currentSize() {
-		return size;
+		return this.size;
 	}
 	
 	/**
 	 * @return the number of entries in the interval list, equal to .size() if inSync()
 	 */
 	public int listSize() {
-		return intervalList.size();
+		return this.intervalList.size();
 	}
 	
 	@Override
 	public String toString() {
-		return nodeString(head,0);
+		return nodeString(this.head,0);
 	}
 	
 	private String nodeString(IntervalNode<Type> node, int level) {		

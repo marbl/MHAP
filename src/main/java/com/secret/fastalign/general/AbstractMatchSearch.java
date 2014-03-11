@@ -249,7 +249,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		return combinedList;	
 	}
 
-	protected abstract List<MatchResult> findMatches(H hashes, boolean allToAll);
+	protected abstract List<MatchResult> findMatches(H hashes, boolean toSelf);
 
 	public long getMatchesProcessed()
 	{

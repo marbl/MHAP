@@ -29,8 +29,8 @@ public class EstimateROC {
 
 		@SuppressWarnings("unused")
 		public int size() {
-			return (Math.max(first, (int) second)
-					- Math.min(first, (int) second) + 1);
+			return (Math.max(this.first, (int) this.second)
+					- Math.min(this.first, (int) this.second) + 1);
 		}
 	}
 
@@ -163,20 +163,20 @@ public class EstimateROC {
 				+ "_" + id);
 	}
 	private String pickRandomSequence() {
-		int val = generator.nextInt(seqToName.size());
-		return seqToName.get(val);
+		int val = generator.nextInt(this.seqToName.size());
+		return this.seqToName.get(val);
 	}
 	
 	private String pickRandomMatch() {
-		int val = generator.nextInt(ovlToName.size());
-		return ovlToName.get(val);
+		int val = generator.nextInt(this.ovlToName.size());
+		return this.ovlToName.get(val);
 	}
 	
 	private int getOverlapSize(String id, String id2) {
-		String chr = seqToChr.get(id);
-		String chr2 = seqToChr.get(id2);
-		Pair p1 = seqToPosition.get(id);
-		Pair p2 = seqToPosition.get(id2);
+		String chr = this.seqToChr.get(id);
+		String chr2 = this.seqToChr.get(id2);
+		Pair p1 = this.seqToPosition.get(id);
+		Pair p2 = this.seqToPosition.get(id2);
 		if (!chr.equalsIgnoreCase(chr2)) {
 			System.err.println("Error: comparing wrong chromosomes!");
 			System.exit(1);
@@ -186,17 +186,17 @@ public class EstimateROC {
 	}
 
 	private HashSet<String> getSequenceMatches(String id, int min) {
-		String chr = seqToChr.get(id);
-		Pair p1 = seqToPosition.get(id);
-		List<Integer> intersect = clusters.get(chr).get(p1.first,
+		String chr = this.seqToChr.get(id);
+		Pair p1 = this.seqToPosition.get(id);
+		List<Integer> intersect = this.clusters.get(chr).get(p1.first,
 				(long) p1.second);
 		HashSet<String> result = new HashSet<String>();
 
 		Iterator<Integer> it = intersect.iterator();
 		while (it.hasNext()) {
-			String id2 = seqToName.get(it.next());
-			Pair p2 = seqToPosition.get(id2);
-			String chr2 = seqToChr.get(id2);
+			String id2 = this.seqToName.get(it.next());
+			Pair p2 = this.seqToPosition.get(id2);
+			String chr2 = this.seqToChr.get(id2);
 			if (!chr.equalsIgnoreCase(chr2)) {
 				System.err.println("Error: comparing wrong chromosomes!");
 				System.exit(1);
@@ -250,17 +250,19 @@ public class EstimateROC {
 			if (id.equalsIgnoreCase(id2)) {
 				continue;
 			}
-			if (seqToChr.get(id) == null || seqToChr.get(id2) == null) {
+			if (this.seqToChr.get(id) == null || this.seqToChr.get(id2) == null) {
 				continue;
 			}
 			String ovlName = getOvlName(id, id2);
-			if (ovlNames.contains(ovlName)) {
+			if (this.ovlNames.contains(ovlName)) {
 				continue;
 			}
-			ovlNames.add(ovlName);
-			ovlToName.put(counter, ovlName);
+			this.ovlNames.add(ovlName);
+			this.ovlToName.put(counter, ovlName);
 			counter++;
 		}
+		
+		bf.close();
 //		ovlToName = ovlNames.toArray(new String[counter]);
 	}
 
@@ -290,32 +292,32 @@ public class EstimateROC {
 			int startInRef = Integer.parseInt(splitLine[9]);
 			int endInRef = Integer.parseInt(splitLine[10]);
 			String chr = splitLine[1];
-			if (!clusters.containsKey(chr)) {
-				clusters.put(chr, new IntervalTree<Integer>());
+			if (!this.clusters.containsKey(chr)) {
+				this.clusters.put(chr, new IntervalTree<Integer>());
 			}
-			clusters.get(chr).addInterval((long) startInRef, (long) endInRef,
+			this.clusters.get(chr).addInterval((long) startInRef, (long) endInRef,
 					counter);
-			seqToPosition.put(id, new Pair(startInRef, endInRef));
-			seqToChr.put(id, chr);
-			seqToName.put(counter, id);
+			this.seqToPosition.put(id, new Pair(startInRef, endInRef));
+			this.seqToChr.put(id, chr);
+			this.seqToName.put(counter, id);
 			counter++;
 		}
 		bf.close();
-		for (String chr : clusters.keySet()) {
-			clusters.get(chr).build();
+		for (String chr : this.clusters.keySet()) {
+			this.clusters.get(chr).build();
 		}
 	}
 
 	private boolean overlapExists(String id, String id2) {
-		return ovlNames.contains(getOvlName(id, id2));
+		return this.ovlNames.contains(getOvlName(id, id2));
 	}
 
 	private void checkMatches(String id, HashSet<String> matches) {
 		for (String m : matches) {
 			if (overlapExists(id, m)) {
-				tp++;
+				this.tp++;
 			} else {
-				fn++;
+				this.fn++;
 			}
 		}
 	}
@@ -323,10 +325,10 @@ public class EstimateROC {
 	private void estimateSensitivity() {
 		// we estimate TP/FN by randomly picking a sequence, getting its
 		// cluster, and checking our matches
-		for (int i = 0; i < numTrials; i++) {
+		for (int i = 0; i < this.numTrials; i++) {
 			// pick cluster
 			String id = pickRandomSequence();
-			HashSet<String> matches = getSequenceMatches(id, minOvlLen);
+			HashSet<String> matches = getSequenceMatches(id, this.minOvlLen);
 			checkMatches(id, matches);
 		}
 	}
@@ -335,7 +337,7 @@ public class EstimateROC {
 		long numFPCompared = 0;
 
 		// we estimate FP/TN by randomly picking two sequences
-		for (int i = 0; i < numTrials; i++) {
+		for (int i = 0; i < this.numTrials; i++) {
 			// pick cluster
 			String id = pickRandomSequence();
 			String other = pickRandomSequence();
@@ -346,12 +348,12 @@ public class EstimateROC {
 
 			if (overlapExists(id, other)) {
 				if (!matches.contains(other)) {
-					fp++;
+					this.fp++;
 				}
 				numFPCompared++;
 			} else {
 				if (!matches.contains(other)) {
-					tn++;
+					this.tn++;
 				}
 			}
 		}
@@ -359,7 +361,7 @@ public class EstimateROC {
 	
 	private void estimatePPV() {
 		int numTP = 0;
-		for (int i = 0; i < numTrials; i++) {
+		for (int i = 0; i < this.numTrials; i++) {
 			// pick an overlap
 			String[] ovl = pickRandomMatch().split("_");
 			String id = ovl[0];
@@ -372,32 +374,32 @@ public class EstimateROC {
 		}
 		
 		// now our formula for PPV. Estimate percent of our matches which are true
-		ppv = (double)numTP / numTrials;
+		this.ppv = (double)numTP / this.numTrials;
 	}
 	
 	private void fullEstimate() {
-		for (int i = 0; i < seqToName.size(); i++) {
-			String id = seqToName.get(i);
-			for (int j = i+1; j < seqToName.size(); j++) {
-				String id2 = seqToName.get(j);
+		for (int i = 0; i < this.seqToName.size(); i++) {
+			String id = this.seqToName.get(i);
+			for (int j = i+1; j < this.seqToName.size(); j++) {
+				String id2 = this.seqToName.get(j);
 				if (id == null || id2 == null) { continue; }
 				HashSet<String> matches = getSequenceMatches(id, 0);
 
 				if (!overlapExists(id, id2)) {
 					if (!matches.contains(id2)) {
-						tn++;
-					} else if (getOverlapSize(id, id2) > minOvlLen) {
-						fn++;
+						this.tn++;
+					} else if (getOverlapSize(id, id2) > this.minOvlLen) {
+						this.fn++;
 					}
 				} else {
 					if (matches.contains(id2)) {
-						tp++;
+						this.tp++;
 					} else {
-						fp++;
+						this.fp++;
 					}
 				}
 			}
 		}
-		ppv = (double)tp / (tp+fp);
+		this.ppv = (double)this.tp / (this.tp+this.fp);
 	}
 }
