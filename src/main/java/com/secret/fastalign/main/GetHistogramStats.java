@@ -1,7 +1,6 @@
 package com.secret.fastalign.main;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.TreeMap;
 
 import com.secret.fastalign.utils.Utils;
@@ -32,7 +31,7 @@ public class GetHistogramStats {
 		}
 	}
 
-	public void process() throws NumberFormatException, IOException {
+	public void process() throws NumberFormatException {
 		double variance = 0;
 		double sum = 0;
 		int total = 0;
@@ -67,7 +66,7 @@ public class GetHistogramStats {
 				+ "\t" + Utils.DECIMAL_FORMAT.format(this.mean + NUM_SD * this.stdev);
 	}
 	
-	public static void main(String[] args) throws NumberFormatException, IOException {
+	public static void main(String[] args) throws NumberFormatException {
 		GetHistogramStats s = new GetHistogramStats(args[0], Double.parseDouble(args[1]));
 		s.process();
 		System.out.println(s.toString());
