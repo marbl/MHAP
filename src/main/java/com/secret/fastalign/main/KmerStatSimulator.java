@@ -304,7 +304,7 @@ public class KmerStatSimulator {
 					errorRate, firstAdj, errors, insertionPercentage,
 					deletionPercentage, subPercentage, false);
 
-			if (kmer < 0) { // we were only asked to simulate sequences not compare
+			if (this.kmer < 0) { // we were only asked to simulate sequences not compare
 				System.out.println(">s" + i);
 				System.out.println(Utils.convertToFasta(firstSeq));
 				continue;
