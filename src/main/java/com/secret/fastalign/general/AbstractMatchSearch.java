@@ -14,16 +14,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.ReadBuffer;
+import com.secret.fastalign.utils.Utils;
 
 public abstract class AbstractMatchSearch<H extends SequenceHashes>
 {
 	private final AtomicLong matchesProcessed;
-	private final AtomicLong sequencesSearched;
-
 	protected final int numThreads;
-	private final boolean storeResults;
-	protected static BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(System.out), 8*1024*1024);
 
+	private final AtomicLong sequencesSearched;
+	private final boolean storeResults;
+
+	public final static int NUM_ELEMENTS_PER_OUTPUT = 20000;
+	protected final static BufferedWriter STD_OUT_BUFFER = new BufferedWriter(new OutputStreamWriter(System.out), Utils.BUFFER_BYTE_SIZE);
+	
 	public AbstractMatchSearch(int numThreads, boolean storeResults)
 	{
 		this.numThreads = numThreads;
@@ -31,7 +34,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		this.matchesProcessed = new AtomicLong();
 		this.sequencesSearched = new AtomicLong();
 	}
-	
+
 	protected void addData(final AbstractSequenceHashStreamer<H> data)
 	{
 		//figure out number of cores
@@ -83,7 +86,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
 	  }
 	}
-
+	
 	protected abstract boolean addSequence(H seqHashes);
 	
 	public ArrayList<MatchResult> findMatches()
@@ -122,7 +125,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		    		nextSequence = seqList.poll();
 
 		    		//output stored results
-		    		if (nextSequence==null || localMatches.size()>20000)
+		    		if (nextSequence==null || localMatches.size()>=NUM_ELEMENTS_PER_OUTPUT)
 		    		{
 			    		//count the number of matches
 			  			AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
@@ -164,7 +167,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 
 	  return combinedList;
 	}
-	
+
 	public ArrayList<MatchResult> findMatches(final AbstractSequenceHashStreamer<H> data) throws IOException
 	{
 		//figure out number of cores
@@ -201,7 +204,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		      		sequenceHashes = data.dequeue(true, buf);			    		
 
 			    		//output stored results
-			    		if (sequenceHashes==null || localMatches.size()>20000)
+			    		if (sequenceHashes==null || localMatches.size()>=NUM_ELEMENTS_PER_OUTPUT)
 			    		{
 				    		//count the number of matches
 				  			AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
@@ -250,53 +253,23 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 	}
 
 	protected abstract List<MatchResult> findMatches(H hashes, boolean toSelf);
-
-	public long getMatchesProcessed()
-	{
-		return this.matchesProcessed.get();
-	}
 	
-	public abstract List<SequenceId> getStoredForwardSequenceIds();
-	
-	public abstract H getStoredSequenceHash(SequenceId id);
-
 	protected void flushOutput()
 	{
 		try
 		{
-			outWriter.flush();
+			STD_OUT_BUFFER.flush();
 		}
 		catch (IOException e)
 		{
 			throw new FastAlignRuntimeException(e);
 		}
 	}
-
-	protected void outputResults(List<MatchResult> matches)
+	
+	public long getMatchesProcessed()
 	{
-		if (this.storeResults || matches.isEmpty())
-			return;
-		
-		try
-		{
-			synchronized (outWriter)
-			{
-				for (MatchResult currResult : matches)
-				{
-					outWriter.write(currResult.toString());
-					outWriter.newLine();
-				}
-
-				outWriter.flush();
-			}
-		}
-		catch (IOException e)
-		{
-			throw new FastAlignRuntimeException(e);
-		}
+		return this.matchesProcessed.get();
 	}
-
-	public abstract int size();
 
 	/**
 	 * @return the sequencesSearched
@@ -306,12 +279,34 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		return this.sequencesSearched.get();
 	}
 
-	/**
-	 * @param outWriter the outWriter to set
-	 */
-	public static void setOutWriter(BufferedWriter outWriter)
+	public abstract List<SequenceId> getStoredForwardSequenceIds();
+
+	public abstract H getStoredSequenceHash(SequenceId id);
+
+	protected void outputResults(List<MatchResult> matches)
 	{
-		AbstractMatchSearch.outWriter = outWriter;
+		if (this.storeResults || matches.isEmpty())
+			return;
+		
+		try
+		{
+			synchronized (STD_OUT_BUFFER)
+			{
+				for (MatchResult currResult : matches)
+				{
+					STD_OUT_BUFFER.write(currResult.toString());
+					STD_OUT_BUFFER.newLine();
+				}
+
+				STD_OUT_BUFFER.flush();
+			}
+		}
+		catch (IOException e)
+		{
+			throw new FastAlignRuntimeException(e);
+		}
 	}
+
+	public abstract int size();
 
 }
