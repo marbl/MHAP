@@ -180,9 +180,9 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 			System.err.println(error);
 		}
 		System.err
-				.println("Usage 1 FastAlignMain -s<fasta/dat from/self file> [-q<fasta/dat to file] [-f<kmer filter list]");
+				.println("Usage 1 FastAlignMain -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
 		System.err
-				.println("Usage 2 FastAlignMain -p<directory of fasta files> -q <output directory> [-f<kmer filter list]");
+				.println("Usage 2 FastAlignMain -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
 		System.err.println("\t  --memory [do not store kmers in memory]");

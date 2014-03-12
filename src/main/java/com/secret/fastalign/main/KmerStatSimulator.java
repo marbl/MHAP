@@ -175,7 +175,6 @@ public class KmerStatSimulator {
 				realErrorStr, 0.792, 0.122, 0.086, true);
 	}
 
-	@SuppressWarnings("unused")
 	private String getSequence(int seqLength, int firstPos, String sequence,
 			double errorRate, StringBuilder profile,
 			StringBuilder realErrorStr, double insertionRate,

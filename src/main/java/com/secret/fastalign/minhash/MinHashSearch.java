@@ -272,13 +272,20 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 					throw new FastAlignRuntimeException("Hashes not found for given id.");
 				
 				//never process short to short
-				if (seqMinHashes.getSequenceLength()<this.minStoreLength && matchedHashes.getSequenceLength()<this.minStoreLength)
+				if (matchedHashes.getSequenceLength()<this.minStoreLength && seqMinHashes.getSequenceLength()<this.minStoreLength)
 					continue;
+				
 				//never process long to long in self, with greater id
 				if (toSelf 
 						&& matchId.getHeaderId() > seqMinHashes.getSequenceId().getHeaderId()
-						&& seqMinHashes.getSequenceLength()>=this.minStoreLength
-						&& matchedHashes.getSequenceLength()>=this.minStoreLength)
+						&& matchedHashes.getSequenceLength()>=this.minStoreLength
+						&& seqMinHashes.getSequenceLength()>=this.minStoreLength)
+					continue;
+				
+				//never do short to long
+				if (toSelf 
+						&& matchedHashes.getSequenceLength()<this.minStoreLength
+						&& seqMinHashes.getSequenceLength()>=this.minStoreLength)
 					continue;
 				
 				Pair<Double, Integer> result = seqMinHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
