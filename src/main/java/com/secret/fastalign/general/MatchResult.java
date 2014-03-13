@@ -66,7 +66,7 @@ public final class MatchResult implements Comparable<MatchResult>
 	@Override
 	public String toString()
 	{
-		return String.format("%s %s %s %d %d %.2f", getFromId().getHeaderId(), getToId().getHeaderId(),
+		return String.format("%s %s %s %d %d %.5f", getFromId().getHeaderId(), getToId().getHeaderId(),
 				getFromId().isForward()&&getToId().isForward() ? 'N' : 'I', 
 				getAShift(), getBShift(), (1.0-getScore())*100.0);
 	}

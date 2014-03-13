@@ -244,8 +244,10 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()
 				/ (double) matchSearch.getNumberSequencesSearched());
-		System.err.println("Average number of elements processed per lookup: " + (double) matchSearch.getNumberElementsProcessed()
+		System.err.println("Average number of table elements processed per lookup: " + (double) matchSearch.getNumberElementsProcessed()
 				/ (double) (matchSearch.getNumberSequencesSearched()));
+		System.err.println("Average number of table elements processed per match: " + (double) matchSearch.getNumberElementsProcessed()
+				/ (double) (matchSearch.getMatchesProcessed()));
 		System.err.println("Average % of hashed sequences hit per lookup: " + (double) matchSearch.getNumberSequencesHit()
 				/ (double) (matchSearch.size() * matchSearch.getNumberSequencesSearched()) * 100.0);
 		System.err.println("Average % of hashed sequences hit that are matches: "
