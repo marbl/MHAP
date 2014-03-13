@@ -16,24 +16,25 @@ import com.secret.fastalign.general.OrderKmerHashes;
 import com.secret.fastalign.general.SequenceId;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Pair;
+import com.secret.fastalign.utils.Utils;
 
 public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHashes>
 {
-	private final HashMap<Integer, ArrayList<SequenceId>> hashes;
-
-	private final int minStoreLength;
-	private final AtomicLong numberSequencesFullyCompared;
-	private final AtomicLong numberSequencesHit;
-	private final AtomicLong numberSequencesHashed;
-	private final AtomicLong numberElementsProcessed;
-	
-	private final int numMinMatches;
-	private final ConcurrentHashMap<SequenceId, SequenceDirectHashes> sequenceVectorsHash;
-
-	private final int maxShift;
 	private final double acceptScore;
 
+	private final HashMap<Integer, ArrayList<SequenceId>> hashes;
+	private final int maxShift;
+	private final int minStoreLength;
+	private final AtomicLong numberElementsProcessed;
+	private final AtomicLong numberSequencesFullyCompared;
+	
+	private final AtomicLong numberSequencesHashed;
+	private final AtomicLong numberSequencesHit;
+
 	private final int numHashes;
+	private final int numMinMatches;
+
+	private final ConcurrentHashMap<SequenceId, SequenceDirectHashes> sequenceVectorsHash;
 
 	public DirectHashSearch(AbstractSequenceHashStreamer<SequenceDirectHashes> data, int numHashes, int numMinMatches, int numThreads, 
 			boolean storeResults, int minStoreLength, int maxShift, double acceptScore) throws IOException
@@ -208,6 +209,11 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 		return matches;
 	}
 
+	public long getNumberElementsProcessed()
+	{
+		return this.numberElementsProcessed.get();
+	}
+
 	public long getNumberSequenceHashed()
 	{
 		return this.numberSequencesHashed.get();
@@ -217,15 +223,10 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 	{
 		return this.numberSequencesFullyCompared.get();
 	}
-
+	
 	public long getNumberSequencesHit()
 	{
 		return this.numberSequencesHit.get();
-	}
-	
-	public long getNumberElementsProcessed()
-	{
-		return this.numberElementsProcessed.get();
 	}
 	
 	@Override
@@ -238,11 +239,16 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 		
 		return seqIds;
 	}
-
+	
 	@Override
 	public SequenceDirectHashes getStoredSequenceHash(SequenceId id)
 	{
 		return this.sequenceVectorsHash.get(id);
+	}
+
+	public double hashTableNormalizedEnthropy()
+	{
+		return Utils.hashEfficiency(this.hashes);
 	}
 
 	@Override

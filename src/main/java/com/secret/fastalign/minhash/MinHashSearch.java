@@ -15,6 +15,7 @@ import com.secret.fastalign.general.SequenceId;
 import com.secret.fastalign.general.SubSequenceId;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Pair;
+import com.secret.fastalign.utils.Utils;
 
 public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 {
@@ -336,6 +337,17 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	public long getNumberSubSequencesHit()
 	{
 		return this.numberSubSequencesHit.get();
+	}
+	
+	public double hashTableNormalizedEnthropy()
+	{
+		double sum = 0.0;
+		for (HashMap<Integer, ArrayList<SubSequenceId>> map : this.hashes)
+		{
+			sum+=Utils.hashEfficiency(map);
+		}
+		
+		return sum/(double)this.hashes.size();
 	}
 	
 	@Override
