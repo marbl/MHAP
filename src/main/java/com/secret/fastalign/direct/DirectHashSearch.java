@@ -123,11 +123,13 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 		OrderKmerHashes mainHashes = seqHashes.getMainHashes();
 		int numStoredHashes = mainHashes.size();
 		
-		
 		HashMap<SequenceId, Integer> bestSequenceHit = new HashMap<SequenceId, Integer>(1024);
-		for (int kmer = 0; kmer < this.numHashes; kmer++)
+		int lookupSize = this.numHashes>0 ? this.numHashes : numStoredHashes;
+		for (int kmer = 0; kmer < lookupSize; kmer++)
 		{
-			int randIndex = rand.nextInt(numStoredHashes);
+			int randIndex = kmer;
+			if (this.numHashes>0)
+				randIndex = rand.nextInt(numStoredHashes);
 			
 			//get the random hash
 			int hashValue = mainHashes.getHash(randIndex);
@@ -163,7 +165,7 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 				continue;
 
 			//see if the hit number is high enough			
-			if (match.getValue() >= this.numMinMatches*3)
+			if (match.getValue() >= this.numMinMatches)
 			{
 				SequenceDirectHashes matchedHashes = this.sequenceVectorsHash.get(match.getKey());
 				if (matchedHashes==null)
