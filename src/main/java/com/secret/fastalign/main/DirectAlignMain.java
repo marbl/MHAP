@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Locale;
 
+import com.secret.fastalign.direct.DirectHashSearch;
+import com.secret.fastalign.direct.SequenceDirectHashStreamer;
+import com.secret.fastalign.direct.SequenceDirectHashes;
 import com.secret.fastalign.general.AbstractSequenceHashStreamer;
 import com.secret.fastalign.general.AbstractSequenceSearchMain;
-import com.secret.fastalign.minhash.MinHashSearch;
-import com.secret.fastalign.minhash.SequenceMinHashStreamer;
-import com.secret.fastalign.minhash.SequenceMinHashes;
 import com.secret.fastalign.utils.Utils;
 
-public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearch, SequenceMinHashes>
+public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHashSearch, SequenceDirectHashes>
 {
 	private final HashSet<Integer> filter;
 
@@ -23,17 +23,15 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private final int numMinMatches;
 
-	private final int subSequenceSize;
-
 	private final double acceptScore;
 
 	private final int maxShift;
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
-	private static final int DEFAULT_KMER_SIZE = 16;
-
 	private static final int DEFAULT_ORDERED_KMER_SIZE = 12;
+
+	private static final int DEFAULT_KMER_SIZE = 16;
 
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
@@ -167,7 +165,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 		}
 
 		// start the main program
-		FastAlignMain main = new FastAlignMain(processFile, inFile, toFile, noSelf, subSequenceSize, numHashes, kmerSize,
+		DirectAlignMain main = new DirectAlignMain(processFile, inFile, toFile, noSelf, subSequenceSize, numHashes, kmerSize,
 				numMinMatches, numThreads, filter, minStoreLength, maxShift, acceptScore);
 
 		main.computeMain();
@@ -180,9 +178,9 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 			System.err.println(error);
 		}
 		System.err
-				.println("Usage 1 FastAlignMain -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
+				.println("Usage 1 DirectAlignMain -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
 		System.err
-				.println("Usage 2 FastAlignMain -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
+				.println("Usage 2 DirectAlignMain -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
 		System.err.println("\t  --memory [do not store kmers in memory]");
@@ -207,12 +205,11 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 		System.exit(1);
 	}
 
-	public FastAlignMain(String processFile, String inFile, String toFile, boolean noSelf, int subSequenceSize,
+	public DirectAlignMain(String processFile, String inFile, String toFile, boolean noSelf, int subSequenceSize,
 			int numHashes, int kmerSize, int numMinMatches, int numThreads, HashSet<Integer> filter, int minStoreLength,
 			int maxShift, double acceptScore)
 	{
 		super(processFile, inFile, toFile, noSelf, numThreads);
-		this.subSequenceSize = subSequenceSize;
 		this.numHashes = numHashes;
 		this.kmerSize = kmerSize;
 		this.numMinMatches = numMinMatches;
@@ -223,27 +220,26 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 	}
 
 	@Override
-	public MinHashSearch getMatchSearch(AbstractSequenceHashStreamer<SequenceMinHashes> hashStreamer) throws IOException
+	public DirectHashSearch getMatchSearch(AbstractSequenceHashStreamer<SequenceDirectHashes> hashStreamer) throws IOException
 	{
-		return new MinHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
+		return new DirectHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
 				this.minStoreLength, this.maxShift, this.acceptScore);
 	}
 
 	@Override
-	public SequenceMinHashStreamer getSequenceHashStreamer(String file, int offset) throws IOException
+	public SequenceDirectHashStreamer getSequenceHashStreamer(String file, int offset) throws IOException
 	{
-		SequenceMinHashStreamer seqStreamer;
+		SequenceDirectHashStreamer seqStreamer;
 		if (file.endsWith(".dat"))
-			seqStreamer = new SequenceMinHashStreamer(file, offset);
+			seqStreamer = new SequenceDirectHashStreamer(file, offset);
 		else
-			seqStreamer = new SequenceMinHashStreamer(file, this.kmerSize, this.numHashes, this.subSequenceSize,
-					DEFAULT_ORDERED_KMER_SIZE, this.filter, offset);
+			seqStreamer = new SequenceDirectHashStreamer(file, this.kmerSize, DEFAULT_ORDERED_KMER_SIZE, this.filter, offset);
 
 		return seqStreamer;
 	}
 
 	@Override
-	protected void outputFinalStat(MinHashSearch matchSearch)
+	protected void outputFinalStat(DirectHashSearch matchSearch)
 	{
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()

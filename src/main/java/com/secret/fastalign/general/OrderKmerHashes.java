@@ -138,6 +138,14 @@ public class OrderKmerHashes
     }
 	}
 	
+	public int getHash(int index)
+	{
+		int i1 = index/this.orderedHashes[0].length;
+		int i2 = index%this.orderedHashes[0].length;
+		
+		return this.orderedHashes[i1][i2][0];
+	}
+	
 	private int[][][] storeAsArray(SortableIntPair[] completeHashAsPair)
 	{
 		//allocate the memory

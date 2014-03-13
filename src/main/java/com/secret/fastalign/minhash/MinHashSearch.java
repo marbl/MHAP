@@ -85,21 +85,23 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		
 	}
 
-	private final ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>> hashes;
+	private final double acceptScore;
 
+	private final ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>> hashes;
+	private final int maxShift;
 	private final int minStoreLength;
+	private final AtomicLong numberElementsProcessed;
 	private final AtomicLong numberSequencesFullyCompared;
+
 	private final AtomicLong numberSequencesHit;
 	private final AtomicLong numberSequencesMinHashed;
-	
 	private final AtomicLong numberSubSequences;
 	private final AtomicLong numberSubSequencesHit;
+
 	private final int numMinMatches;
 	private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
 
-	private final int maxShift;
-	private final double acceptScore;
-
+	
 	public MinHashSearch(AbstractSequenceHashStreamer<SequenceMinHashes> data, int numHashes, int numMinMatches, int numThreads, 
 			boolean storeResults, int minStoreLength, int maxShift, double acceptScore) throws IOException
 	{
@@ -114,6 +116,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		this.numberSequencesFullyCompared = new AtomicLong();
 		this.numberSubSequences = new AtomicLong();
 		this.numberSequencesMinHashed = new AtomicLong();
+		this.numberElementsProcessed = new AtomicLong();
 		
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
@@ -209,6 +212,8 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 				// if some matches exist add them
 				if (currentHashMatchList != null)
 				{
+					this.numberElementsProcessed.getAndAdd(currentHashMatchList.size());
+
 					for (SubSequenceId subSequenceId : currentHashMatchList)
 					{
 						MatchId matchedId = new MatchId(subSequenceId, subSequence);
@@ -308,6 +313,11 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		return matches;
 	}
 
+	public long getNumberElementsProcessed()
+	{
+		return this.numberElementsProcessed.get();
+	}
+
 	public long getNumberSequenceHashed()
 	{
 		return this.numberSequencesMinHashed.get();
@@ -322,7 +332,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	{
 		return this.numberSequencesHit.get();
 	}
-
+	
 	public long getNumberSubSequencesHit()
 	{
 		return this.numberSubSequencesHit.get();
