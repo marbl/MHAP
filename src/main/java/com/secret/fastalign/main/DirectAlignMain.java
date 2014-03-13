@@ -242,6 +242,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 	protected void outputFinalStat(DirectHashSearch matchSearch)
 	{
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
+		System.err.println("Hash table Shannon normalized entropy: " + matchSearch.hashTableNormalizedEnthropy());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()
 				/ (double) matchSearch.getNumberSequencesSearched());
 		System.err.println("Average number of table elements processed per lookup: " + (double) matchSearch.getNumberElementsProcessed()
