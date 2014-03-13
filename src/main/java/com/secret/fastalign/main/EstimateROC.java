@@ -34,7 +34,8 @@ public class EstimateROC {
 		public int second;
 
 		public Pair(int startInRef, int endInRef) {
-			// TODO Auto-generated constructor stub
+			this.first = startInRef;
+			this.second = endInRef;
 		}
 
 		@SuppressWarnings("unused")
@@ -55,6 +56,24 @@ public class EstimateROC {
 
 		public Overlap() {
 			// do nothing
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("Overlap Aid=");
+			stringBuilder.append(this.id1);
+			stringBuilder.append(" (");
+			stringBuilder.append(this.afirst);
+			stringBuilder.append(", ");
+			stringBuilder.append(this.asecond);
+			stringBuilder.append("), Bid=");
+			stringBuilder.append(this.id2);
+			stringBuilder.append(" (");
+			stringBuilder.append(this.bfirst);
+			stringBuilder.append("), ");
+			stringBuilder.append(this.bsecond);
+			return stringBuilder.toString();
 		}
 	}
 
@@ -116,12 +135,6 @@ public class EstimateROC {
 		g.processReference(args[0]);
 		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 
-		// load matches
-		System.err.print("Loading matches...");
-		startTime = System.nanoTime();
-		g.processOverlaps(args[1]);
-		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
-
 		if (args.length > 4) {
 			// load fasta
 			System.err.print("Loading fasta...");
@@ -129,6 +142,12 @@ public class EstimateROC {
 			g.loadFasta(args[4]);
 			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 		}
+		
+		// load matches
+		System.err.print("Loading matches...");
+		startTime = System.nanoTime();
+		g.processOverlaps(args[1]);
+		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 		
 		if (g.numTrials == 0) {
 			System.err.print("Computing full statistics O(" + g.seqToName.size() + "^2) operations!...");
@@ -256,6 +275,14 @@ public class EstimateROC {
 				int aoffset = Integer.parseInt(splitLine[3]);
 				int boffset = Integer.parseInt(splitLine[4]);
 				boolean isFwd = ("N".equals(splitLine[2]));
+				if (this.dataSeq != null) {
+					int alen = this.dataSeq[Integer.parseInt(overlap.id1)-1].length();
+					int blen = this.dataSeq[Integer.parseInt(overlap.id2)-1].length();
+					overlap.afirst = Math.max(0, aoffset);
+					overlap.asecond = Math.min(alen, alen + boffset);
+					overlap.bfirst = -1*Math.min(0, aoffset);
+					overlap.bsecond = Math.min(blen, blen - boffset);
+				}
 			} else if (splitLine.length == 13) {
 				overlap.afirst = Integer.parseInt(splitLine[5]);
 				overlap.asecond = Integer.parseInt(splitLine[6]);
@@ -420,7 +447,7 @@ public class EstimateROC {
 		}
 		Alignment alignment;
 		try {
-			alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 0f);
+			alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 1f);
 		} catch (MatrixLoaderException e) {
 			return false;
 		}
