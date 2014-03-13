@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.io.File;
@@ -53,7 +54,7 @@ public final class Utils
 
 	public enum Translate
 	{
-		A("T"), C("G"), G("C"), T("A"), N("N"), Y("R"), R("Y"), W("W"), S("S"), K("M"), M("K"), D("H"), V("B"), H("D"), B("V");
+		A("T"), B("V"), C("G"), D("H"), G("C"), H("D"), K("M"), M("K"), N("N"), R("Y"), S("S"), T("A"), V("B"), W("W"), Y("R");
 
 		private String other;
 
@@ -69,8 +70,8 @@ public final class Utils
 	}
 
 	public static final int BUFFER_BYTE_SIZE = 8388608; //8MB
-	public static final int FASTA_LINE_LENGTH = 60;
 	public static final NumberFormat DECIMAL_FORMAT = new DecimalFormat("############.####");
+	public static final int FASTA_LINE_LENGTH = 60;
 
 	public static final int MBYTES = 1048576;
 
@@ -158,58 +159,6 @@ public final class Utils
 		return hashes;
 	}
 	
-	//adapted form http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
-	public final static int quickSelect(int[] array, int k, int length)
-	{
-		if (array == null || length <= k)
-			return Integer.MAX_VALUE;
-
-		int from = 0;
-		int to = length - 1;
-
-		// if from == to we reached the kth element
-		while (from < to)
-		{
-			int r = from;
-			int w = to;
-			int mid = array[(r + w) / 2];
-
-			// stop if the reader and writer meets
-			while (r < w)
-			{
-				if (array[r] >= mid)
-				{ 
-					// put the large values at the end
-					int tmp = array[w];
-					array[w] = array[r];
-					array[r] = tmp;
-					w--;
-				}
-				else
-				{ 
-					// the value is smaller than the pivot, skip
-					r++;
-				}
-			}
-
-			// if we stepped up (r++) we need to step one down
-			if (array[r] > mid)
-				r--;
-
-			// the r pointer is on the end of the first k elements
-			if (k <= r)
-			{
-				to = r;
-			}
-			else
-			{
-				from = r + 1;
-			}
-		}
-
-		return array[k];
-	}
-
 	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numHashes,
 			HashSet<Integer> filter)
 	{
@@ -287,7 +236,7 @@ public final class Utils
 
 		return hashes;
 	}
-
+	
 	// add new line breaks every FASTA_LINE_LENGTH characters
 	public final static String convertToFasta(String supplied)
 	{
@@ -533,6 +482,38 @@ public final class Utils
 		return null;
 	}
 
+	public final static <H> double hashEfficiency(HashMap<Integer,ArrayList<H>> c)
+	{
+		double e = hashEnthropy(c);
+		double log2inv = 1.0/Math.log(2);
+		double scaling = Math.log(c.size())*log2inv;
+		
+		return e/scaling;
+	}
+
+	public final static <H> double hashEnthropy(HashMap<Integer,ArrayList<H>> c)
+	{
+		double sum = 0.0;
+		double log2inv = 1.0/Math.log(2);
+		
+		double[] p = new double[c.size()];
+		int size = 0;
+		int count = 0;
+		for (ArrayList<H> elem : c.values())
+		{
+			size += elem.size();
+			p[count++] = elem.size();
+		}
+		
+		for (int iter=0; iter<p.length; iter++)
+		{
+			double val = p[iter]/(double)size;
+			sum -= val*Math.log(val)*log2inv;
+		}
+		
+		return sum;
+	}
+
 	public final static boolean isAContainedInB(int startA, int endA, int startB, int endB)
 	{
 		int minA = Math.min(startA, endA);
@@ -541,6 +522,58 @@ public final class Utils
 		int maxB = Math.max(startB, endB);
 
 		return (minB < minA && maxB > maxA);
+	}
+
+	//adapted form http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
+	public final static int quickSelect(int[] array, int k, int length)
+	{
+		if (array == null || length <= k)
+			return Integer.MAX_VALUE;
+
+		int from = 0;
+		int to = length - 1;
+
+		// if from == to we reached the kth element
+		while (from < to)
+		{
+			int r = from;
+			int w = to;
+			int mid = array[(r + w) / 2];
+
+			// stop if the reader and writer meets
+			while (r < w)
+			{
+				if (array[r] >= mid)
+				{ 
+					// put the large values at the end
+					int tmp = array[w];
+					array[w] = array[r];
+					array[r] = tmp;
+					w--;
+				}
+				else
+				{ 
+					// the value is smaller than the pivot, skip
+					r++;
+				}
+			}
+
+			// if we stepped up (r++) we need to step one down
+			if (array[r] > mid)
+				r--;
+
+			// the r pointer is on the end of the first k elements
+			if (k <= r)
+			{
+				to = r;
+			}
+			else
+			{
+				from = r + 1;
+			}
+		}
+
+		return array[k];
 	}
 
 	public final static String rc(String supplied)
