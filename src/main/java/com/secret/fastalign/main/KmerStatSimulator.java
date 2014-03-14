@@ -160,7 +160,7 @@ public class KmerStatSimulator {
 				result = 'T';
 			}
 
-			if (toExclude != null && toExclude == result) {
+			if (toExclude != null && toExclude.equals(result)) {
 				result = null;
 			}
 		}

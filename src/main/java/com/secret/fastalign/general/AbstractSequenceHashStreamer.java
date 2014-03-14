@@ -242,7 +242,8 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
     }
     finally 
     {
-      output.close();
+    	if (output!=null)
+    		output.close();
     }
   }
 }
