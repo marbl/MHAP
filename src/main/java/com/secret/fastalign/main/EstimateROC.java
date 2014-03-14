@@ -28,6 +28,7 @@ public class EstimateROC {
 	private static final double MIN_IDENTITY = 0.60;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 500;
+	private static final boolean DEFAULT_DO_DP = false;
 	private static boolean DEBUG = false;
 	
 	private static class Pair {
@@ -93,6 +94,7 @@ public class EstimateROC {
 	
 	private int minOvlLen = DEFAULT_MIN_OVL;
 	private int numTrials = DEFAULT_NUM_TRIALS;
+	private boolean doDP = false;
 	private long tp = 0;
 	private long fn = 0;
 	private long tn = 0;
@@ -108,26 +110,31 @@ public class EstimateROC {
 				.println("\t1. A blasr M4 file mapping sequences to a reference (or reference subset)");
 		System.err
 				.println("\t2. All-vs-all mappings of same sequences in CA ovl format");
-		System.err.println("\t3. Minimum overlap length (default: " + DEFAULT_MIN_OVL);
-		System.err.println("\t4. Number of random trials, 0 means full compute (default : " + DEFAULT_NUM_TRIALS);
-		System.err.println("\t5. Sequences in fasta format.");
+		System.err
+		.println("\t3. Fasta sequences");
+		System.err.println("\t4. Minimum overlap length (default: " + DEFAULT_MIN_OVL);
+		System.err.println("\t5. Number of random trials, 0 means full compute (default : " + DEFAULT_NUM_TRIALS);
+		System.err.println("\t6. Compute DP during PPV true/false");
+		System.err.println("\t7. Debug output true/false");
 	}
 
 	public static void main(String[] args) throws Exception {
-		if (args.length < 2) {
+		if (args.length < 3) {
 			printUsage();
 			System.exit(1);
 		}
 		EstimateROC g = null;
-		if (args.length > 3) {
-			g = new EstimateROC(Integer.parseInt(args[2]), Integer.parseInt(args[3]));
-		} else if (args.length > 2) {
-			g = new EstimateROC(Integer.parseInt(args[2]));
+		if (args.length > 5) {
+			g = new EstimateROC(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Boolean.parseBoolean(args[5]));
+		} else if (args.length > 4) {
+			g = new EstimateROC(Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+		} else if (args.length > 3) {
+			g = new EstimateROC(Integer.parseInt(args[3]));
 		} else {
 			g = new EstimateROC();
 		}
-		if (args.length > 5) {
-			DEBUG = Boolean.parseBoolean(args[5]);
+		if (args.length > 6) {
+			DEBUG = Boolean.parseBoolean(args[6]);
 		}
 		
 		System.err.println("Running, reference: " + args[0] + " matches: " + args[1]);
@@ -141,13 +148,11 @@ public class EstimateROC {
 		g.processReference(args[0]);
 		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 
-		if (args.length > 4) {
-			// load fasta
-			System.err.print("Loading fasta...");
-			startTime = System.nanoTime();
-			g.loadFasta(args[4]);
-			System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
-		}
+		// load fasta
+		System.err.print("Loading fasta...");
+		startTime = System.nanoTime();
+		g.loadFasta(args[2]);
+		System.err.println("done " + (System.nanoTime() - startTime) * 1.0e-9 + "s.");
 		
 		// load matches
 		System.err.print("Loading matches...");
@@ -197,10 +202,15 @@ public class EstimateROC {
 		this(minOvlLen, DEFAULT_NUM_TRIALS);
 	}
 	
-	@SuppressWarnings("unused")
 	public EstimateROC(int minOvlLen, int numTrials) {
+		this(minOvlLen, numTrials, DEFAULT_DO_DP);
+	}
+	
+	@SuppressWarnings("unused")
+	public EstimateROC(int minOvlLen, int numTrials, boolean doDP) {
 		this.minOvlLen = minOvlLen;
 		this.numTrials = numTrials;
+		this.doDP = doDP;
 		if (false) {
 			GregorianCalendar t = new GregorianCalendar();
 			int t1 = t.get(Calendar.SECOND);
@@ -455,7 +465,7 @@ public class EstimateROC {
 	}
 	
 	private boolean computeDP(String id, String id2) {
-		if (this.dataSeq == null) {
+		if (this.doDP == false) {
 			return false;
 		}
 		Logger logger = Logger.getLogger(SmithWatermanGotoh.class.getName());
