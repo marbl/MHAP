@@ -406,9 +406,21 @@ public class EstimateROC {
 			int start = Integer.parseInt(splitLine[5]);
 			int end = Integer.parseInt(splitLine[6]);
 			int length = Integer.parseInt(splitLine[7]);
+			int seqIsFwd = Integer.parseInt(splitLine[4]);
+			if (seqIsFwd != 0) {
+				System.err.println("Error: malformed line, first sequences should always be in fwd orientation");
+				System.exit(1);
+			}
 			int startInRef = Integer.parseInt(splitLine[9]);
 			int endInRef = Integer.parseInt(splitLine[10]);
+			int refLen = Integer.parseInt(splitLine[11]);
+			int isRev = Integer.parseInt(splitLine[8]);
 			int score = Integer.parseInt(splitLine[2]);
+			if (isRev == 1) {
+				int tmp = refLen - endInRef;
+				endInRef = refLen - startInRef;
+				startInRef = tmp;
+			}
 			String chr = splitLine[1];
 			if (!this.clusters.containsKey(chr)) {
 				this.clusters.put(chr, new IntervalTree<Integer>());
