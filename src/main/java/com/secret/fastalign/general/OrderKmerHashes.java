@@ -45,7 +45,7 @@ public class OrderKmerHashes
 	
 	private final int[][][] orderedHashes;
 
-	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
+	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.50;
 	public final static int MAX_ARRAY_SIZE = 1000;
 	
 	private final static int[][][] allocateMemory(int size)
@@ -280,9 +280,11 @@ public class OrderKmerHashes
 			else
 				shift = 0;
 
-			// int[] test = Arrays.copyOf(posShift, count);
-			// Arrays.sort(test);
-			// System.err.println(Arrays.toString(test));
+			/*
+			int[] test = Arrays.copyOf(posShift, count);
+			Arrays.sort(test);
+			System.err.println(Arrays.toString(test));
+			*/
 
 			// get the updated borders
 			valid1Lower = Math.max(0, -shift - border);
@@ -310,6 +312,8 @@ public class OrderKmerHashes
 				validCount++;
 		}
 		double validShiftPercent = (double) validCount / (double) count;
+		
+		//System.err.println(validShiftPercent);
 
 		double score = 0;
 		if (overlapSize > 0 && validShiftPercent > SHIFT_CONSENSUS_PERCENTAGE)

@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.secret.fastalign.utils.FastAlignRuntimeException;
 import com.secret.fastalign.utils.Utils;
 
-public class FastaData
+public class FastaData implements Cloneable
 {
 	private final BufferedReader fileReader;
 	private final int offset;
