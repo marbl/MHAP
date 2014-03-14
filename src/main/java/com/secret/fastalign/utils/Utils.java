@@ -173,7 +173,7 @@ public final class Utils
 		// get the rabin hashes
 		final int[] rabinHashes = computeSequenceHashes(seq, kmerSize);
 
-		final int[] hashes = new int[Math.max(1,numHashes)];
+		int[] hashes = new int[Math.max(1,numHashes)];
 		
 		Arrays.fill(hashes, Integer.MAX_VALUE);
 
@@ -214,6 +214,25 @@ public final class Utils
 					hashes[2 * word + 1] = val2;
 			}
 		}
+		
+		//now combine into super shingles
+		/*
+		HashFunction hf = Hashing.murmur3_32(0);
+		
+		int[] superShingles = new int[hashes.length];
+		for (int iter=0; iter<hashes.length; iter++)
+		{
+			int i1 = iter;
+			int i2 = (iter+1)%hashes.length;
+			
+			HashCode hc = hf.newHasher().
+					putInt(hashes[i1]).
+					putInt(hashes[i2]).
+					hash();
+			superShingles[iter] = hc.asInt();
+		}
+		hashes = superShingles;
+		*/
 
 		return hashes;
 	}

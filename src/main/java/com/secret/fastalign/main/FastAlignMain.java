@@ -51,7 +51,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
-	private static final double DEFAULT_ACCEPT_SCORE = 0.03;
+	private static final double DEFAULT_ACCEPT_SCORE = 0.04;
 
 	public static void main(String[] args) throws Exception
 	{
