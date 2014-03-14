@@ -28,6 +28,7 @@ public class EstimateROC {
 	private static final double MIN_IDENTITY = 0.60;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 500;
+	private static boolean DEBUG = false;
 	
 	private static class Pair {
 		public int first;
@@ -82,11 +83,13 @@ public class EstimateROC {
 
 	private HashMap<String, IntervalTree<Integer>> clusters = new HashMap<String, IntervalTree<Integer>>();
 	private HashMap<String, String> seqToChr = new HashMap<String, String>(10000000);
+	private HashMap<String, Integer> seqToScore = new HashMap<String, Integer>(10000000);
 	private HashMap<String, Pair> seqToPosition = new HashMap<String, Pair>(10000000);
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>(10000000);
-	private HashSet<String> ovlNames = new HashSet<String>(10000000*100);
-	private HashMap<String, Overlap> ovlInfo = new HashMap<String, Overlap>(10000000*100);
-	private HashMap<Integer, String> ovlToName = new HashMap<Integer, String>(10000000*100);
+	private HashMap<String, Integer> seqNameToIndex = new HashMap<String, Integer>(10000000);
+	private HashSet<String> ovlNames = new HashSet<String>(10000000*10);
+	private HashMap<String, Overlap> ovlInfo = new HashMap<String, Overlap>(10000000*10);
+	private HashMap<Integer, String> ovlToName = new HashMap<Integer, String>(10000000*10);
 	
 	private int minOvlLen = DEFAULT_MIN_OVL;
 	private int numTrials = DEFAULT_NUM_TRIALS;
@@ -122,6 +125,9 @@ public class EstimateROC {
 			g = new EstimateROC(Integer.parseInt(args[2]));
 		} else {
 			g = new EstimateROC();
+		}
+		if (args.length > 5) {
+			DEBUG = Boolean.parseBoolean(args[5]);
 		}
 		
 		System.err.println("Running, reference: " + args[0] + " matches: " + args[1]);
@@ -229,7 +235,7 @@ public class EstimateROC {
 		Pair p1 = this.seqToPosition.get(id);
 		Pair p2 = this.seqToPosition.get(id2);
 		if (!chr.equalsIgnoreCase(chr2)) {
-			System.err.println("Error: comparing wrong chromosomes!");
+			System.err.println("Error: comparing wrong chromosomes betweeen sequences " + id + " and sequence " + id2);
 			System.exit(1);
 		}
 		return Utils.getRangeOverlap(p1.first, p1.second,
@@ -249,7 +255,7 @@ public class EstimateROC {
 			Pair p2 = this.seqToPosition.get(id2);
 			String chr2 = this.seqToChr.get(id2);
 			if (!chr.equalsIgnoreCase(chr2)) {
-				System.err.println("Error: comparing wrong chromosomes!");
+				System.err.println("Error: comparing wrong chromosomes betweeen sequences " + id + " and sequence in its cluster " + id2);
 				System.exit(1);
 			}
 			int overlap = Utils.getRangeOverlap(p1.first, p1.second,
@@ -384,25 +390,44 @@ public class EstimateROC {
 			if (id.indexOf("/") != -1) {
 				id = id.substring(0, splitLine[0].indexOf("/"));
 			}
+			if (id.indexOf(",") != -1) {
+				id = id.split(",")[1];
+			}
 			int start = Integer.parseInt(splitLine[5]);
 			int end = Integer.parseInt(splitLine[6]);
 			int length = Integer.parseInt(splitLine[7]);
 			int startInRef = Integer.parseInt(splitLine[9]);
 			int endInRef = Integer.parseInt(splitLine[10]);
+			int score = Integer.parseInt(splitLine[2]);
 			String chr = splitLine[1];
 			if (!this.clusters.containsKey(chr)) {
 				this.clusters.put(chr, new IntervalTree<Integer>());
 			}
-			this.clusters.get(chr).addInterval(startInRef, endInRef,
-					counter);
-			this.seqToPosition.put(id, new Pair(startInRef, endInRef));
-			this.seqToChr.put(id, chr);
-			this.seqToName.put(counter, id);
-			counter++;
+			if (this.seqToPosition.containsKey(id)) {
+				if (score < this.seqToScore.get(id)) {
+					// replace
+					this.seqToPosition.put(id, new Pair(startInRef, endInRef));
+					this.seqToChr.put(id, chr);
+					this.seqToScore.put(id, score);
+				}
+			} else {
+				this.seqToPosition.put(id, new Pair(startInRef, endInRef));
+				this.seqToChr.put(id, chr);
+				this.seqToName.put(counter, id);
+				this.seqNameToIndex.put(id, counter);
+				this.seqToScore.put(id, score);
+				counter++;
+			}
 		}
 		bf.close();
-		for (String chr : this.clusters.keySet()) {
-			this.clusters.get(chr).build();
+		for (String id : this.seqToPosition.keySet()) {
+			String chr = this.seqToChr.get(id);
+			if (!this.clusters.containsKey(chr)) {
+				this.clusters.put(chr, new IntervalTree<Integer>());
+			}
+			Pair p = this.seqToPosition.get(id);
+			this.clusters.get(chr).addInterval(p.first, p.second,
+					this.seqNameToIndex.get(id));
 		}
 		
 		System.err.print("Processed " + this.clusters.size() + " chromosomes, "
@@ -424,6 +449,7 @@ public class EstimateROC {
 				this.tp++;
 			} else {
 				this.fn++;
+				if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + m + " is missing."); }
 			}
 		}
 	}
@@ -502,6 +528,8 @@ public class EstimateROC {
 			} else {
 				if (computeDP(id, id2)) {
 					numTP++;
+				} else {
+					if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + id2 + " is not correct."); }
 				}
 			}
 		}
