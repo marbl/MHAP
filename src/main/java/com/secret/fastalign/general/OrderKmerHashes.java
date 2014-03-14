@@ -313,7 +313,7 @@ public class OrderKmerHashes
 		}
 		double validShiftPercent = (double) validCount / (double) count;
 		
-		System.err.println(validShiftPercent);
+		//System.err.println(validShiftPercent);
 
 		double score = 0;
 		if (overlapSize > 0 && validShiftPercent > SHIFT_CONSENSUS_PERCENTAGE)
