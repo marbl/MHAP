@@ -370,5 +370,34 @@
          manifest="${build.home}/MANIFEST.MF"/>
 
   </target>
+  
+  <target name="jar-directalign" depends="compile">
+
+    <copy file="LICENSE.txt" tofile="${build.home}/classes/META-INF/LICENSE.txt"/>
+    <copy file="NOTICE.txt"  tofile="${build.home}/classes/META-INF/NOTICE.txt"/>
+    
+    <manifestclasspath property="lib.list" jarfile="direct-align-${component.version}.jar">
+        <classpath refid="compile.classpath"/>
+    </manifestclasspath>
+    
+    <manifest file="${build.home}/MANIFEST.MF">
+        <attribute name="Specification-Title"      value="${component.title}"/>
+        <attribute name="Specification-Version"    value="${}"/>
+        <attribute name="Specification-Vendor"     value="${copyright.name}"/>
+        <attribute name="Implementation-Title"     value="${component.title}"/>
+        <attribute name="Implementation-Version"   value="${}"/> 
+        <attribute name="Implementation-Vendor"    value="${copyright.name}"/>
+        <attribute name="Implementation-Vendor-Id" value=""/>
+        <attribute name="X-Compile-Source-JDK"     value="${compile.source}"/>
+        <attribute name="X-Compile-Target-JDK"     value="${compile.target}"/>
+        <attribute name="Main-Class" value="com.secret.fastalign.main.DirectAlignMain" />
+        <attribute name="Class-Path" value="${lib.list}" />
+    </manifest>
+    
+    <jar jarfile="${build.home}/direct-align-${component.version}.jar"
+          basedir="${build.home}/classes"
+         manifest="${build.home}/MANIFEST.MF"/>
+
+  </target>
 
 </project>
