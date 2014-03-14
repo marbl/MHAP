@@ -182,9 +182,9 @@ public class EstimateROC {
 		System.err.println("Total time: " + (System.nanoTime() - totalTime) * 1.0e-9 + "s.");
 		
 		System.out.println("Estimated sensitivity:\t"
-				+ Utils.DECIMAL_FORMAT.format((double) g.tp / (g.tp + g.fn)));
+				+ Utils.DECIMAL_FORMAT.format((double) g.tp / (double)(g.tp + g.fn)));
 		System.out.println("Estimated specificity:\t"
-				+ Utils.DECIMAL_FORMAT.format((double) g.tn / (g.fp + g.tn)));
+				+ Utils.DECIMAL_FORMAT.format((double) g.tn / (double)(g.fp + g.tn)));
 		System.out.println("Estimated PPV:\t "
 				+ Utils.DECIMAL_FORMAT.format(g.ppv));
 	}
@@ -487,6 +487,7 @@ public class EstimateROC {
 			// pick cluster
 			String id = pickRandomSequence();
 			HashSet<String> matches = getSequenceMatches(id, this.minOvlLen);
+			if (DEBUG) { System.err.println("Estimated sensitivity trial #" + i + " " + id + " matches " + matches); }
 			checkMatches(id, matches);
 		}
 	}
@@ -517,27 +518,41 @@ public class EstimateROC {
 	private void estimatePPV() {
 		int numTP = 0;
 		for (int i = 0; i < this.numTrials; i++) {
-			// pick an overlap
-			String[] ovl = pickRandomMatch().split("_");
-			String id = ovl[0];
-			String id2 = ovl[1];
-			
-			HashSet<String> matches = getSequenceMatches(id, 0);
-			if (matches.contains(id2)) {
-				numTP++;
+			int ovlLen = 0;
+			String[] ovl = null;
+			String ovlName = null;
+			while (ovlLen < this.minOvlLen) {
+				// pick an overlap
+				ovlName = pickRandomMatch();
+				Overlap o = this.ovlInfo.get(ovlName);
+				ovlLen = Utils.getRangeOverlap(o.afirst, o.asecond, o.bfirst, o.bsecond);
+			}
+			if (ovlName == null) {
+				System.err.println("Could not find any computed overlaps > " + this.minOvlLen);
+				System.exit(1);
 			} else {
-				if (computeDP(id, id2)) {
+				ovl = ovlName.split("_");
+				String id = ovl[0];
+				String id2 = ovl[1];
+				
+				HashSet<String> matches = getSequenceMatches(id, 0);
+				if (matches.contains(id2)) {
 					numTP++;
 				} else {
-					if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + id2 + " is not correct."); }
+					if (computeDP(id, id2)) {
+						numTP++;
+					} else {
+						if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + id2 + " is not correct."); }
+					}
 				}
 			}
 		}
 		
 		// now our formula for PPV. Estimate percent of our matches which are true
-		this.ppv = (double)numTP / this.numTrials;
+		this.ppv = (double)numTP / (double)this.numTrials;
 	}
 	
+	@SuppressWarnings("cast")
 	private void fullEstimate() {
 		for (int i = 0; i < this.seqToName.size(); i++) {
 			String id = this.seqToName.get(i);
@@ -565,6 +580,6 @@ public class EstimateROC {
 				}
 			}
 		}
-		this.ppv = (double)this.tp / (this.tp+this.fp);
+		this.ppv = (double) this.tp / ((double)this.tp+(double)this.fp);
 	}
 }
