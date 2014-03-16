@@ -17,9 +17,9 @@ public class AlignmentHashRun
 {	
 	private static final int DEFAULT_NUM_WORDS = 1024;
 
-	private static final int DEFAULT_KMER_SIZE = 14;
+	private static final int DEFAULT_KMER_SIZE = 16;
 	
-	protected static final int DEFAULT_NUM_MIN_MATCHES = 4;
+	protected static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
@@ -55,6 +55,7 @@ public class AlignmentHashRun
 		long startTime = System.nanoTime();
 
 		FastaData data = new FastaData(inFile, 0);
+		data.enqueueFullFile();
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
 		SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, 0);

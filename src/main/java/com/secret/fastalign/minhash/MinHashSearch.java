@@ -89,7 +89,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	private final double acceptScore;
 
 	private final ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>> hashes;
-	private final int maxShift;
+	private final double maxShift;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
 	private final AtomicLong numberSequencesFullyCompared;
@@ -104,7 +104,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 
 	
 	public MinHashSearch(AbstractSequenceHashStreamer<SequenceMinHashes> data, int numHashes, int numMinMatches, int numThreads, 
-			boolean storeResults, int minStoreLength, int maxShift, double acceptScore) throws IOException
+			boolean storeResults, int minStoreLength, double maxShift, double acceptScore) throws IOException
 	{
 		super(numThreads, storeResults);
 
@@ -260,7 +260,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		
 		// compute the proper counts for all sets and remove below threshold
 		ArrayList<MatchResult> matches = new ArrayList<MatchResult>(32);
-
+		
 		for (Entry<SequenceId, Integer> match : bestSequenceHit.entrySet())
 		{
 			//get the match id

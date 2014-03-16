@@ -185,7 +185,7 @@ public class OrderKmerHashes
 		return storeAsArray(completeHashAsPair);
 	}
 	
-	public Pair<Double, Integer> getFullScore(OrderKmerHashes s, int maxShift)
+	public Pair<Double, Integer> getFullScore(OrderKmerHashes s, double maxShift)
 	{
 		int[][][] allKmerHashes = this.orderedHashes;
 
@@ -202,7 +202,7 @@ public class OrderKmerHashes
 		int valid2Lower = 0;
 		int valid2Upper = size2;
 		int overlapSize = 0;
-		int border = maxShift;
+		int maxShiftInOverlap = 0;
 
 		int count = 0;
 		int shift = 0;
@@ -286,34 +286,39 @@ public class OrderKmerHashes
 			System.err.println(Arrays.toString(test));
 			*/
 
-			// get the updated borders
-			valid1Lower = Math.max(0, -shift - border);
-			valid1Upper = Math.min(size1, size2 - shift + border);
-			valid2Lower = Math.max(0, shift - border);
-			valid2Upper = Math.min(size2, size1 + shift + border);
-
 			// get the actual overlap size
 			int valid2LowerBorder = Math.max(0, shift);
 			int valid2UpperBorder = Math.min(size2, size1 + shift);
 			overlapSize = valid2UpperBorder - valid2LowerBorder;
 
-			// System.err.println(overlapSize);
-			// System.err.println("Size1= "+size1+" Lower:"+
-			// valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
-			// System.err.println("Size2= "+size2+" Lower:"+
-			// valid2Lower+" Upper:"+valid2Upper);
-		}
+			//recompute the border
+			maxShiftInOverlap = (int)((double)overlapSize*maxShift);
 
+			// get the updated borders
+			valid1Lower = Math.max(0, -shift - maxShiftInOverlap);
+			valid1Upper = Math.min(size1, size2 - shift + maxShiftInOverlap);
+			valid2Lower = Math.max(0, shift - maxShiftInOverlap);
+			valid2Upper = Math.min(size2, size1 + shift + maxShiftInOverlap);
+
+			/*
+			System.err.println(overlapSize);
+			System.err.println("Size1= "+size1+" Lower:"+
+			valid1Lower+" Upper:"+valid1Upper+" Shift="+shift);
+			System.err.println("Size2= "+size2+" Lower:"+
+			valid2Lower+" Upper:"+valid2Upper);
+			*/
+		}
+		
 		// count percent valid shift, there must be a consensus
 		int validCount = 0;
 		for (int iter = 0; iter < count; iter++)
 		{
-			if (Math.abs(posShift[iter] - shift) <= maxShift)
+			if (Math.abs(posShift[iter] - shift) <= maxShiftInOverlap)
 				validCount++;
 		}
 		double validShiftPercent = (double) validCount / (double) count;
 		
-		//System.err.println(validShiftPercent);
+		//System.err.println(overlapSize);
 
 		double score = 0;
 		if (overlapSize > 0 && validShiftPercent > SHIFT_CONSENSUS_PERCENTAGE)
