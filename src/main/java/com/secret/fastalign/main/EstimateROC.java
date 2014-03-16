@@ -25,7 +25,7 @@ import com.secret.fastalign.utils.IntervalTree;
 import com.secret.fastalign.utils.Utils;
 
 public class EstimateROC {
-	private static final double MIN_IDENTITY = 0.60;
+	private static final double MIN_IDENTITY = 0.70;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 500;
 	private static final boolean DEFAULT_DO_DP = false;
@@ -403,6 +403,7 @@ public class EstimateROC {
 			if (id.indexOf(",") != -1) {
 				id = id.split(",")[1];
 			}
+			double idy = Double.parseDouble(splitLine[3]);
 			int start = Integer.parseInt(splitLine[5]);
 			int end = Integer.parseInt(splitLine[6]);
 			int length = Integer.parseInt(splitLine[7]);
@@ -420,6 +421,9 @@ public class EstimateROC {
 				int tmp = refLen - endInRef;
 				endInRef = refLen - startInRef;
 				startInRef = tmp;
+			}
+			if (idy < MIN_IDENTITY) {
+				continue;
 			}
 			String chr = splitLine[1];
 			if (!this.clusters.containsKey(chr)) {
@@ -471,7 +475,13 @@ public class EstimateROC {
 				this.tp++;
 			} else {
 				this.fn++;
-				if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + m + " is missing."); }
+				if (DEBUG) { 
+					System.err.println("Overlap between sequences: " + id + ", " + m + " is missing.");
+					System.err.println(">" + id + " reference location " + this.seqToChr.get(id) + " " + this.seqToPosition.get(id).first + ", " + this.seqToPosition.get(id).first);
+					System.err.println(this.dataSeq[Integer.parseInt(id)-1].getString());
+					System.err.println(">" + m + " reference location " + this.seqToChr.get(m) + " " + this.seqToPosition.get(m).first + ", " + this.seqToPosition.get(m).first);
+					System.err.println(this.dataSeq[Integer.parseInt(m)-1].getString());
+				}
 			}
 		}
 	}
@@ -499,16 +509,21 @@ public class EstimateROC {
 		} catch (MatrixLoaderException e) {
 			return false;
 		}
-		return ((double)alignment.getSimilarity()/s1.length() > MIN_IDENTITY);
+		return (AlignmentHashRun.getScoreWithNoTerminalGaps(alignment) > MIN_IDENTITY);
 	}
 
 	private void estimateSensitivity() {
 		// we estimate TP/FN by randomly picking a sequence, getting its
 		// cluster, and checking our matches
 		for (int i = 0; i < this.numTrials; i++) {
-			// pick cluster
-			String id = pickRandomSequence();
-			HashSet<String> matches = getSequenceMatches(id, this.minOvlLen);
+			String id = null;
+			HashSet<String> matches = null;
+			while (matches == null || matches.size() == 0) {
+				// pick cluster
+				id = pickRandomSequence();
+				matches = getSequenceMatches(id, this.minOvlLen);
+			}
+			
 			if (DEBUG) { System.err.println("Estimated sensitivity trial #" + i + " " + id + " matches " + matches); }
 			checkMatches(id, matches);
 		}
