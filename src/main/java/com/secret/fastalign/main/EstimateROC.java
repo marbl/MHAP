@@ -478,10 +478,23 @@ public class EstimateROC {
 		if (ovl == null) {
 			return false;
 		}
+		
+		//KB I believe the expected overlap should be this, rather then reference
+		//my definition of shift is negative of the a parameter that is outputed
+		//int shiftb = -shift - seqMinHashes.getSequenceLength() + matchedHashes.getSequenceLength();
+		//MatchResult currResult = new MatchResult(seqMinHashes.getSequenceId(), matchId, matchScore, -shift, shiftb);
+		
+		//the code is below, size1 and size2 are the lengths of the sequences
+		// get the actual overlap size
+		//int valid2LowerBorder = Math.max(0, shift);
+		//int valid2UpperBorder = Math.min(size2, size1 + shift);
+		//int refOverlap = valid2UpperBorder - valid2LowerBorder;
+
+		
 		int observedOverlap = Utils.getRangeOverlap(ovl.afirst, ovl.asecond, ovl.bfirst, ovl.bsecond);
-		int diff = Math.abs(observedOverlap - refOverlap);
-		double overlapRatio = (double)diff / (double) refOverlap;
-		return (overlapRatio < 0.3);
+		double diff = (double)Math.abs(observedOverlap - refOverlap);
+		//double overlapRatio = (double)diff / (double) refOverlap;
+		return (diff > 0.7*refOverlap && diff < 1.3*refOverlap);
 	}
 
 	private void checkMatches(String id, HashSet<String> matches) {

@@ -27,7 +27,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private final double acceptScore;
 
-	private final int maxShift;
+	private final double maxShift;
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
@@ -37,7 +37,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
-	private static final int DEFAULT_MAX_SHIFT_ALLOWED = 800;
+	private static final double DEFAULT_MAX_SHIFT_PERCENT = 0.3;
 
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 
@@ -70,7 +70,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 		boolean noSelf = DEFAULT_NO_SELF;
 		String filterFile = null;
 		double filterThreshold = DEFAULT_FILTER_CUTOFF;
-		int maxShift = DEFAULT_MAX_SHIFT_ALLOWED;
+		double maxShift = DEFAULT_MAX_SHIFT_PERCENT;
 		int minStoreLength = DEFAULT_MIN_STORE_LENGTH;
 		String processFile = null;
 		double acceptScore = DEFAULT_ACCEPT_SCORE;
@@ -123,7 +123,7 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 			}
 			else if (args[i].trim().equalsIgnoreCase("--max-shift"))
 			{
-				maxShift = Integer.parseInt(args[++i]);
+				maxShift = Double.parseDouble(args[++i]);
 			}
 			else if (args[i].trim().equalsIgnoreCase("--num-threads"))
 			{
@@ -191,8 +191,8 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 				+ DEFAULT_MIN_STORE_LENGTH);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
 		System.err
-				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
-						+ DEFAULT_MAX_SHIFT_ALLOWED);
+				.println("\t  --max-shift [double fraction of the overlap size where shift in k-mer match is still considered valid], default: "
+						+ DEFAULT_MAX_SHIFT_PERCENT);
 		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: "
 				+ DEFAULT_NUM_MIN_MATCHES);
 		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): "
@@ -203,13 +203,13 @@ public final class FastAlignMain extends AbstractSequenceSearchMain<MinHashSearc
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
 		System.err
 				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
-						+ DEFAULT_MAX_SHIFT_ALLOWED);
+						+ DEFAULT_MAX_SHIFT_PERCENT);
 		System.exit(1);
 	}
 
 	public FastAlignMain(String processFile, String inFile, String toFile, boolean noSelf, int subSequenceSize,
 			int numHashes, int kmerSize, int numMinMatches, int numThreads, HashSet<Integer> filter, int minStoreLength,
-			int maxShift, double acceptScore)
+			double maxShift, double acceptScore)
 	{
 		super(processFile, inFile, toFile, noSelf, numThreads);
 		this.subSequenceSize = subSequenceSize;

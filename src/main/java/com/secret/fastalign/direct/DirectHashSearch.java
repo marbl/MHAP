@@ -23,7 +23,7 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 	private final double acceptScore;
 
 	private final HashMap<Integer, ArrayList<SequenceId>> hashes;
-	private final int maxShift;
+	private final double maxShift;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
 	private final AtomicLong numberSequencesFullyCompared;
@@ -37,7 +37,7 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 	private final ConcurrentHashMap<SequenceId, SequenceDirectHashes> sequenceVectorsHash;
 
 	public DirectHashSearch(AbstractSequenceHashStreamer<SequenceDirectHashes> data, int numHashes, int numMinMatches, int numThreads, 
-			boolean storeResults, int minStoreLength, int maxShift, double acceptScore) throws IOException
+			boolean storeResults, int minStoreLength, double maxShift, double acceptScore) throws IOException
 	{
 		super(numThreads, storeResults);
 		

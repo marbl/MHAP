@@ -25,7 +25,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 
 	private final double acceptScore;
 
-	private final int maxShift;
+	private final double maxShift;
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
@@ -35,7 +35,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
-	private static final int DEFAULT_MAX_SHIFT_ALLOWED = 800;
+	private static final double DEFAULT_MAX_SHIFT_ALLOWED = .03;
 
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 
@@ -68,7 +68,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 		boolean noSelf = DEFAULT_NO_SELF;
 		String filterFile = null;
 		double filterThreshold = DEFAULT_FILTER_CUTOFF;
-		int maxShift = DEFAULT_MAX_SHIFT_ALLOWED;
+		double maxShift = DEFAULT_MAX_SHIFT_ALLOWED;
 		int minStoreLength = DEFAULT_MIN_STORE_LENGTH;
 		String processFile = null;
 		double acceptScore = DEFAULT_ACCEPT_SCORE;
@@ -121,7 +121,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 			}
 			else if (args[i].trim().equalsIgnoreCase("--max-shift"))
 			{
-				maxShift = Integer.parseInt(args[++i]);
+				maxShift = Double.parseDouble(args[++i]);
 			}
 			else if (args[i].trim().equalsIgnoreCase("--num-threads"))
 			{
@@ -207,7 +207,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 
 	public DirectAlignMain(String processFile, String inFile, String toFile, boolean noSelf, int subSequenceSize,
 			int numHashes, int kmerSize, int numMinMatches, int numThreads, HashSet<Integer> filter, int minStoreLength,
-			int maxShift, double acceptScore)
+			double maxShift, double acceptScore)
 	{
 		super(processFile, inFile, toFile, noSelf, numThreads);
 		this.numHashes = numHashes;
