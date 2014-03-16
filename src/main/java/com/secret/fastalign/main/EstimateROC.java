@@ -473,22 +473,15 @@ public class EstimateROC {
 	}
 	
 	private boolean overlapMatches(String id, String m) {
-		int refOverlap = 0;
-		Pair p1 = this.seqToPosition.get(id);
-		Pair p2 = this.seqToPosition.get(m);
-		if (p1 == null || p2 == null) {
-			System.err.println("Error: check overlap called on non-existent sequences!");
-			System.exit(1);
-			return false;
-		}
+		int refOverlap = getOverlapSize(id, m);
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, m));
 		if (ovl == null) {
 			return false;
 		}
-		refOverlap = Utils.getOvlSize(p1.first, p1.second, p2.first, p2.second);
-		int observedOverlap = Utils.getOvlSize(ovl.afirst, ovl.asecond, ovl.bfirst, ovl.bsecond);
-		double overlapRatio = (double)observedOverlap / (double) refOverlap;
-		return (overlapRatio > 0.7 && overlapRatio < 1.3);
+		int observedOverlap = Utils.getRangeOverlap(ovl.afirst, ovl.asecond, ovl.bfirst, ovl.bsecond);
+		int diff = Math.abs(observedOverlap - refOverlap);
+		double overlapRatio = (double)diff / (double) refOverlap;
+		return (overlapRatio < 0.3);
 	}
 
 	private void checkMatches(String id, HashSet<String> matches) {
