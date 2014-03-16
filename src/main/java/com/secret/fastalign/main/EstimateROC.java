@@ -63,7 +63,8 @@ public class EstimateROC {
 		@Override
 		public String toString() {
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.append("Overlap Aid=");
+			stringBuilder.append("Overlap Fwd=" + this.isFwd);
+			stringBuilder.append(" Aid=");
 			stringBuilder.append(this.id1);
 			stringBuilder.append(" (");
 			stringBuilder.append(this.afirst);
@@ -73,8 +74,9 @@ public class EstimateROC {
 			stringBuilder.append(this.id2);
 			stringBuilder.append(" (");
 			stringBuilder.append(this.bfirst);
-			stringBuilder.append("), ");
+			stringBuilder.append(", ");
 			stringBuilder.append(this.bsecond);
+			stringBuilder.append(")");
 			return stringBuilder.toString();
 		}
 	}
@@ -278,7 +280,6 @@ public class EstimateROC {
 		return result;
 	}
 
-	@SuppressWarnings("unused")
 	private Overlap getOverlapInfo(String line) {
 		Overlap overlap = new Overlap();
 		String[] splitLine = line.trim().split("\\s+");
@@ -287,10 +288,11 @@ public class EstimateROC {
 			if (splitLine.length == 7 || splitLine.length == 6) {
 				overlap.id1 = splitLine[0];
 				overlap.id2 = splitLine[1];
+				@SuppressWarnings("unused")
 				double score = Double.parseDouble(splitLine[5]) * 5;
 				int aoffset = Integer.parseInt(splitLine[3]);
 				int boffset = Integer.parseInt(splitLine[4]);
-				boolean isFwd = ("N".equals(splitLine[2]));
+				overlap.isFwd = "N".equalsIgnoreCase(splitLine[2]);
 				if (this.dataSeq != null) {
 					int alen = this.dataSeq[Integer.parseInt(overlap.id1)-1].length();
 					int blen = this.dataSeq[Integer.parseInt(overlap.id2)-1].length();
@@ -496,12 +498,12 @@ public class EstimateROC {
 		logger.setLevel(Level.OFF);
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, id2));
 
-		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id1)-1].toString().substring(ovl.afirst, ovl.asecond));
+		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id1)-1].getString().substring(ovl.afirst, ovl.asecond));
 		jaligner.Sequence s2 = null;
 		if (ovl.isFwd) {
-			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].toString().substring(ovl.bfirst, ovl.bsecond));
+			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].getString().substring(ovl.bfirst, ovl.bsecond));
 		} else {
-			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].getReverseCompliment().toString().substring(ovl.bfirst, ovl.bsecond));
+			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].getReverseCompliment().getString().substring(ovl.bfirst, ovl.bsecond));
 		}
 		Alignment alignment;
 		try {
