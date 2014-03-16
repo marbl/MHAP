@@ -25,6 +25,7 @@ import com.secret.fastalign.utils.IntervalTree;
 import com.secret.fastalign.utils.Utils;
 
 public class EstimateROC {
+	private static final double MIN_OVERLAP_DIFFERENCE = 0.8;
 	private static final double MIN_IDENTITY = 0.70;
 	private static final double MIN_REF_IDENTITY = MIN_IDENTITY + 0.10;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
@@ -59,6 +60,12 @@ public class EstimateROC {
 
 		public Overlap() {
 			// do nothing
+		}
+		
+		public int getSize() {
+			double first = (double)Math.max(this.asecond, this.afirst) - (double)Math.min(this.asecond, this.afirst);
+			first += (double)Math.max(this.bsecond, this.bfirst) - (double)Math.min(this.bsecond, this.bfirst);
+			return (int)Math.round(first/2);
 		}
 		
 		@Override
@@ -241,7 +248,7 @@ public class EstimateROC {
 		int val = generator.nextInt(this.ovlToName.size());
 		return this.ovlToName.get(val);
 	}
-	
+
 	private int getOverlapSize(String id, String id2) {
 		String chr = this.seqToChr.get(id);
 		String chr2 = this.seqToChr.get(id2);
@@ -286,6 +293,7 @@ public class EstimateROC {
 		String[] splitLine = line.trim().split("\\s+");
 
 		try {
+
 			if (splitLine.length == 7 || splitLine.length == 6) {
 				overlap.id1 = splitLine[0];
 				overlap.id2 = splitLine[1];
@@ -323,6 +331,16 @@ public class EstimateROC {
 				overlap.id2 = splitLine[1];
 				if (overlap.id2.indexOf(",") != -1) {
 					overlap.id2 = overlap.id2.split(",")[1];
+				}
+				if (this.dataSeq != null) {
+					int alen = this.dataSeq[Integer.parseInt(overlap.id1)-1].length();
+					int blen = this.dataSeq[Integer.parseInt(overlap.id2)-1].length();
+					if (overlap.asecond > alen) {
+						overlap.asecond = alen;
+					}
+					if (overlap.bsecond > blen) {
+						overlap.bsecond = blen;
+					}
 				}
 			}
 		} catch (NumberFormatException e) {
@@ -425,7 +443,11 @@ public class EstimateROC {
 				endInRef = refLen - startInRef;
 				startInRef = tmp;
 			}
-			if (idy < MIN_REF_IDENTITY) {
+			if (idy < MIN_REF_IDENTITY*100) {
+				continue;
+			}
+			double diff = ((double)(end - start) / (double)(endInRef-startInRef));
+			if (diff < MIN_OVERLAP_DIFFERENCE) {
 				continue;
 			}
 			String chr = splitLine[1];
@@ -478,23 +500,13 @@ public class EstimateROC {
 		if (ovl == null) {
 			return false;
 		}
-		
-		//KB I believe the expected overlap should be this, rather then reference
-		//my definition of shift is negative of the a parameter that is outputed
-		//int shiftb = -shift - seqMinHashes.getSequenceLength() + matchedHashes.getSequenceLength();
-		//MatchResult currResult = new MatchResult(seqMinHashes.getSequenceId(), matchId, matchScore, -shift, shiftb);
-		
-		//the code is below, size1 and size2 are the lengths of the sequences
-		// get the actual overlap size
-		//int valid2LowerBorder = Math.max(0, shift);
-		//int valid2UpperBorder = Math.min(size2, size1 + shift);
-		//int refOverlap = valid2UpperBorder - valid2LowerBorder;
-
-		
-		int observedOverlap = Utils.getRangeOverlap(ovl.afirst, ovl.asecond, ovl.bfirst, ovl.bsecond);
-		double diff = (double)Math.abs(observedOverlap - refOverlap);
-		//double overlapRatio = (double)diff / (double) refOverlap;
-		return (diff > 0.7*refOverlap && diff < 1.3*refOverlap);
+		int diff = Math.abs(ovl.getSize() - refOverlap);
+		double diffPercent = (double)diff / (double)refOverlap;
+		if (DEBUG) { System.err.println("Overlap " + ovl + " " + ovl.getSize() + " versus ref " + refOverlap + " " + " diff is " + diff + "(" + diffPercent + ")"); }
+		if (diffPercent > 0.3) {
+			return false;
+		}
+		return true;
 	}
 
 	private void checkMatches(String id, HashSet<String> matches) {
@@ -523,13 +535,14 @@ public class EstimateROC {
 		logger = Logger.getLogger(MatrixLoader.class.getName());
 		logger.setLevel(Level.OFF);
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, id2));
+		System.err.println("Aligning sequence " + ovl.id1 + " to " + ovl.id2 + " " + ovl.bfirst + " to " + ovl.bsecond + " and " + ovl.isFwd + " and " + ovl.afirst + " " + ovl.asecond);
 
 		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id1)-1].getString().substring(ovl.afirst, ovl.asecond));
 		jaligner.Sequence s2 = null;
 		if (ovl.isFwd) {
 			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].getString().substring(ovl.bfirst, ovl.bsecond));
 		} else {
-			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].getReverseCompliment().getString().substring(ovl.bfirst, ovl.bsecond));
+			s2 = new jaligner.Sequence(Utils.rc(this.dataSeq[Integer.parseInt(ovl.id2)-1].getString().substring(ovl.bfirst, ovl.bsecond)));
 		}
 		Alignment alignment;
 		try {
@@ -537,6 +550,7 @@ public class EstimateROC {
 		} catch (MatrixLoaderException e) {
 			return false;
 		}
+		if (DEBUG) { System.err.println(alignment.getSummary()); System.err.println (new jaligner.formats.Pair().format(alignment)); }
 		return (AlignmentHashRun.getScoreWithNoTerminalGaps(alignment) > MIN_IDENTITY);
 	}
 
