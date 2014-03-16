@@ -265,6 +265,9 @@ public class OrderKmerHashes
 					
 					// compute the shift
 					posShift[count] = pos2 - pos1;
+					
+					//if (repeat>0)
+					//	System.err.println(""+pos1+" "+pos2);
 
 					count++;
 					i1++;
@@ -287,11 +290,11 @@ public class OrderKmerHashes
 			*/
 
 			// get the actual overlap size
-			int valid2LowerBorder = Math.max(0, shift);
-			int valid2UpperBorder = Math.min(size2, size1 + shift);
-			overlapSize = valid2UpperBorder - valid2LowerBorder;
+			int leftPosition = Math.max(0, shift);
+			int rightPosition = Math.min(size2, size1 + shift);
+			overlapSize = Math.max(50,rightPosition - leftPosition);
 
-			//recompute the border
+			//compute the max possible allowed shift in kmers
 			maxShiftInOverlap = (int)((double)overlapSize*maxShift);
 
 			// get the updated borders
