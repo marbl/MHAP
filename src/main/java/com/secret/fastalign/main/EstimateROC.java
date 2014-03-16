@@ -26,6 +26,7 @@ import com.secret.fastalign.utils.Utils;
 
 public class EstimateROC {
 	private static final double MIN_IDENTITY = 0.70;
+	private static final double MIN_REF_IDENTITY = MIN_IDENTITY + 0.10;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 500;
 	private static final boolean DEFAULT_DO_DP = false;
@@ -227,7 +228,7 @@ public class EstimateROC {
 		generator = new Random(seed);
 	}
 
-	private String getOvlName(String id, String id2) {
+	private static String getOvlName(String id, String id2) {
 		return (id.compareTo(id2) <= 0 ? id + "_" + id2 : id2
 				+ "_" + id);
 	}
@@ -424,7 +425,7 @@ public class EstimateROC {
 				endInRef = refLen - startInRef;
 				startInRef = tmp;
 			}
-			if (idy < MIN_IDENTITY) {
+			if (idy < MIN_REF_IDENTITY) {
 				continue;
 			}
 			String chr = splitLine[1];
@@ -470,18 +471,37 @@ public class EstimateROC {
 	private boolean overlapExists(String id, String id2) {
 		return this.ovlNames.contains(getOvlName(id, id2));
 	}
+	
+	private boolean overlapMatches(String id, String m) {
+		int refOverlap = 0;
+		Pair p1 = this.seqToPosition.get(id);
+		Pair p2 = this.seqToPosition.get(m);
+		if (p1 == null || p2 == null) {
+			System.err.println("Error: check overlap called on non-existent sequences!");
+			System.exit(1);
+			return false;
+		}
+		Overlap ovl = this.ovlInfo.get(getOvlName(id, m));
+		if (ovl == null) {
+			return false;
+		}
+		refOverlap = Utils.getOvlSize(p1.first, p1.second, p2.first, p2.second);
+		int observedOverlap = Utils.getOvlSize(ovl.afirst, ovl.asecond, ovl.bfirst, ovl.bsecond);
+		double overlapRatio = (double)observedOverlap / (double) refOverlap;
+		return (overlapRatio > 0.7 && overlapRatio < 1.3);
+	}
 
 	private void checkMatches(String id, HashSet<String> matches) {
 		for (String m : matches) {
-			if (overlapExists(id, m)) {
+			if (overlapMatches(id, m)) {
 				this.tp++;
 			} else {
 				this.fn++;
 				if (DEBUG) { 
 					System.err.println("Overlap between sequences: " + id + ", " + m + " is missing.");
-					System.err.println(">" + id + " reference location " + this.seqToChr.get(id) + " " + this.seqToPosition.get(id).first + ", " + this.seqToPosition.get(id).first);
+					System.err.println(">" + id + " reference location " + this.seqToChr.get(id) + " " + this.seqToPosition.get(id).first + ", " + this.seqToPosition.get(id).second);
 					System.err.println(this.dataSeq[Integer.parseInt(id)-1].getString());
-					System.err.println(">" + m + " reference location " + this.seqToChr.get(m) + " " + this.seqToPosition.get(m).first + ", " + this.seqToPosition.get(m).first);
+					System.err.println(">" + m + " reference location " + this.seqToChr.get(m) + " " + this.seqToPosition.get(m).first + ", " + this.seqToPosition.get(m).second);
 					System.err.println(this.dataSeq[Integer.parseInt(m)-1].getString());
 				}
 			}
@@ -600,7 +620,7 @@ public class EstimateROC {
 				if (id == null || id2 == null) { continue; }
 				HashSet<String> matches = getSequenceMatches(id, 0);
 
-				if (!overlapExists(id, id2)) {
+				if (!overlapMatches(id, id2)) {
 					if (!matches.contains(id2)) {
 						this.tn++;
 					} else if (getOverlapSize(id, id2) > this.minOvlLen) {
