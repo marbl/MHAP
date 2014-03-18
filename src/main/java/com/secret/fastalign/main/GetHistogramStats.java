@@ -11,7 +11,7 @@ public class GetHistogramStats {
 	private double percent = 0.99;
 	private double mean = 0;
 	private double stdev = 0;
-	private int cut = 0;
+	private long cut = 0;
 
 	public GetHistogramStats(String fileName, double p) {
 		try {
@@ -34,11 +34,11 @@ public class GetHistogramStats {
 	public void process() throws NumberFormatException {
 		double variance = 0;
 		double sum = 0;
-		int total = 0;
+		long total = 0;
 
 		for (int val : this.histogram.keySet()) {
 			long count = this.histogram.get(val);
-			for (int i = 0; i < count; i++) {
+			for (long i = 0; i < count; i++) {
 				total++;
 				double delta = (val - this.mean);
 				this.mean += (delta / total);
