@@ -70,7 +70,7 @@ public final class Utils
 	}
 
 	public static final int BUFFER_BYTE_SIZE = 8388608; //8MB
-	public static final NumberFormat DECIMAL_FORMAT = new DecimalFormat("############.####");
+	public static final NumberFormat DECIMAL_FORMAT = new DecimalFormat("############.########");
 	public static final int FASTA_LINE_LENGTH = 60;
 
 	public static final int MBYTES = 1048576;
