@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.secret.fastalign.general.AbstractMatchSearch;
@@ -100,7 +99,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	private final AtomicLong numberSubSequencesHit;
 
 	private final int numMinMatches;
-	private final ConcurrentHashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
+	private final HashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
 
 	
 	public MinHashSearch(AbstractSequenceHashStreamer<SequenceMinHashes> data, int numHashes, int numMinMatches, int numThreads, 
@@ -122,7 +121,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
 
-		this.sequenceVectorsHash = new ConcurrentHashMap<SequenceId, SequenceMinHashes>(data.getNumberProcessed() + 100, (float) 0.75, this.numThreads);
+		this.sequenceVectorsHash = new HashMap<SequenceId, SequenceMinHashes>(data.getNumberProcessed() + 100, (float) 0.75);
 
 		this.hashes = new ArrayList<HashMap<Integer, ArrayList<SubSequenceId>>>(numHashes);
 		for (int iter = 0; iter < numHashes; iter++)
@@ -140,13 +139,15 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 			throw new FastAlignRuntimeException("Number of hashes does not match.");
 
 		// put the result into the hashmap
-		SequenceMinHashes minHash = this.sequenceVectorsHash.put(currHash.getSequenceId(), currHash);
-		if (minHash != null)
+		synchronized (this.sequenceVectorsHash)
 		{
-			// put back the original value, WARNING: not thread safe
-			this.sequenceVectorsHash.put(currHash.getSequenceId(), minHash);
+			SequenceMinHashes minHash = this.sequenceVectorsHash.put(currHash.getSequenceId(), currHash);
+			if (minHash != null)
+			{
+				this.sequenceVectorsHash.put(currHash.getSequenceId(), minHash);
 
-			throw new FastAlignRuntimeException("Sequence id already exists in the hashtable.");
+				throw new FastAlignRuntimeException("Sequence id already exists in the hashtable.");
+			}			
 		}
 		
 		// add the hashes
