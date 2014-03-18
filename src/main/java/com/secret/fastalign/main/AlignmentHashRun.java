@@ -19,7 +19,7 @@ public class AlignmentHashRun
 
 	private static final int DEFAULT_KMER_SIZE = 16;
 	
-	protected static final int DEFAULT_NUM_MIN_MATCHES = 3;
+	protected static final int DEFAULT_NUM_MIN_MATCHES = 1;
 
 	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
 
@@ -136,6 +136,8 @@ public class AlignmentHashRun
 		char GAP = '-';
 		//float extend = alignment.getExtend();
 		//float open = alignment.getOpen();
+		float extend = 1.0f;
+		float open = 1.0f;
 		//Matrix matrix = alignment.getMatrix();
 
 		// The calculated score
@@ -190,13 +192,13 @@ public class AlignmentHashRun
 			{
 				if (previous1wasGap)
 				{
-					//calcScore -= extend;
-					calcScore -= 0;
+					calcScore -= extend;
+					//calcScore -= 0;
 				}
 				else
 				{
-					//calcScore -= open;
-					calcScore -= 0;
+					calcScore -= open;
+					//calcScore -= 0;
 				}
 				previous1wasGap = true;
 				previous2wasGap = false;
@@ -206,13 +208,13 @@ public class AlignmentHashRun
 			{
 				if (previous2wasGap)
 				{
-					//calcScore -= extend;
-					calcScore -= 0;
+					calcScore -= extend;
+					//calcScore -= 0;
 				}
 				else
 				{
-					//calcScore -= open;
-					calcScore -= 0;
+					calcScore -= open;
+					//calcScore -= 0;
 				}
 				previous1wasGap = false;
 				previous2wasGap = true;

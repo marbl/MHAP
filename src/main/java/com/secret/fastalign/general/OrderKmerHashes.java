@@ -185,7 +185,7 @@ public class OrderKmerHashes
 		return storeAsArray(completeHashAsPair);
 	}
 	
-	public Pair<Double, Integer> getFullScore(OrderKmerHashes s, double maxShift)
+	public Pair<Double, Integer> getFullScore(OrderKmerHashes s, double maxShiftPercent)
 	{
 		int[][][] allKmerHashes = this.orderedHashes;
 
@@ -201,23 +201,26 @@ public class OrderKmerHashes
 		int valid1Upper = size1;
 		int valid2Lower = 0;
 		int valid2Upper = size2;
-		int overlapSize = 0;
-		int maxShiftInOverlap = 0;
+
+		int medianShift = 0;
+		int overlapSize = Math.min(size1, size2);
+		int absMaxShiftInOverlap = Math.max(size1, size2);
 
 		int count = 0;
-		int shift = 0;
 		int[] posShift = new int[Math.min(size1, size2)/8+1];
 
+		//check the repeat flag
 		int numScoringRepeats = 2;
-		if (maxShift <= 0)
+		if (maxShiftPercent <= 0)
+		{
 			numScoringRepeats = 1;
-
-		// make it positive
-		maxShift = Math.abs(maxShift);
+			maxShiftPercent = Math.abs(maxShiftPercent);
+		}
 
 		// refine multiple times to get better interval estimate
 		for (int repeat = 0; repeat < numScoringRepeats; repeat++)
 		{
+			//init counters
 			count = 0;
 			int ii1 = 0;
 			int ii2 = 0;
@@ -259,12 +262,20 @@ public class OrderKmerHashes
 					i2++;
 				else
 				{
+					//check if current shift makes sense positionally
+					int currShift = pos2-pos1;
+					if (Math.abs(currShift-medianShift) > absMaxShiftInOverlap)
+					{
+						//do not record this shift and increase counter
+						i2++;
+					}
+
 					//adjust array size if needed
 					if (posShift.length<=count)
 						posShift = Arrays.copyOf(posShift, posShift.length*2);
 					
 					// compute the shift
-					posShift[count] = pos2 - pos1;
+					posShift[count] = currShift;					
 					
 					//if (repeat>0)
 					//	System.err.println(""+pos1+" "+pos2);
@@ -278,10 +289,10 @@ public class OrderKmerHashes
 			// get the median
 			if (count > 0)
 			{
-				shift = Utils.quickSelect(posShift, count / 2, count);
+				medianShift = Utils.quickSelect(posShift, count / 2, count);
 			}
 			else
-				shift = 0;
+				medianShift = 0;
 
 			/*
 			int[] test = Arrays.copyOf(posShift, count);
@@ -290,18 +301,18 @@ public class OrderKmerHashes
 			*/
 
 			// get the actual overlap size
-			int leftPosition = Math.max(0, shift);
-			int rightPosition = Math.min(size2, size1 + shift);
+			int leftPosition = Math.max(0, medianShift);
+			int rightPosition = Math.min(size2, size1 + medianShift);
 			overlapSize = Math.max(50,rightPosition - leftPosition);
 
 			//compute the max possible allowed shift in kmers
-			maxShiftInOverlap = (int)((double)overlapSize*maxShift);
+			absMaxShiftInOverlap = Math.min(Math.max(size1, size2), (int)((double)overlapSize*maxShiftPercent));
 
 			// get the updated borders
-			valid1Lower = Math.max(0, -shift - maxShiftInOverlap);
-			valid1Upper = Math.min(size1, size2 - shift + maxShiftInOverlap);
-			valid2Lower = Math.max(0, shift - maxShiftInOverlap);
-			valid2Upper = Math.min(size2, size1 + shift + maxShiftInOverlap);
+			valid1Lower = Math.max(0, -medianShift - absMaxShiftInOverlap);
+			valid1Upper = Math.min(size1, size2 - medianShift + absMaxShiftInOverlap);
+			valid2Lower = Math.max(0, medianShift - absMaxShiftInOverlap);
+			valid2Upper = Math.min(size2, size1 + medianShift + absMaxShiftInOverlap);
 
 			/*
 			System.err.println(overlapSize);
@@ -316,7 +327,7 @@ public class OrderKmerHashes
 		int validCount = 0;
 		for (int iter = 0; iter < count; iter++)
 		{
-			if (Math.abs(posShift[iter] - shift) <= maxShiftInOverlap)
+			if (Math.abs(posShift[iter] - medianShift) <= absMaxShiftInOverlap)
 				validCount++;
 		}
 		double validShiftPercent = (double) validCount / (double) count;
@@ -327,7 +338,7 @@ public class OrderKmerHashes
 		if (overlapSize > 0 && validShiftPercent > SHIFT_CONSENSUS_PERCENTAGE)
 			score = (double) count / (double) (overlapSize);
 
-		return new Pair<Double, Integer>(score, shift);
+		return new Pair<Double, Integer>(score, medianShift);
 	}
 
 	public int size()
