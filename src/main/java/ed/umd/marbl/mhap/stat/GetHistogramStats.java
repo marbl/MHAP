@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.main;
+package ed.umd.marbl.mhap.stat;
 
 import java.io.BufferedReader;
 import java.util.TreeMap;
