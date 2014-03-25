@@ -1,6 +1,6 @@
 <?xml version = '1.0' encoding = 'utf-8'?> 
 
-<project name="FAST-ALIGN" default="main" basedir=".">
+<project name="MHAP" default="main" basedir=".">
 	
   <!-- ========== Component Declarations ==================================== -->
 
@@ -10,13 +10,13 @@
     <property name="copyright.name"          value="Konstantin Berlin and Sergey Koren"/>
 
     <!-- The name of this component -->
-    <property name="component.name"          value="fast-align"/>
+    <property name="component.name"          value="mhap"/>
 
     <!-- The primary package name of this component -->
-    <property name="component.package"       value="com.secret.fastalign"/>
+    <property name="component.package"       value="edu.umd.marbl.mhap"/>
 
     <!-- The title of this component -->
-    <property name="component.title"         value="FAST-ALIGN"/>
+    <property name="component.title"         value="MHAP"/>
 
     <!-- The base directory for component sources -->
     <property name="source.home"             value="src/main/java"/>
@@ -339,15 +339,15 @@
   </path>
   <property name="dep_cp" value="${toString:dep.runtime}" />
 
-  <target name="main" depends="jar-fastalign">
+  <target name="main" depends="jar-mhap">
   </target>
 
-  <target name="jar-fastalign" depends="compile">
-
+  <target name="jar-mhap" depends="compile">
+  
     <copy file="LICENSE.txt" tofile="${build.home}/classes/META-INF/LICENSE.txt"/>
     <copy file="NOTICE.txt"  tofile="${build.home}/classes/META-INF/NOTICE.txt"/>
     
-    <manifestclasspath property="lib.list" jarfile="fast-align-${component.version}.jar">
+    <manifestclasspath property="lib.list" jarfile="mhap-${component.version}.jar">
         <classpath refid="compile.classpath"/>
     </manifestclasspath>
     
@@ -361,11 +361,11 @@
         <attribute name="Implementation-Vendor-Id" value=""/>
         <attribute name="X-Compile-Source-JDK"     value="${compile.source}"/>
         <attribute name="X-Compile-Target-JDK"     value="${compile.target}"/>
-        <attribute name="Main-Class" value="com.secret.fastalign.main.FastAlignMain" />
+        <attribute name="Main-Class" value="edu.umd.marbl.mhap.main.MhapMain" />
         <attribute name="Class-Path" value="${lib.list}" />
     </manifest>
     
-    <jar jarfile="${build.home}/fast-align-${component.version}.jar"
+    <jar jarfile="${build.home}/mhap-${component.version}.jar"
           basedir="${build.home}/classes"
          manifest="${build.home}/MANIFEST.MF"/>
 
@@ -390,7 +390,7 @@
         <attribute name="Implementation-Vendor-Id" value=""/>
         <attribute name="X-Compile-Source-JDK"     value="${compile.source}"/>
         <attribute name="X-Compile-Target-JDK"     value="${compile.target}"/>
-        <attribute name="Main-Class" value="com.secret.fastalign.main.DirectAlignMain" />
+        <attribute name="Main-Class" value="edu.umd.marbl.mhap.main.DirectAlignMain" />
         <attribute name="Class-Path" value="${lib.list}" />
     </manifest>
     
