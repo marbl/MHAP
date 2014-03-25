@@ -352,6 +352,10 @@
       -keepclasseswithmembers public class * {
           public static void main(java.lang.String[]);
       }
+      -keepclassmembers,allowoptimization enum * {
+          public static **[] values();
+          public static ** valueOf(java.lang.String);
+      }
     </proguard>
   </target>
   
