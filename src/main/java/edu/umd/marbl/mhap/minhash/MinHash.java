@@ -46,7 +46,7 @@ public final class MinHash implements Serializable
 	 * 
 	 */
 	private static final long serialVersionUID = 8846482698636860862L;
-	private final int[][] minHashes;
+	private final int[] minHashes;
 	private final int seqLength;
 	
 	public static MinHash fromByteStream(DataInputStream input) throws IOException
@@ -58,21 +58,14 @@ public final class MinHash implements Serializable
 			int seqLength = input.readInt();
 			
 			//bb.putInt(this.minHashes.length);
-			int seqNum = input.readInt();
-			
-			//bb.putInt(this.minHashes[0].length);
 			int hashNum = input.readInt();
 			
 			//store the array
-			int[][] minHashes = new int[seqNum][];
-			for (int seq=0; seq<seqNum; seq++)
+			int[] minHashes = new int[hashNum];
+			for (int hash=0; hash<hashNum; hash++)
 			{
-				minHashes[seq] = new int[hashNum];
-				for (int hash=0; hash<hashNum; hash++)
-				{
-					//bb.putInt(this.minHashes[seq][hash]);
-					minHashes[seq][hash] = input.readInt();
-				}
+				//bb.putInt(this.minHashes[seq][hash]);
+				minHashes[hash] = input.readInt();
 			}
 			
 			return new MinHash(seqLength, minHashes);
@@ -83,7 +76,7 @@ public final class MinHash implements Serializable
 		}
 	}
 	
-	private MinHash(int seqLength, int[][] minHashes)
+	private MinHash(int seqLength, int[] minHashes)
 	{
 		this.seqLength = seqLength;
 		this.minHashes = minHashes;
@@ -93,37 +86,20 @@ public final class MinHash implements Serializable
 	{
 		this.seqLength = seq.length();
 
-		int numberSubSeq = seq.length()/subSequenceSize+1;
-		if (seq.length()%subSequenceSize<kmerSize)
-			numberSubSeq--;
-		
-		//adjust for more equal distribution
-		subSequenceSize = seq.length()/numberSubSeq+1;
-		
-		this.minHashes = new int[numberSubSeq][];
-		for (int iter=0; iter<numberSubSeq; iter++)
-		{
-			String subString = seq.getString().substring(iter*subSequenceSize, Math.min(seq.length(), (iter+1)*subSequenceSize));
-
-			//get the hashes
-			if (subString.length()>=kmerSize)
-				this.minHashes[iter] = Utils.computeKmerMinHashes(subString, kmerSize, numHashes, filter);
-		}	
+		this.minHashes = Utils.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
 	}
 
 	public byte[] getAsByteArray()
 	{
-		ByteBuffer bb = ByteBuffer.allocate(4*(3+this.minHashes.length*this.minHashes[0].length));
+		ByteBuffer bb = ByteBuffer.allocate(4*(2+this.minHashes.length));
 		
 		//store the size
 		bb.putInt(this.seqLength);
 		bb.putInt(this.minHashes.length);
-		bb.putInt(this.minHashes[0].length);
 		
 		//store the array
-		for (int seq=0; seq<this.minHashes.length; seq++)
-			for (int hash=0; hash<this.minHashes[0].length; hash++)
-				bb.putInt(this.minHashes[seq][hash]); 
+		for (int hash=0; hash<this.minHashes.length; hash++)
+			bb.putInt(this.minHashes[hash]); 
     
     return bb.array();
 	}
@@ -136,19 +112,14 @@ public final class MinHash implements Serializable
 	/**
 	 * @return the minHashes
 	 */
-	public final int[][] getSubSeqMinHashArray()
+	public final int[] getMinHashArray()
 	{
 		return this.minHashes;
 	}
 	
-	public final int numSubSequences()
-	{
-		return this.minHashes.length;
-	}
-	
 	public final int numHashes()
 	{
-		return this.minHashes[0].length;
+		return this.minHashes.length;
 	}
 
 	/* (non-Javadoc)
