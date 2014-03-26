@@ -42,9 +42,9 @@ import edu.umd.marbl.mhap.general.AbstractMatchSearch;
 import edu.umd.marbl.mhap.general.AbstractSequenceHashStreamer;
 import edu.umd.marbl.mhap.general.MatchResult;
 import edu.umd.marbl.mhap.general.OrderKmerHashes;
+import edu.umd.marbl.mhap.general.OverlapInfo;
 import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
-import edu.umd.marbl.mhap.utils.Pair;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHashes>
@@ -218,16 +218,15 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 						&& seqHashes.getSequenceLength()>=this.minStoreLength)
 					continue;
 				
-				Pair<Double, Integer> result = seqHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
-				double matchScore = result.x;
-				int shift = result.y;
-				int shiftb = -shift - seqHashes.getSequenceLength() + matchedHashes.getSequenceLength();
+				OverlapInfo result = seqHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
 				
+				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
 				
-				if (matchScore >= this.acceptScore)
+				//if score is good add
+				if (result.score >= this.acceptScore)
 				{
-					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, matchScore, -shift, shiftb);
+					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result.score, result.a, result.b);
 
 					// add to list
 					matches.add(currResult);

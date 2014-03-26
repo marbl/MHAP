@@ -66,7 +66,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 
 	private static final boolean DEFAULT_LARGE_MEMORY = true;
 
-	private static final double DEFAULT_MAX_SHIFT_PERCENT = 0.3;
+	private static final double DEFAULT_MAX_SHIFT_PERCENT = 0.2;
 
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 
@@ -226,7 +226,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 				+ DEFAULT_NUM_MIN_MATCHES);
 		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): "
 				+ DEFAULT_NUM_THREADS);
-		System.err.println("\t  --subsequence-size [int size of maximum minhashed sequence], default: "
+		System.err.println("\t  --subsequence-size [depricated, int size of maximum minhashed sequence], default: "
 				+ DEFAULT_SUB_SEQUENCE_SIZE);
 		System.err.println("\t  --no-self [do not compute results to self], default: " + DEFAULT_NO_SELF);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);

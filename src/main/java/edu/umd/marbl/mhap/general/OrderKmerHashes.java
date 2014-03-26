@@ -38,7 +38,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
-import edu.umd.marbl.mhap.utils.Pair;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class OrderKmerHashes 
@@ -74,7 +73,6 @@ public class OrderKmerHashes
 	
 	private final int[][][] orderedHashes;
 
-	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.50;
 	public final static int MAX_ARRAY_SIZE = 1000;
 	
 	private final static int[][][] allocateMemory(int size)
@@ -214,7 +212,7 @@ public class OrderKmerHashes
 		return storeAsArray(completeHashAsPair);
 	}
 	
-	public Pair<Double, Integer> getFullScore(OrderKmerHashes s, double maxShiftPercent)
+	public OverlapInfo getFullScore(OrderKmerHashes s, double maxShiftPercent)
 	{
 		int[][][] allKmerHashes = this.orderedHashes;
 
@@ -237,7 +235,9 @@ public class OrderKmerHashes
 
 		int count = 0;
 		int[] posShift = new int[Math.min(size1, size2)/8+1];
-
+		int[] pos1Index = new int[posShift.length];
+		int[] pos2Index = new int[posShift.length];
+		
 		//check the repeat flag
 		int numScoringRepeats = 2;
 		if (maxShiftPercent <= 0)
@@ -254,11 +254,23 @@ public class OrderKmerHashes
 			int ii1 = 0;
 			int ii2 = 0;
 			int i1 = 0;
-			int i2 = 0;
+			int i2 = 0;			
+			
+			//init the loop storage
+			int hash1 = 0;
+			int hash2 = 0;
+			int pos1;
+			int pos2;
 
 			// perform merge operation to get the shift and the kmer count
 			while (true)
 			{
+				//store previous value
+				//int prevHash1 = hash1;
+				//int prevHash2 = hash2;
+				//int prevIndex1 = i1;
+				//int prevIndex2 = i2;
+
 				if (i1>=allKmerHashes[ii1].length)
 				{
 					ii1++;
@@ -276,14 +288,14 @@ public class OrderKmerHashes
 					//break if reached end
 					if (ii2>=sAllKmerHashes.length)
 						break;
-				}
+				}				
 				
 				//get the values in the array
-				int hash1 = allKmerHashes[ii1][i1][0];
-				int pos1 = allKmerHashes[ii1][i1][1];
+				hash1 = allKmerHashes[ii1][i1][0];
+				pos1 = allKmerHashes[ii1][i1][1];
 
-				int hash2 = sAllKmerHashes[ii2][i2][0];
-				int pos2 = sAllKmerHashes[ii2][i2][1];
+				hash2 = sAllKmerHashes[ii2][i2][0];
+				pos2 = sAllKmerHashes[ii2][i2][1];
 
 				if (hash1 < hash2 || pos1 < valid1Lower || pos1 >= valid1Upper)
 					i1++;
@@ -297,20 +309,36 @@ public class OrderKmerHashes
 					{
 						//do not record this shift and increase counter
 						i2++;
+						continue;
 					}
+					
+					//if (prevHash1==hash1 && i1!=prevIndex1)
+					//{
+					//	i1++;
+					//	continue;
+					//}
+					//if (prevHash2==hash2 && i2!=prevIndex2)
+					//{
+					//	i2++;
+					//	continue;
+					//}
+
 
 					//adjust array size if needed
 					if (posShift.length<=count)
+					{
 						posShift = Arrays.copyOf(posShift, posShift.length*2);
+						pos1Index = Arrays.copyOf(pos1Index, pos1Index.length*2);
+						pos2Index = Arrays.copyOf(pos2Index, pos2Index.length*2);
+					}
 					
 					// compute the shift
-					posShift[count] = currShift;					
+					posShift[count] = currShift;								
+					pos1Index[count] = pos1;
+					pos2Index[count] = pos2;
 					
-					//if (repeat>0)
-					//	System.err.println(""+pos1+" "+pos2);
-
 					count++;
-					i1++;
+					//i1++;
 					i2++;
 				}
 			}
@@ -318,21 +346,57 @@ public class OrderKmerHashes
 			// get the median
 			if (count > 0)
 			{
+				//pick out only the best values
+				if (repeat>0)
+				{
+					int reducedCount = -1;
+
+					//copy over only the best values
+					for (int iter=0; iter<count; iter++)
+					{
+						if (reducedCount>=0 && pos1Index[reducedCount]==pos1Index[iter])
+						{
+							//if better, record it
+							if (Math.abs(posShift[reducedCount]-medianShift)>Math.abs(posShift[iter]-medianShift))
+							{
+								pos1Index[reducedCount] = pos1Index[iter];
+								pos2Index[reducedCount] = pos2Index[iter];
+								posShift[reducedCount] = posShift[iter];
+							}
+						}
+						else
+						{
+							//add the new data
+							reducedCount++;
+							pos1Index[reducedCount] = pos1Index[iter];
+							pos2Index[reducedCount] = pos2Index[iter];
+							posShift[reducedCount] = posShift[iter];
+						}
+					}
+					
+					count = reducedCount+1;
+				}
+
 				medianShift = Utils.quickSelect(posShift, count / 2, count);
+				//medianShift = Utils.quickSelect(posShift.clone(), count / 2, count);
 			}
 			else
 				medianShift = 0;
-
-			/*
-			int[] test = Arrays.copyOf(posShift, count);
-			Arrays.sort(test);
-			System.err.println(Arrays.toString(test));
-			*/
-
+			
 			// get the actual overlap size
 			int leftPosition = Math.max(0, medianShift);
 			int rightPosition = Math.min(size2, size1 + medianShift);
 			overlapSize = Math.max(50,rightPosition - leftPosition);
+
+			//if (((double) count / (double) (overlapSize))>0.06 && repeat==1)
+			//{
+			//	int[] test = Arrays.copyOf(posShift, count);
+			//	int[] test2 = Arrays.copyOf(pos1Index, count);
+
+				//Arrays.sort(test);
+				//System.err.println("Start = "+Math.max(0, -medianShift)+", Overlap="+overlapSize+" Maxshift="+absMaxShiftInOverlap+": ["+Arrays.toString(test)+"; "+Arrays.toString(test2)+"];");
+				//System.err.println("Overlap="+overlapSize+", Shift/overlap="+(double)(test[test.length-10]-test[10])/(double)overlapSize);
+			//}
 
 			//compute the max possible allowed shift in kmers
 			absMaxShiftInOverlap = Math.min(Math.max(size1, size2), (int)((double)overlapSize*maxShiftPercent));
@@ -351,23 +415,58 @@ public class OrderKmerHashes
 			valid2Lower+" Upper:"+valid2Upper);
 			*/
 		}
-		
-		// count percent valid shift, there must be a consensus
+			
+		//storage for edge computation
+		int leftEdge1 = Integer.MAX_VALUE;
+		int leftEdge2 = Integer.MAX_VALUE;
+		int rightEdge1 = Integer.MIN_VALUE;
+		int rightEdge2 = Integer.MIN_VALUE;
+
 		int validCount = 0;
-		for (int iter = 0; iter < count; iter++)
+		for (int iter=0; iter<count; iter++)
 		{
-			if (Math.abs(posShift[iter] - medianShift) <= absMaxShiftInOverlap)
-				validCount++;
+			int pos1 = pos1Index[iter];
+			int pos2 = pos2Index[iter];
+			
+			//take only valid values
+			if (Math.abs(posShift[iter] - medianShift) > absMaxShiftInOverlap)
+				continue;
+
+			//get the edges
+			if (pos1<leftEdge1)
+				leftEdge1 = pos1;
+			if (pos2<leftEdge2)
+				leftEdge2 = pos2;
+			if (pos1>rightEdge1)
+				rightEdge1 = pos1;
+			if (pos2>rightEdge2)
+				rightEdge2 = pos2;
+
+			validCount++;
 		}
-		double validShiftPercent = (double) validCount / (double) count;
+
+		//get edge info based on the german tank problem
+		int gap1 = (int)Math.round((rightEdge1-validCount)/(double)validCount);
+		int gap2 = (int)Math.round((rightEdge2-validCount)/(double)validCount);
+		int a1 = Math.max(0,leftEdge1-gap1);
+		int a2 = Math.max(0,leftEdge2-gap2);
+		int b1 = Math.min(this.size()+20,rightEdge1+gap1);
+		int b2 = Math.min(s.size()+20,rightEdge2+gap2);
 		
-		//System.err.println(overlapSize);
+		int ahang = a1-a2;
+		int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
+		
+		//int shiftb = -medianShift - this.size() + s.size();
+		//if (score>0.04)
+			//System.out.format("A=%d %d, B=%d %d\n", -medianShift, a1-a2, shiftb, -medianShift+(-medianShift-(a1-a2))-this.size()+s.size());
+		//	System.out.format("A=%d %d, B=%d %d\n", -medianShift, ahang, shiftb, bhang);
+		//return new OverlapInfo(score, -medianShift, shiftb);
+	
+		//compute the score
+		double score = (double) validCount / (double) (overlapSize);
 
-		double score = 0;
-		if (overlapSize > 0 && validShiftPercent > SHIFT_CONSENSUS_PERCENTAGE)
-			score = (double) count / (double) (overlapSize);
-
-		return new Pair<Double, Integer>(score, medianShift);
+		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
+		return new OverlapInfo(score, ahang, bhang);
 	}
 
 	public int size()
