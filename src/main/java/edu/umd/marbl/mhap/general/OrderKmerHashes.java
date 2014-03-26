@@ -377,8 +377,7 @@ public class OrderKmerHashes
 					count = reducedCount+1;
 				}
 
-				medianShift = Utils.quickSelect(posShift, count / 2, count);
-				//medianShift = Utils.quickSelect(posShift.clone(), count / 2, count);
+				medianShift = Utils.quickSelect(Arrays.copyOf(posShift, count), count / 2, count);
 			}
 			else
 				medianShift = 0;
@@ -387,16 +386,6 @@ public class OrderKmerHashes
 			int leftPosition = Math.max(0, medianShift);
 			int rightPosition = Math.min(size2, size1 + medianShift);
 			overlapSize = Math.max(50,rightPosition - leftPosition);
-
-			//if (((double) count / (double) (overlapSize))>0.06 && repeat==1)
-			//{
-			//	int[] test = Arrays.copyOf(posShift, count);
-			//	int[] test2 = Arrays.copyOf(pos1Index, count);
-
-				//Arrays.sort(test);
-				//System.err.println("Start = "+Math.max(0, -medianShift)+", Overlap="+overlapSize+" Maxshift="+absMaxShiftInOverlap+": ["+Arrays.toString(test)+"; "+Arrays.toString(test2)+"];");
-				//System.err.println("Overlap="+overlapSize+", Shift/overlap="+(double)(test[test.length-10]-test[10])/(double)overlapSize);
-			//}
 
 			//compute the max possible allowed shift in kmers
 			absMaxShiftInOverlap = Math.min(Math.max(size1, size2), (int)((double)overlapSize*maxShiftPercent));
@@ -445,6 +434,9 @@ public class OrderKmerHashes
 			validCount++;
 		}
 
+		//compute the score
+		double score = (double) validCount / (double) (overlapSize);
+
 		//get edge info based on the german tank problem
 		int gap1 = (int)Math.round((rightEdge1-validCount)/(double)validCount);
 		int gap2 = (int)Math.round((rightEdge2-validCount)/(double)validCount);
@@ -461,9 +453,15 @@ public class OrderKmerHashes
 			//System.out.format("A=%d %d, B=%d %d\n", -medianShift, a1-a2, shiftb, -medianShift+(-medianShift-(a1-a2))-this.size()+s.size());
 		//	System.out.format("A=%d %d, B=%d %d\n", -medianShift, ahang, shiftb, bhang);
 		//return new OverlapInfo(score, -medianShift, shiftb);
-	
-		//compute the score
-		double score = (double) validCount / (double) (overlapSize);
+					
+		//if (score>0.06)
+		//{
+		//	int[] test = Arrays.copyOf(posShift, count);
+		//	int[] test2 = Arrays.copyOf(pos1Index, count);
+
+		//	System.err.println("Start = "+Math.max(0, -medianShift)+", Overlap="+overlapSize+" Maxshift="+absMaxShiftInOverlap+": ["+Arrays.toString(test)+"; "+Arrays.toString(test2)+"];");
+		//	System.err.println("Overlap="+overlapSize+", Shift/overlap="+(double)(test[test.length-10]-test[10])/(double)overlapSize);
+		//}
 
 		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
 		return new OverlapInfo(score, ahang, bhang);
