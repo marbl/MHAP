@@ -38,6 +38,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.Pair;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class OrderKmerHashes 
@@ -211,6 +212,193 @@ public class OrderKmerHashes
 		
 		return storeAsArray(completeHashAsPair);
 	}
+	
+	public OverlapInfo getFullScoreExperimental(OrderKmerHashes s, double maxShiftPercent)
+	{
+		int[][][] allKmerHashes = this.orderedHashes;
+
+		// get the kmers of the second sequence
+		int[][][] sAllKmerHashes = s.orderedHashes;
+		
+		//get sizes
+		int size1 = this.size();
+		int size2 = s.size();
+		
+		int count = 0;
+		//int[] posShift = new int[Math.min(size1, size2)/8+1];
+		int[] pos1Index = new int[Math.min(size1, size2)/8+1];
+		int[] pos2Index = new int[pos1Index.length];
+		
+		//init counters
+		count = 0;
+		int ii1 = 0;
+		int ii2 = 0;
+		int i1 = 0;
+		int i2 = 0;			
+		
+		//init the loop storage
+		int hash1 = 0;
+		int hash2 = 0;
+		int pos1;
+		int pos2;
+
+		// perform merge operation to get the shift and the kmer count
+		while (true)
+		{
+			//store previous value
+			//int prevHash1 = hash1;
+			//int prevHash2 = hash2;
+			//int prevIndex1 = i1;
+			//int prevIndex2 = i2;
+
+			if (i1>=allKmerHashes[ii1].length)
+			{
+				ii1++;
+				i1 = 0;
+				
+				//break if reached end
+				if (ii1>=allKmerHashes.length)
+					break;
+			}
+			if (i2>=sAllKmerHashes[ii2].length)
+			{
+				ii2++;
+				i2 = 0;
+
+				//break if reached end
+				if (ii2>=sAllKmerHashes.length)
+					break;
+			}				
+			
+			//get the values in the array
+			hash1 = allKmerHashes[ii1][i1][0];
+			pos1 = allKmerHashes[ii1][i1][1];
+
+			hash2 = sAllKmerHashes[ii2][i2][0];
+			pos2 = sAllKmerHashes[ii2][i2][1];
+
+			if (hash1 < hash2)
+				i1++;
+			else if (hash2 < hash1)
+				i2++;
+			else
+			{
+				//check if current shift makes sense positionally
+				//int currShift = pos2-pos1;
+				
+				//adjust array size if needed
+				if (pos1Index.length<=count)
+				{
+					//posShift = Arrays.copyOf(posShift, posShift.length*2);
+					pos1Index = Arrays.copyOf(pos1Index, pos1Index.length*2);
+					pos2Index = Arrays.copyOf(pos2Index, pos2Index.length*2);
+				}
+				
+				// compute the shift
+				//posShift[count] = currShift;								
+				pos1Index[count] = pos1;
+				pos2Index[count] = pos2;
+				
+				count++;
+				i1++;
+				i2++;
+			}
+		}
+
+		//fit a regression line
+		double eps = 1.0e-1;
+		double outlier = 3.0;
+		double[] r = new double[pos1Index.length];
+		
+		//create the copies of data
+		int[] pos1GoodIndex = Arrays.copyOf(pos1Index, pos1Index.length);
+		int[] pos2GoodIndex = Arrays.copyOf(pos1Index, pos1Index.length);
+		
+		Pair<Double,Double> linePrev = new Pair<Double,Double>(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+		Pair<Double,Double> line = Utils.linearRegression(pos1GoodIndex, pos2GoodIndex, count);
+		
+		int validCount = 0;
+  	int steps = 0;
+		while (steps<10 && count>10 && (Math.abs(linePrev.x-line.x)>eps || Math.abs(linePrev.y-line.y)>eps))
+		{
+			//compute residuals
+			for (int iter=0; iter<count; iter++)
+			{
+				r[iter] = (double)pos2Index[iter]-(line.x+line.y*(double)pos1Index[iter]);
+				//System.err.print(" "+r[iter]);
+			}
+			
+			double rmean = Utils.mean(r, count);
+			double std = Utils.std(r, count, rmean);
+			
+			//go through the list and put valid regions at start
+			validCount = 0;
+			for (int iter=0; iter<count; iter++)
+			{
+				if (Math.abs(r[iter])<Math.max(200.0,outlier*std))
+				{
+					pos1GoodIndex[validCount] = pos1Index[iter];
+					pos2GoodIndex[validCount] = pos2Index[iter];
+					validCount++;
+				}
+			}
+						
+			//perform another round of regression
+			linePrev = line;
+			line = Utils.linearRegression(pos1GoodIndex, pos2GoodIndex, validCount);
+			
+			steps++;
+		}
+				
+		//extrapolate to 0 and end point
+		int a1 = Math.max(0,(int)Math.round(-line.x/line.y));
+		int a2 = Math.max(0,(int)line.x.doubleValue());
+		int b1 = Math.min(size(), (int)Math.round(((double)s.size()-line.x)/line.y));
+		int b2 = Math.min(s.size(),(int)(line.x+line.y*(double)size()));
+		
+		int ahang = a1-a2;
+		int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
+		
+		//compute correlation only in the proper region
+		validCount = 0;
+		for (int iter=0; iter<count; iter++)
+		{
+			if (pos2Index[iter]<a1 && pos2Index[iter]>b1)
+				continue;
+			
+			double residual = (double)pos2Index[iter]-(line.x+line.y*(double)pos1Index[iter]);
+			if (Math.abs(residual)<=400.0)
+			{
+				pos1GoodIndex[validCount] = pos1Index[iter];
+				pos2GoodIndex[validCount] = pos2Index[iter];
+				validCount++;
+			}
+		}
+
+		//compute the correlation over the valid region
+		double corr = 0.0;
+		if (validCount>10)
+			corr = Utils.pearsonCorr(pos1GoodIndex, pos2GoodIndex, validCount);
+
+		
+		//int shiftb = -medianShift - this.size() + s.size();
+		//if (score>0.04)
+			//System.out.format("A=%d %d, B=%d %d\n", -medianShift, a1-a2, shiftb, -medianShift+(-medianShift-(a1-a2))-this.size()+s.size());
+		//	System.out.format("A=%d %d, B=%d %d\n", -medianShift, ahang, shiftb, bhang);
+		//return new OverlapInfo(score, -medianShift, shiftb);
+					
+		//if (corr>0.06)
+		//{
+		//	int[] test = Arrays.copyOf(pos1Index, count);
+		//	int[] test2 = Arrays.copyOf(pos2Index, count);
+
+		//	System.err.println("corr="+corr+": ["+Arrays.toString(test)+"; "+Arrays.toString(test2)+"];");
+		//}
+
+		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
+		return new OverlapInfo(corr, ahang, bhang);
+	}
+
 	
 	public OverlapInfo getFullScore(OrderKmerHashes s, double maxShiftPercent)
 	{
@@ -442,8 +630,8 @@ public class OrderKmerHashes
 		int gap2 = (int)Math.round((rightEdge2-validCount)/(double)validCount);
 		int a1 = Math.max(0,leftEdge1-gap1);
 		int a2 = Math.max(0,leftEdge2-gap2);
-		int b1 = Math.min(this.size()+20,rightEdge1+gap1);
-		int b2 = Math.min(s.size()+20,rightEdge2+gap2);
+		int b1 = Math.min(this.size(),rightEdge1+gap1);
+		int b2 = Math.min(s.size(),rightEdge2+gap2);
 		
 		int ahang = a1-a2;
 		int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
