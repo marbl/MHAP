@@ -248,6 +248,9 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 				
 				OverlapInfo result = seqMinHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
 				
+				//OverlapInfo result2 = seqMinHashes.getOrderedHashes().getFullScoreExperimental(matchedHashes.getOrderedHashes(), this.maxShift);				
+				//System.err.println(result+"  "+result2);
+				
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
 				

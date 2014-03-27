@@ -530,6 +530,92 @@ public final class Utils
 
 		return null;
 	}
+	
+	public final static Pair<Double,Double> linearRegression(int[] a, int[] b, int size)
+	{
+		//take one pass and compute means
+		int xy = 0;
+		int x = 0;
+		int y = 0;
+		int x2 = 0;
+		
+		for (int iter=0; iter<size; iter++)
+		{
+			xy += a[iter]*b[iter];
+			x += a[iter];
+			y += b[iter];
+			x2 += a[iter]*a[iter];
+		}
+		
+		double Ninv = 1.0/(double)size;
+		
+		double beta = ((double)xy-Ninv*(double)(x*y))/((double)x2-Ninv*(double)(x*x));
+		double alpha = Ninv*((double)y-beta*(double)x);
+		
+		return new Pair<Double,Double>(alpha, beta);
+	}
+	
+	public final static double mean(double[] a, int size)
+	{
+		double x = 0.0;
+		for (int iter=0; iter<size; iter++)
+			x += a[iter];
+
+		return x/(double)size;
+	}
+	
+	public final static double pearsonCorr(int[] a, int[] b, int size)
+	{
+		if (size<2)
+			return 0.0;
+		
+		double meana = mean(a, size);
+		double meanb = mean(b, size);
+		double stda = std(a, size, meana);
+		double stdb = std(b, size, meanb);
+		
+		double r = 0.0;
+		for (int iter=0; iter<size; iter++)
+		{
+			r += ((double)a[iter]-meana)*((double)b[iter]-meanb)/(stda*stdb);
+		}
+
+		
+		return r/(double)(size-1);
+	}
+
+	public final static double mean(int[] a, int size)
+	{
+		int x = 0;
+		for (int iter=0; iter<size; iter++)
+			x += a[iter];
+
+		return x/(double)size;
+	}
+	
+	public final static double std(int[] a, int size, double mean)
+	{
+		double x = 0.0;
+		for (int iter=0; iter<size; iter++)
+		{
+			double val = (double)a[iter]-mean;
+			x += val*val;
+		}
+
+		return Math.sqrt(x/(double)(size-1));
+	}
+	
+	public final static double std(double[] a, int size, double mean)
+	{
+		double x = 0.0;
+		for (int iter=0; iter<size; iter++)
+		{
+			double val = a[iter]-mean;
+			x += val*val;
+		}
+
+		return Math.sqrt(x/(double)(size-1));
+	}
 
 	public final static <H> double hashEfficiency(HashMap<Integer,ArrayList<H>> c)
 	{

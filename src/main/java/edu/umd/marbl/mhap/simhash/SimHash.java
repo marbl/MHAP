@@ -62,7 +62,7 @@ public final class SimHash
 		  	
 	      for (int bit=0; bit<64; bit++)
 	      {
-	        /* if not different then increase count */
+	        // if not different then increase counts
 	        if ((val&mask)==0b0)
 	          counts[offset+bit]--;
 	        else
