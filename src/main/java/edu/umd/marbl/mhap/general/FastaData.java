@@ -149,9 +149,11 @@ public class FastaData implements Cloneable
 				throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
 
 			// process the current header
-			// parse the new header
-			// header = this.lastLine.substring(1).split("[\\s]+", 2)[0];
-			// String header = "";
+			String header = null;
+			if (SequenceId.STORE_FULL_ID)
+				header = this.lastLine.substring(1).split("[\\s,]+", 2)[0];
+			
+			//read the first line of the sequence
 			this.lastLine = this.fileReader.readLine();
 
 			StringBuilder fastaSeq = new StringBuilder();
@@ -159,9 +161,16 @@ public class FastaData implements Cloneable
 			{
 				if (this.lastLine == null || this.lastLine.startsWith(">"))
 				{
-					// enqueue sequence
-					SequenceId id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1);
+					//generate sequence id
+					SequenceId id;
+					if (SequenceId.STORE_FULL_ID)
+						id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1, true, header);
+					else
+						id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1);
+
 					Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
+
+					// enqueue sequence
 					this.sequenceList.add(seq);
 					this.numberProcessed.getAndIncrement();
 
