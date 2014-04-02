@@ -39,6 +39,9 @@ public final class SequenceId implements Serializable
 	private static final long serialVersionUID = 2181572437818064822L;
 	private final int id;
 	private final boolean isFwd;
+	private final String strId;
+	
+	public static boolean STORE_FULL_ID = false; 
 	
 	public SequenceId(int id)
 	{
@@ -49,16 +52,24 @@ public final class SequenceId implements Serializable
 	{
 		this.id = id;
 		this.isFwd = isFwd;
+		this.strId = null;
+	}
+	
+	public SequenceId(int id, boolean isFwd, String strId)
+	{
+		this.id = id;
+		this.isFwd = isFwd;
+		this.strId = strId;
 	}
 	
 	public SequenceId createOffset(int offset)
 	{
-		return new SequenceId(this.id+offset, this.isFwd);
+		return new SequenceId(this.id+offset, this.isFwd, this.strId);
 	}
 	
 	public SequenceId complimentId()
 	{
-		return new SequenceId(this.id, !this.isFwd);
+		return new SequenceId(this.id, !this.isFwd, this.strId);
 	}
 	
 	/* (non-Javadoc)
@@ -90,9 +101,8 @@ public final class SequenceId implements Serializable
 
 	public String getHeader()
 	{
-		//String s = indicies.get(this.id);
-		//if (s!=null)
-		//	return s;
+		if (this.strId!=null)
+			return this.strId;
 		
 		return String.valueOf(this.id);
 	}

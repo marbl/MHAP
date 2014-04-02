@@ -35,6 +35,7 @@ import java.util.Locale;
 
 import edu.umd.marbl.mhap.general.AbstractSequenceHashStreamer;
 import edu.umd.marbl.mhap.general.AbstractSequenceSearchMain;
+import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.minhash.MinHashSearch;
 import edu.umd.marbl.mhap.minhash.SequenceMinHashStreamer;
 import edu.umd.marbl.mhap.minhash.SequenceMinHashes;
@@ -64,13 +65,13 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 
 	private static final int DEFAULT_ORDERED_KMER_SIZE = 12;
 
-	private static final boolean DEFAULT_LARGE_MEMORY = true;
-
 	private static final double DEFAULT_MAX_SHIFT_PERCENT = 0.2;
 
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 
 	private static final boolean DEFAULT_NO_SELF = false;
+
+	private static final boolean DEFAULT_STORE_ID = false;
 
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
@@ -94,7 +95,6 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		int numHashes = DEFAULT_NUM_WORDS;
 		int numMinMatches = DEFAULT_NUM_MIN_MATCHES;
 		int subSequenceSize = DEFAULT_SUB_SEQUENCE_SIZE;
-		boolean storeInMemory = DEFAULT_LARGE_MEMORY;
 		int numThreads = DEFAULT_NUM_THREADS;
 		boolean noSelf = DEFAULT_NO_SELF;
 		String filterFile = null;
@@ -160,7 +160,11 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 			}
 			else if (args[i].trim().equalsIgnoreCase("--no-self"))
 			{
-				noSelf = true;
+				noSelf = !DEFAULT_NO_SELF;
+			}
+			else if (args[i].trim().equalsIgnoreCase("--store-full-id"))
+			{
+				SequenceId.STORE_FULL_ID = !DEFAULT_STORE_ID;
 			}
 		}
 		if (inFile == null && processFile == null)
@@ -181,7 +185,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		System.err.println("max shift:\t" + maxShift);
 		System.err.println("threshold:\t" + acceptScore);
 		System.err.println("number of threads:\t" + numThreads);
-		System.err.println("use large amount of memory:\t" + storeInMemory);
+		System.err.println("store full sequence ids:\t" + SequenceId.STORE_FULL_ID);
 		System.err.println("compute alignment to self of -s file:\t" + !noSelf);
 
 		long startTime = System.nanoTime();
@@ -229,6 +233,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		System.err.println("\t  --subsequence-size [depricated, int size of maximum minhashed sequence], default: "
 				+ DEFAULT_SUB_SEQUENCE_SIZE);
 		System.err.println("\t  --no-self [do not compute results to self], default: " + DEFAULT_NO_SELF);
+		System.err.println("\t  --store-full-id [use full sequence id rather than order in file], default: " + DEFAULT_STORE_ID);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
 		System.err
 				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
