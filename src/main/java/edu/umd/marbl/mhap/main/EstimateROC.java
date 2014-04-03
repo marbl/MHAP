@@ -339,7 +339,6 @@ public class EstimateROC {
 					overlap.bsecond = Math.min(blen, blen - boffset);
 				}
 			} else if (splitLine.length == 12) {
-//				34 12 94.57843 290 0 100 5281 5361 0 100 5284 5362
 				overlap.id1 = splitLine[0];
 				overlap.id2 = splitLine[1];
 				@SuppressWarnings("unused")
