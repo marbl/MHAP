@@ -383,7 +383,10 @@ public class EstimateROC {
 	private void loadFasta(String file) throws IOException {
 		FastaData data = new FastaData(file, 0);
 		data.enqueueFullFile();
-		this.dataSeq = data.toArray();
+		this.dataSeq = new Sequence[data.getNumberProcessed()];
+		int i = 0;
+		while (!data.isEmpty())
+			this.dataSeq[i++] = data.dequeue();
 	}
 	
 	private void processOverlaps(String file) throws Exception {

@@ -39,7 +39,6 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 
 import edu.umd.marbl.mhap.general.FastaData;
-import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class KmerStatSimulator {
@@ -289,16 +288,14 @@ public class KmerStatSimulator {
 		}
 		System.err.println("Started...");
 
-		FastaData data = null;
 		String[] sequences = null;
 		if (this.reference != null) {
-			data = new FastaData(this.reference, 0);
+			FastaData data = new FastaData(this.reference, 0);
 			data.enqueueFullFile();
-			Sequence[] dataSeq = data.toArray();
-			sequences = new String[dataSeq.length];
-			for (int i = 0; i < dataSeq.length; i++) {
-				sequences[i] = dataSeq[i].getString().toUpperCase().replace("N", "");
-			}
+			sequences = new String[data.getNumberProcessed()];
+			int i = 0;
+			while (!data.isEmpty())
+				sequences[i++] = data.dequeue().getString().toUpperCase().replace("N", "");
 		}
 		System.err.println("Loaded reference");
 
