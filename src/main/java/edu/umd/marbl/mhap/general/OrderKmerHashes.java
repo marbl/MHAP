@@ -38,7 +38,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
-import edu.umd.marbl.mhap.utils.Pair;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class OrderKmerHashes 
@@ -218,6 +217,7 @@ public class OrderKmerHashes
 		return storeAsArray(completeHashAsPair);
 	}
 	
+	/*
 	public OverlapInfo getFullScoreExperimental(OrderKmerHashes s, double maxShiftPercent)
 	{
 		int[][][] allKmerHashes = this.orderedHashes;
@@ -404,7 +404,7 @@ public class OrderKmerHashes
 		//return new OverlapInfo(corr, ahang, bhang);
 		return new OverlapInfo(corr, validCount, a1, a2, b1, b2);
 	}
-
+	 */
 	
 	public OverlapInfo getFullScore(OrderKmerHashes s, double maxShiftPercent)
 	{
@@ -556,12 +556,15 @@ public class OrderKmerHashes
 				count = reducedCount+1;
 			}
 
-			medianShift = Utils.quickSelect(Arrays.copyOf(posShift, count), count / 2, count);
+			if (count<=0)
+				medianShift = 0;
+			else
+				medianShift = Utils.quickSelect(Arrays.copyOf(posShift, count), count / 2, count);
 			
 			// get the actual overlap size
 			int leftPosition = Math.max(0, -medianShift);
 			int rightPosition = Math.min(size1, size2 - medianShift);
-			overlapSize = Math.max(size1-size(), rightPosition - leftPosition);
+			overlapSize = Math.max(this.seqLength-size1, rightPosition - leftPosition);
 
 			//compute the max possible allowed shift in kmers
 			absMaxShiftInOverlap = Math.min(Math.max(size1, size2), (int)((double)overlapSize*maxShiftPercent));
@@ -611,16 +614,19 @@ public class OrderKmerHashes
 			validCount++;
 		}
 
+		if (validCount<=1)
+			return new OverlapInfo(0.0, 0, 0, 0, 0, 0);
+
 		//compute the score
 		double score = (double) validCount / (double) (overlapSize);
 
-		//get edge info based on the german tank problem
-		int gap1 = (int)Math.round((rightEdge1-validCount)/(double)validCount);
-		int gap2 = (int)Math.round((rightEdge2-validCount)/(double)validCount);
-		int a1 = Math.max(0,leftEdge1-gap1);
-		int a2 = Math.max(0,leftEdge2-gap2);
-		int b1 = Math.min(this.seqLength,rightEdge1+gap1);
-		int b2 = Math.min(s.seqLength,rightEdge2+gap2);
+		//get edge info  uniformly minimum variance unbiased (UMVU) estimators
+		//a = (n*a-b)/(n-1)
+		//b = (n*b-a)/(n-1)
+		int a1 = Math.max(0,(int)Math.round((validCount*leftEdge1-rightEdge1)/(double)(validCount-1)));
+		int a2 = Math.max(0,(int)Math.round((validCount*leftEdge2-rightEdge2)/(double)(validCount-1)));
+		int b1 = Math.min(this.seqLength,(int)Math.round((validCount*rightEdge1-leftEdge1)/(double)(validCount-1)));
+		int b2 = Math.min(s.seqLength,(int)Math.round((validCount*rightEdge2-leftEdge2)/(double)(validCount-1)));
 		
 		//int ahang = a1-a2;
 		//int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
@@ -636,6 +642,7 @@ public class OrderKmerHashes
 
 		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
 		//return new OverlapInfo(score, ahang, bhang);
+		
 		return new OverlapInfo(score, validCount, a1, a2, b1, b2);
 	}
 

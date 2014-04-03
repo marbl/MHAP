@@ -191,9 +191,9 @@ public class FastaData implements Cloneable
 
 	}
 
-	public long getNumberProcessed()
+	public int getNumberProcessed()
 	{
-		return this.numberProcessed.get();
+		return this.numberProcessed.intValue();
 	}
 
 	public Sequence getSequence(SequenceId id)
@@ -211,11 +211,6 @@ public class FastaData implements Cloneable
 				return seq.getReverseCompliment();
 
 		return null;
-	}
-
-	public Sequence[] toArray()
-	{
-		return this.sequenceList.toArray(new Sequence[(int) this.getNumberProcessed()]);
 	}
 
 	public boolean isEmpty()
