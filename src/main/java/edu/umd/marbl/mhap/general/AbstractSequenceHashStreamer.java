@@ -163,7 +163,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 	  }
 	}
 	
-	public long getFastaProcessed()
+	public int getFastaProcessed()
 	{
 		if (this.fastaData==null)
 			return 0;
