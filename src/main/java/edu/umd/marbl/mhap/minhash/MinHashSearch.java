@@ -165,9 +165,9 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	}
 
 	@Override
-	public List<MatchResult> findMatches(SequenceMinHashes seqMinHashes, boolean toSelf)
+	public List<MatchResult> findMatches(SequenceMinHashes seqHashes, boolean toSelf)
 	{
-		MinHash minHash = seqMinHashes.getMinHashes();
+		MinHash minHash = seqHashes.getMinHashes();
 
 		if (this.hashes.size() != minHash.numHashes())
 			throw new FastAlignRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
@@ -219,7 +219,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 			SequenceId matchId = match.getKey();
 			
 			// do not store matches with smaller ids, unless its coming from a short read
-			if (toSelf && matchId.getHeaderId() == seqMinHashes.getSequenceId().getHeaderId())
+			if (toSelf && matchId.getHeaderId() == seqHashes.getSequenceId().getHeaderId())
 				continue;
 
 			//see if the hit number is high enough			
@@ -230,23 +230,23 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 					throw new FastAlignRuntimeException("Hashes not found for given id.");
 				
 				//never process short to short
-				if (matchedHashes.getSequenceLength()<this.minStoreLength && seqMinHashes.getSequenceLength()<this.minStoreLength)
+				if (matchedHashes.getSequenceLength()<this.minStoreLength && seqHashes.getSequenceLength()<this.minStoreLength)
 					continue;
 				
 				//never process long to long in self, with greater id
 				if (toSelf 
-						&& matchId.getHeaderId() > seqMinHashes.getSequenceId().getHeaderId()
+						&& matchId.getHeaderId() > seqHashes.getSequenceId().getHeaderId()
 						&& matchedHashes.getSequenceLength()>=this.minStoreLength
-						&& seqMinHashes.getSequenceLength()>=this.minStoreLength)
+						&& seqHashes.getSequenceLength()>=this.minStoreLength)
 					continue;
 				
 				//never do short to long
 				if (toSelf 
 						&& matchedHashes.getSequenceLength()<this.minStoreLength
-						&& seqMinHashes.getSequenceLength()>=this.minStoreLength)
+						&& seqHashes.getSequenceLength()>=this.minStoreLength)
 					continue;
 				
-				OverlapInfo result = seqMinHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
+				OverlapInfo result = seqHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
 				
 				//OverlapInfo result2 = seqMinHashes.getOrderedHashes().getFullScoreExperimental(matchedHashes.getOrderedHashes(), this.maxShift);				
 				//System.err.println(result+"  "+result2);
@@ -257,7 +257,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 				//if score is good add
 				if (result.score >= this.acceptScore)
 				{
-					MatchResult currResult = new MatchResult(seqMinHashes.getSequenceId(), matchId, result.score, result.a, result.b);
+					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result, seqHashes.getSequenceLength(), matchedHashes.getSequenceLength());
 
 					// add to list
 					matches.add(currResult);

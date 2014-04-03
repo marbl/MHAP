@@ -34,22 +34,34 @@ public final class MatchResult implements Comparable<MatchResult>
 {
 	private final SequenceId fromId;
 	private final SequenceId toId;
-	private final int a;
-	private final int b;
+	private final int a1;
+	private final int a2;
+	private final int b1;
+	private final int b2;
 	private final double score;
+	private final int kmerCount;
+	private final int fromLength;
+	private final int toLength;
 	
-	public MatchResult(SequenceId fromId, SequenceId toId, double score, int a, int b)
+	public MatchResult(SequenceId fromId, SequenceId toId, OverlapInfo overlap, int fromLength, int toLength)
 	{
 		this.fromId = fromId;
 		this.toId = toId;
 		
-		this.a = a;
-		this.b = b;
+		this.fromLength = fromLength;
+		this.toLength = toLength;
 		
-		if (score>1.0)
+		this.a1 = getFromId().isForward() ? overlap.a1 : fromLength-overlap.a1;
+		this.b1 = getFromId().isForward() ? overlap.b1 : fromLength-overlap.b1;
+		this.a2 = getToId().isForward() ? overlap.a2 : toLength-overlap.a2;
+		this.b2 = getToId().isForward() ? overlap.b2 : toLength-overlap.b2;
+		
+		this.kmerCount = overlap.kmerCount;
+		
+		if (overlap.score>1.0)
 			this.score = 	1.0;
 		else
-			this.score = score;
+			this.score = overlap.score;
 	}
 
 	/**
@@ -82,22 +94,22 @@ public final class MatchResult implements Comparable<MatchResult>
 		return -Double.compare(this.score, o.score);
 	}
 	
-	public int getAShift()
-	{
-		return this.a;
-	}
-	
-	public int getBShift()
-	{
-		return this.b;
-	}
-
 	@Override
 	public String toString()
 	{
-		return String.format("%s %s %s %d %d %.5f", getFromId().getHeader(), getToId().getHeader(),
-				getFromId().isForward()&&getToId().isForward() ? 'N' : 'I', 
-				getAShift(), getBShift(), (1.0-getScore())*100.0);
+		return String.format("%s %s %.5f %d %d %d %d %d %d %d %d %d",
+				getFromId().getHeader(), 
+				getToId().getHeader(),
+				(1.0-getScore())*100.0,
+				this.kmerCount,
+				getFromId().isForward() ? 0 : 1,
+				this.a1,
+				this.b1,
+				this.fromLength,
+				getToId().isForward() ? 0 : 1,
+				this.a2,
+				this.b2,
+				this.toLength);
 	}
 
 

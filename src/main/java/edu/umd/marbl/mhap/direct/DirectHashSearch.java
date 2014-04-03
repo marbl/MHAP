@@ -226,7 +226,7 @@ public final class DirectHashSearch extends AbstractMatchSearch<SequenceDirectHa
 				//if score is good add
 				if (result.score >= this.acceptScore)
 				{
-					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result.score, result.a, result.b);
+					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result, matchedHashes.getSequenceLength(), matchedHashes.getSequenceLength());
 
 					// add to list
 					matches.add(currResult);
