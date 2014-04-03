@@ -322,7 +322,6 @@ public class EstimateROC {
 		String[] splitLine = line.trim().split("\\s+");
 
 		try {
-
 			if (splitLine.length == 7 || splitLine.length == 6) {
 				overlap.id1 = splitLine[0];
 				overlap.id2 = splitLine[1];
@@ -338,6 +337,27 @@ public class EstimateROC {
 					overlap.asecond = Math.min(alen, alen + boffset);
 					overlap.bfirst = -1*Math.min(0, aoffset);
 					overlap.bsecond = Math.min(blen, blen - boffset);
+				}
+			} else if (splitLine.length == 12) {
+//				34 12 94.57843 290 0 100 5281 5361 0 100 5284 5362
+				overlap.id1 = splitLine[0];
+				overlap.id2 = splitLine[1];
+				@SuppressWarnings("unused")
+				double score = Double.parseDouble(splitLine[2]);
+				overlap.isFwd = Integer.parseInt(splitLine[8]) == 0;
+				if (this.dataSeq != null) {
+					int alen = this.dataSeq[Integer.parseInt(overlap.id1)-1].length();
+					int blen = this.dataSeq[Integer.parseInt(overlap.id2)-1].length();
+					overlap.afirst = Integer.parseInt(splitLine[5]);
+					overlap.asecond = Integer.parseInt(splitLine[6]);
+					overlap.bfirst = Integer.parseInt(splitLine[9]);
+					overlap.bsecond = Integer.parseInt(splitLine[10]);
+					if (overlap.asecond > alen) {
+						overlap.asecond = alen;
+					}
+					if (overlap.bsecond > blen) {
+						overlap.bsecond = blen;
+					}
 				}
 			} else if (splitLine.length == 13) {
 				overlap.afirst = Integer.parseInt(splitLine[5]);
