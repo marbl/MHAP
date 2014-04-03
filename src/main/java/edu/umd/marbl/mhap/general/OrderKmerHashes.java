@@ -73,6 +73,7 @@ public class OrderKmerHashes
 	}
 	
 	private final int[][][] orderedHashes;
+	private final int seqLength;
 
 	public final static int MAX_ARRAY_SIZE = 1000;
 	
@@ -101,6 +102,7 @@ public class OrderKmerHashes
 		try
 		{
 			//dos.writeInt(size());
+			int seqLength = input.readInt();			
 			int hashLength = input.readInt();			
 			
 			int[][][] orderedHashes = allocateMemory(hashLength);
@@ -122,7 +124,7 @@ public class OrderKmerHashes
 				i++;
 			}
 			
-			return new OrderKmerHashes(orderedHashes);
+			return new OrderKmerHashes(seqLength, orderedHashes);
 			
 		}
 		catch (EOFException e)
@@ -131,13 +133,15 @@ public class OrderKmerHashes
 		}
 	}
 
-	private OrderKmerHashes(int[][][] orderedHashes)
+	private OrderKmerHashes(int seqLength, int[][][] orderedHashes)
 	{
+		this.seqLength = seqLength;
 		this.orderedHashes = orderedHashes;
 	}
 	
 	public OrderKmerHashes(Sequence seq, int kmerSize)
 	{
+		this.seqLength = seq.length();
 		this.orderedHashes = getFullHashes(seq, kmerSize);
 	}
 
@@ -148,6 +152,7 @@ public class OrderKmerHashes
     
     try
 		{
+			dos.writeInt(this.seqLength);
 			dos.writeInt(size());
 	    for (int iter=0; iter<this.orderedHashes.length; iter++)
 	    	for (int iter2=0; iter2<this.orderedHashes[iter].length; iter2++)
@@ -356,8 +361,8 @@ public class OrderKmerHashes
 		int b1 = Math.min(size(), (int)Math.round(((double)s.size()-line.x)/line.y));
 		int b2 = Math.min(s.size(),(int)(line.x+line.y*(double)size()));
 		
-		int ahang = a1-a2;
-		int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
+		//int ahang = a1-a2;
+		//int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
 		
 		//compute correlation only in the proper region
 		validCount = 0;
@@ -396,7 +401,8 @@ public class OrderKmerHashes
 		//}
 
 		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
-		return new OverlapInfo(corr, ahang, bhang);
+		//return new OverlapInfo(corr, ahang, bhang);
+		return new OverlapInfo(corr, validCount, a1, a2, b1, b2);
 	}
 
 	
@@ -453,12 +459,6 @@ public class OrderKmerHashes
 			// perform merge operation to get the shift and the kmer count
 			while (true)
 			{
-				//store previous value
-				//int prevHash1 = hash1;
-				//int prevHash2 = hash2;
-				//int prevIndex1 = i1;
-				//int prevIndex2 = i2;
-
 				if (i1>=allKmerHashes[ii1].length)
 				{
 					ii1++;
@@ -500,18 +500,6 @@ public class OrderKmerHashes
 						continue;
 					}
 					
-					//if (prevHash1==hash1 && i1!=prevIndex1)
-					//{
-					//	i1++;
-					//	continue;
-					//}
-					//if (prevHash2==hash2 && i2!=prevIndex2)
-					//{
-					//	i2++;
-					//	continue;
-					//}
-
-
 					//adjust array size if needed
 					if (posShift.length<=count)
 					{
@@ -525,55 +513,55 @@ public class OrderKmerHashes
 					pos1Index[count] = pos1;
 					pos2Index[count] = pos2;
 					
-					count++;
-					//i1++;
+					//if first round, store only first hit
+					if (repeat==0)
+						i1++;
 					i2++;
+
+					count++;
 				}
 			}
+			
+			if (count<=0)
+				return new OverlapInfo(0.0, 0, 0, 0, 0, 0);
 
-			// get the median
-			if (count > 0)
+			//pick out only the matches that are best
+			if (repeat>0)
 			{
-				//pick out only the best values
-				if (repeat>0)
-				{
-					int reducedCount = -1;
+				int reducedCount = -1;
 
-					//copy over only the best values
-					for (int iter=0; iter<count; iter++)
+				//copy over only the best values
+				for (int iter=0; iter<count; iter++)
+				{
+					if (reducedCount>=0 && pos1Index[reducedCount]==pos1Index[iter])
 					{
-						if (reducedCount>=0 && pos1Index[reducedCount]==pos1Index[iter])
+						//if better, record it
+						if (Math.abs(posShift[reducedCount]-medianShift)>Math.abs(posShift[iter]-medianShift))
 						{
-							//if better, record it
-							if (Math.abs(posShift[reducedCount]-medianShift)>Math.abs(posShift[iter]-medianShift))
-							{
-								pos1Index[reducedCount] = pos1Index[iter];
-								pos2Index[reducedCount] = pos2Index[iter];
-								posShift[reducedCount] = posShift[iter];
-							}
-						}
-						else
-						{
-							//add the new data
-							reducedCount++;
 							pos1Index[reducedCount] = pos1Index[iter];
 							pos2Index[reducedCount] = pos2Index[iter];
 							posShift[reducedCount] = posShift[iter];
 						}
 					}
-					
-					count = reducedCount+1;
+					else
+					{
+						//add the new data
+						reducedCount++;
+						pos1Index[reducedCount] = pos1Index[iter];
+						pos2Index[reducedCount] = pos2Index[iter];
+						posShift[reducedCount] = posShift[iter];
+					}
 				}
-
-				medianShift = Utils.quickSelect(Arrays.copyOf(posShift, count), count / 2, count);
+				
+				count = reducedCount+1;
 			}
-			else
-				medianShift = 0;
+
+			medianShift = Utils.quickSelect(Arrays.copyOf(posShift, count), count / 2, count);
 			
 			// get the actual overlap size
-			int leftPosition = Math.max(0, medianShift);
-			int rightPosition = Math.min(size2, size1 + medianShift);
-			overlapSize = Math.max(50,rightPosition - leftPosition);
+			int leftPosition = Math.max(0, -medianShift);
+			int rightPosition = Math.min(size1, size2 - medianShift);
+			overlapSize = Math.max(size1-size(), rightPosition - leftPosition);
 
 			//compute the max possible allowed shift in kmers
 			absMaxShiftInOverlap = Math.min(Math.max(size1, size2), (int)((double)overlapSize*maxShiftPercent));
@@ -599,6 +587,7 @@ public class OrderKmerHashes
 		int rightEdge1 = Integer.MIN_VALUE;
 		int rightEdge2 = Integer.MIN_VALUE;
 
+		//count only the shifts in the correct place
 		int validCount = 0;
 		for (int iter=0; iter<count; iter++)
 		{
@@ -630,18 +619,12 @@ public class OrderKmerHashes
 		int gap2 = (int)Math.round((rightEdge2-validCount)/(double)validCount);
 		int a1 = Math.max(0,leftEdge1-gap1);
 		int a2 = Math.max(0,leftEdge2-gap2);
-		int b1 = Math.min(this.size(),rightEdge1+gap1);
-		int b2 = Math.min(s.size(),rightEdge2+gap2);
+		int b1 = Math.min(this.seqLength,rightEdge1+gap1);
+		int b2 = Math.min(s.seqLength,rightEdge2+gap2);
 		
-		int ahang = a1-a2;
-		int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
-		
-		//int shiftb = -medianShift - this.size() + s.size();
-		//if (score>0.04)
-			//System.out.format("A=%d %d, B=%d %d\n", -medianShift, a1-a2, shiftb, -medianShift+(-medianShift-(a1-a2))-this.size()+s.size());
-		//	System.out.format("A=%d %d, B=%d %d\n", -medianShift, ahang, shiftb, bhang);
-		//return new OverlapInfo(score, -medianShift, shiftb);
-					
+		//int ahang = a1-a2;
+		//int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
+							
 		//if (score>0.06)
 		//{
 		//	int[] test = Arrays.copyOf(posShift, count);
@@ -652,7 +635,8 @@ public class OrderKmerHashes
 		//}
 
 		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
-		return new OverlapInfo(score, ahang, bhang);
+		//return new OverlapInfo(score, ahang, bhang);
+		return new OverlapInfo(score, validCount, a1, a2, b1, b2);
 	}
 
 	public int size()
@@ -661,3 +645,4 @@ public class OrderKmerHashes
 		return (this.orderedHashes.length-1)*this.orderedHashes[0].length+this.orderedHashes[this.orderedHashes.length-1].length;
 	}
 }
+
