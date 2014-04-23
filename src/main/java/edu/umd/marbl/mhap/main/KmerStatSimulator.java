@@ -57,6 +57,7 @@ public class KmerStatSimulator {
 	private HashMap<String, Integer> skipMers = new HashMap<String, Integer>();
 
 	private int totalTrials = 10000;
+	private boolean halfError = false;
 
 	private static Random generator = null;
 	public static int seed = 0;
@@ -80,14 +81,17 @@ public class KmerStatSimulator {
 			f.kmer = Integer.parseInt(args[1]);
 			f.overlap = Integer.parseInt(args[3]);
 			if (args.length > 7) {
-				f.reference = args[7];
+				f.halfError  = Boolean.parseBoolean(args[7]);
+			}
+			if (args.length > 8) {
+				f.reference = args[8];
 			}
 			if (f.overlap > f.requestedLength) {
 				System.err.println("Cannot have overlap > sequence length");
 				System.exit(1);
 			}
-			if (args.length > 8) {
-				f.loadSkipMers(args[8]);
+			if (args.length > 9) {
+				f.loadSkipMers(args[9]);
 			}
 
 			f.simulate(Double.parseDouble(args[4]), Double.parseDouble(args[5]),
@@ -106,7 +110,7 @@ public class KmerStatSimulator {
 
 	public static void printUsage() {
 		System.err
-				.println("Example usage: simulateSharedKmers <#trials> <kmer size> <seq length> <overlap length> <insertion> <subst> <del> [reference genome] [kmers to ignore]");
+				.println("Example usage: simulateSharedKmers <#trials> <kmer size> <seq length> <overlap length> <insertion> <subst> <del> [only one sequence error] [reference genome] [kmers to ignore]");
 		System.err
 		.println("Usage 2: simulateSharedKmers <#trials> <seq length> <insertion> <subst> <del> [reference genome]");
 	}
@@ -342,8 +346,8 @@ public class KmerStatSimulator {
 			int offset = (int) ((this.requestedLength * 2) - this.overlap);
 			int secondPos = (firstPos + offset) % sequence.length();
 			String secondSeq = getSequence(sequenceLength, secondPos, sequence,
-					errorRate, firstAdj, errors, insertionPercentage,
-					deletionPercentage, subPercentage, true);
+					(this.halfError ? 0 : errorRate), firstAdj, errors, (this.halfError ? 0 :insertionPercentage),
+					(this.halfError ? 0 : deletionPercentage), (this.halfError ? 0 : subPercentage), true);
 			if (this.verbose) {
 				System.err.println("Given seq " + firstPos + " of len " + sequence.length() + " and offset " + secondPos + " due to offset " + offset);
 				System.err.println(">" + seqID + "_" + firstPos + "\n" + firstSeq);
@@ -376,8 +380,8 @@ public class KmerStatSimulator {
 				}
 				// generate error for second sequence
 				secondSeq = getSequence(sequenceLength, secondPos, sequence,
-						errorRate, firstAdj, errors, insertionPercentage,
-						deletionPercentage, subPercentage, true);
+						(this.halfError ? 0 : errorRate), firstAdj, errors, (this.halfError ? 0 : insertionPercentage),
+						(this.halfError ? 0 : deletionPercentage), (this.halfError ? 0 : subPercentage), true);
 			} else {
 				secondPos = 0;
 				secondSeq = buildRandomSequence(sequenceLength);
