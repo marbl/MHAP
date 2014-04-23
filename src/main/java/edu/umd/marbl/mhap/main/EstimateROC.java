@@ -31,6 +31,7 @@ package edu.umd.marbl.mhap.main;
 
 import jaligner.Alignment;
 import jaligner.SmithWatermanGotoh;
+import jaligner.NeedlemanWunschGotoh;
 import jaligner.matrix.MatrixLoader;
 import jaligner.matrix.MatrixLoaderException;
 
@@ -54,11 +55,12 @@ import edu.umd.marbl.mhap.utils.IntervalTree;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class EstimateROC {
+	private static final boolean ALIGN_SW = false;
 	private static final double MIN_OVERLAP_DIFFERENCE = 0.8;
 	private static final double MIN_IDENTITY = 0.70;
 	private static final double MIN_REF_IDENTITY = MIN_IDENTITY + 0.10;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
-	private static final int DEFAULT_MIN_OVL = 500;
+	private static final int DEFAULT_MIN_OVL = 2000;
 	private static final boolean DEFAULT_DO_DP = false;
 	private static boolean DEBUG = false;
 	
@@ -144,13 +146,13 @@ public class EstimateROC {
 	public static void printUsage() {
 		System.err
 				.println("This program uses random sampling to estimate PPV/Sensitivity/Specificity");
-		System.err.println("The program requires 2 arguments:");
+		System.err.println("The sequences in the fasta file used to generate the truth must be sequentially numbered from 1 to N!");
 		System.err
 				.println("\t1. A blasr M4 file mapping sequences to a reference (or reference subset)");
 		System.err
 				.println("\t2. All-vs-all mappings of same sequences in CA ovl format");
 		System.err
-		.println("\t3. Fasta sequences");
+		.println("\t3. Fasta sequences sequentially numbered from 1 to N.");
 		System.err.println("\t4. Minimum overlap length (default: " + DEFAULT_MIN_OVL);
 		System.err.println("\t5. Number of random trials, 0 means full compute (default : " + DEFAULT_NUM_TRIALS);
 		System.err.println("\t6. Compute DP during PPV true/false");
@@ -264,6 +266,10 @@ public class EstimateROC {
 		generator = new Random(seed);
 	}
 
+	private static int getSequenceId(String id) {
+		return Integer.parseInt(id)-1;
+	}
+	
 	private static String getOvlName(String id, String id2) {
 		return (id.compareTo(id2) <= 0 ? id + "_" + id2 : id2
 				+ "_" + id);
@@ -345,8 +351,8 @@ public class EstimateROC {
 				double score = Double.parseDouble(splitLine[2]);
 				overlap.isFwd = Integer.parseInt(splitLine[8]) == 0;
 				if (this.dataSeq != null) {
-					int alen = this.dataSeq[Integer.parseInt(overlap.id1)-1].length();
-					int blen = this.dataSeq[Integer.parseInt(overlap.id2)-1].length();
+					int alen = this.dataSeq[getSequenceId(overlap.id1)].length();
+					int blen = this.dataSeq[getSequenceId(overlap.id2)].length();
 					overlap.afirst = Integer.parseInt(splitLine[5]);
 					overlap.asecond = Integer.parseInt(splitLine[6]);
 					overlap.bfirst = Integer.parseInt(splitLine[9]);
@@ -381,8 +387,8 @@ public class EstimateROC {
 					overlap.id2 = overlap.id2.split(",")[1];
 				}
 				if (this.dataSeq != null) {
-					int alen = this.dataSeq[Integer.parseInt(overlap.id1)-1].length();
-					int blen = this.dataSeq[Integer.parseInt(overlap.id2)-1].length();
+					int alen = this.dataSeq[getSequenceId(overlap.id1)].length();
+					int blen = this.dataSeq[getSequenceId(overlap.id2)].length();
 					if (overlap.asecond > alen) {
 						overlap.asecond = alen;
 					}
@@ -404,8 +410,9 @@ public class EstimateROC {
 		data.enqueueFullFile();
 		this.dataSeq = new Sequence[data.getNumberProcessed()];
 		int i = 0;
-		while (!data.isEmpty())
+		while (!data.isEmpty()) {
 			this.dataSeq[i++] = data.dequeue();
+		}
 	}
 	
 	private void processOverlaps(String file) throws Exception {
@@ -577,32 +584,72 @@ public class EstimateROC {
 		}
 	}
 	
+	private static double getScore(Alignment alignment, int ovlLen) {
+		char[] sequence1 = alignment.getSequence1();
+		char[] sequence2 = alignment.getSequence2();
+		int length = Math.max(sequence1.length, sequence2.length);
+		char GAP = '-';
+		int errors = 0;
+		int matches = 0;
+		for (int i = 0; i <= length; i++)
+		{
+			char c1 = GAP;
+			char c2 = GAP;
+			if (i < sequence1.length) {
+				c1 = sequence1[i];
+			}
+			if (i < sequence2.length) {
+				c2 = sequence2[i];
+			}
+			if (c1 != c2 || c1 == GAP || c2 == GAP) {
+				errors++;
+			} else {
+				matches++;
+			}
+		}
+		return (matches / (double)ovlLen);
+	}
+	
 	private boolean computeDP(String id, String id2) {
 		if (this.doDP == false) {
 			return false;
 		}
-		Logger logger = Logger.getLogger(SmithWatermanGotoh.class.getName());
+		Logger logger = null;
+		if (ALIGN_SW) {
+			logger = Logger.getLogger(SmithWatermanGotoh.class.getName());
+		} else {
+			logger = Logger.getLogger(NeedlemanWunschGotoh.class.getName());
+		}
 		logger.setLevel(Level.OFF);
 		logger = Logger.getLogger(MatrixLoader.class.getName());
 		logger.setLevel(Level.OFF);
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, id2));
 		System.err.println("Aligning sequence " + ovl.id1 + " to " + ovl.id2 + " " + ovl.bfirst + " to " + ovl.bsecond + " and " + ovl.isFwd + " and " + ovl.afirst + " " + ovl.asecond);
 
-		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id1)-1].getString().substring(ovl.afirst, ovl.asecond));
+		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id1)].getString().substring(ovl.afirst, ovl.asecond));
 		jaligner.Sequence s2 = null;
 		if (ovl.isFwd) {
-			s2 = new jaligner.Sequence(this.dataSeq[Integer.parseInt(ovl.id2)-1].getString().substring(ovl.bfirst, ovl.bsecond));
+			s2 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id2)].getString().substring(ovl.bfirst, ovl.bsecond));
 		} else {
-			s2 = new jaligner.Sequence(Utils.rc(this.dataSeq[Integer.parseInt(ovl.id2)-1].getString().substring(ovl.bfirst, ovl.bsecond)));
+			s2 = new jaligner.Sequence(Utils.rc(this.dataSeq[getSequenceId(ovl.id2)].getString().substring(ovl.bfirst, ovl.bsecond)));
 		}
 		Alignment alignment;
 		try {
-			alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 1f);
+			if (ALIGN_SW) {
+				alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 1f);
+			} else {
+				alignment = NeedlemanWunschGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 1f);
+			}
 		} catch (MatrixLoaderException e) {
 			return false;
 		}
-		if (DEBUG) { System.err.println(alignment.getSummary()); System.err.println (new jaligner.formats.Pair().format(alignment)); }
-		return (AlignmentHashRun.getScoreWithNoTerminalGaps(alignment) > MIN_IDENTITY);
+		double score = getScore(alignment, Math.max(s1.length(), s2.length())); // alignment.getIdentity() / 100;
+		if (DEBUG) { 
+			System.err.println(alignment.getSummary());
+			System.err.println("My score: " + score);
+			System.err.println (new jaligner.formats.Pair().format(alignment)); 
+		}
+		return (score > MIN_IDENTITY);
 	}
 
 	private void estimateSensitivity() {
