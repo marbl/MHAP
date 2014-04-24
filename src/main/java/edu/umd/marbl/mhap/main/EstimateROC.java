@@ -584,10 +584,11 @@ public class EstimateROC {
 		}
 	}
 	
-	private static double getScore(Alignment alignment, int ovlLen) {
+	private static double getScore(Alignment alignment) {
 		char[] sequence1 = alignment.getSequence1();
 		char[] sequence2 = alignment.getSequence2();
 		int length = Math.max(sequence1.length, sequence2.length);
+		int ovlLen = Math.min(sequence1.length, sequence2.length);
 		char GAP = '-';
 		int errors = 0;
 		int matches = 0;
@@ -643,7 +644,7 @@ public class EstimateROC {
 		} catch (MatrixLoaderException e) {
 			return false;
 		}
-		double score = getScore(alignment, Math.max(s1.length(), s2.length())); // alignment.getIdentity() / 100;
+		double score = getScore(alignment); // alignment.getIdentity() / 100;
 		if (DEBUG) { 
 			System.err.println(alignment.getSummary());
 			System.err.println("My score: " + score);
