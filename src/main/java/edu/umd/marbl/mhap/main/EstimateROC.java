@@ -55,7 +55,7 @@ import edu.umd.marbl.mhap.utils.IntervalTree;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class EstimateROC {
-	private static final boolean ALIGN_SW = false;
+	private static final boolean ALIGN_SW = true;
 	private static final double MIN_OVERLAP_DIFFERENCE = 0.8;
 	private static final double MIN_IDENTITY = 0.70;
 	private static final double MIN_REF_IDENTITY = MIN_IDENTITY + 0.10;
@@ -650,7 +650,7 @@ public class EstimateROC {
 			System.err.println("My score: " + score);
 			System.err.println (new jaligner.formats.Pair().format(alignment)); 
 		}
-		return (score > MIN_IDENTITY);
+		return (score > MIN_IDENTITY && alignment.getLength() > this.minOvlLen);
 	}
 
 	private void estimateSensitivity() {
