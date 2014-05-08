@@ -62,23 +62,19 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 
 	private static final int DEFAULT_KMER_SIZE = 16;
 
-	private static final boolean DEFAULT_LARGE_MEMORY = true;
-
-	private static final double DEFAULT_MAX_SHIFT_ALLOWED = .03;
+	private static final double DEFAULT_MAX_SHIFT_PERCENT = 0.2;
 
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 
 	private static final boolean DEFAULT_NO_SELF = false;
 
-	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
+	private static final int DEFAULT_NUM_MIN_MATCHES = 10;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 
-	private static final int DEFAULT_NUM_WORDS = 512;
+	private static final int DEFAULT_NUM_WORDS = 0;
 
-	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
-
-	private static final double DEFAULT_ACCEPT_SCORE = 0.03;
+	private static final double DEFAULT_ACCEPT_SCORE = 0.05;
 
 	public static void main(String[] args) throws Exception
 	{
@@ -91,13 +87,11 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 		int kmerSize = DEFAULT_KMER_SIZE;
 		int numHashes = DEFAULT_NUM_WORDS;
 		int numMinMatches = DEFAULT_NUM_MIN_MATCHES;
-		int subSequenceSize = DEFAULT_SUB_SEQUENCE_SIZE;
-		boolean storeInMemory = DEFAULT_LARGE_MEMORY;
 		int numThreads = DEFAULT_NUM_THREADS;
 		boolean noSelf = DEFAULT_NO_SELF;
 		String filterFile = null;
 		double filterThreshold = DEFAULT_FILTER_CUTOFF;
-		double maxShift = DEFAULT_MAX_SHIFT_ALLOWED;
+		double maxShift = DEFAULT_MAX_SHIFT_PERCENT;
 		int minStoreLength = DEFAULT_MIN_STORE_LENGTH;
 		String processFile = null;
 		double acceptScore = DEFAULT_ACCEPT_SCORE;
@@ -140,10 +134,6 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 			{
 				numMinMatches = Integer.parseInt(args[++i]);
 			}
-			else if (args[i].trim().equalsIgnoreCase("--subsequence-size"))
-			{
-				subSequenceSize = Integer.parseInt(args[++i]);
-			}
 			else if (args[i].trim().equalsIgnoreCase("--threshold"))
 			{
 				acceptScore = Double.parseDouble(args[++i]);
@@ -175,11 +165,9 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 		System.err.println("num hashed words:\t" + numHashes);
 		System.err.println("num min matches:\t" + numMinMatches);
 		System.err.println("min hashed seq length:\t" + minStoreLength);
-		System.err.println("subsequence size:\t" + subSequenceSize);
 		System.err.println("max shift:\t" + maxShift);
 		System.err.println("threshold:\t" + acceptScore);
 		System.err.println("number of threads:\t" + numThreads);
-		System.err.println("use large amount of memory:\t" + storeInMemory);
 		System.err.println("compute alignment to self of -s file:\t" + !noSelf);
 
 		long startTime = System.nanoTime();
@@ -194,7 +182,7 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 		}
 
 		// start the main program
-		DirectAlignMain main = new DirectAlignMain(processFile, inFile, toFile, noSelf, subSequenceSize, numHashes, kmerSize,
+		DirectAlignMain main = new DirectAlignMain(processFile, inFile, toFile, noSelf, numHashes, kmerSize,
 				numMinMatches, numThreads, filter, minStoreLength, maxShift, acceptScore);
 
 		main.computeMain();
@@ -213,28 +201,26 @@ public final class DirectAlignMain extends AbstractSequenceSearchMain<DirectHash
 		System.err.println("Options: ");
 		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
 		System.err.println("\t  --memory [do not store kmers in memory]");
-		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
+		System.err.println("\t  --num-hashes [int # random k-mers to select, 0 means take all (deterministic)], default: " + DEFAULT_NUM_WORDS);
 		System.err.println("\t  --min-store-length [int # of minimum sequence length that is hashed], default: "
 				+ DEFAULT_MIN_STORE_LENGTH);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
 		System.err
-				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
-						+ DEFAULT_MAX_SHIFT_ALLOWED);
+		.println("\t  --max-shift [double fraction of the overlap size where shift in k-mer match is still considered valid], default: "
+				+ DEFAULT_MAX_SHIFT_PERCENT);
 		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: "
 				+ DEFAULT_NUM_MIN_MATCHES);
 		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): "
 				+ DEFAULT_NUM_THREADS);
-		System.err.println("\t  --subsequence-size [int size of maximum minhashed sequence], default: "
-				+ DEFAULT_SUB_SEQUENCE_SIZE);
 		System.err.println("\t  --no-self [do not compute results to self], default: " + DEFAULT_NO_SELF);
 		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
 		System.err
 				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
-						+ DEFAULT_MAX_SHIFT_ALLOWED);
+						+ DEFAULT_MAX_SHIFT_PERCENT);
 		System.exit(1);
 	}
 
-	public DirectAlignMain(String processFile, String inFile, String toFile, boolean noSelf, int subSequenceSize,
+	public DirectAlignMain(String processFile, String inFile, String toFile, boolean noSelf,
 			int numHashes, int kmerSize, int numMinMatches, int numThreads, HashSet<Integer> filter, int minStoreLength,
 			double maxShift, double acceptScore)
 	{

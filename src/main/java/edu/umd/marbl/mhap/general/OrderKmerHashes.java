@@ -100,6 +100,7 @@ public class OrderKmerHashes
 	{
 		try
 		{
+			//dos.writeInt(this.seqLength);
 			//dos.writeInt(size());
 			int seqLength = input.readInt();			
 			int hashLength = input.readInt();			
@@ -312,17 +313,17 @@ public class OrderKmerHashes
 
 		//fit a regression line
 		double eps = 1.0e-1;
-		double outlier = 3.0;
+		double outlier = 4.0;
 		double[] r = new double[pos1Index.length];
 		
 		//create the copies of data
 		int[] pos1GoodIndex = Arrays.copyOf(pos1Index, pos1Index.length);
-		int[] pos2GoodIndex = Arrays.copyOf(pos1Index, pos1Index.length);
+		int[] pos2GoodIndex = Arrays.copyOf(pos2Index, pos2Index.length);
 		
 		Pair<Double,Double> linePrev = new Pair<Double,Double>(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
 		Pair<Double,Double> line = Utils.linearRegression(pos1GoodIndex, pos2GoodIndex, count);
 		
-		int validCount = 0;
+		int validCount = count;
   	int steps = 0;
 		while (steps<10 && count>10 && (Math.abs(linePrev.x-line.x)>eps || Math.abs(linePrev.y-line.y)>eps))
 		{
@@ -340,7 +341,7 @@ public class OrderKmerHashes
 			validCount = 0;
 			for (int iter=0; iter<count; iter++)
 			{
-				if (Math.abs(r[iter])<Math.max(200.0,outlier*std))
+				if (Math.abs(r[iter])<Math.max(100.0,outlier*std))
 				{
 					pos1GoodIndex[validCount] = pos1Index[iter];
 					pos2GoodIndex[validCount] = pos2Index[iter];
@@ -360,51 +361,15 @@ public class OrderKmerHashes
 		int a2 = Math.max(0,(int)line.x.doubleValue());
 		int b1 = Math.min(size(), (int)Math.round(((double)s.size()-line.x)/line.y));
 		int b2 = Math.min(s.size(),(int)(line.x+line.y*(double)size()));
-		
-		//int ahang = a1-a2;
-		//int bhang = (this.size()-b1>s.size()-b2) ? b1-this.size() : s.size() - b2;
-		
-		//compute correlation only in the proper region
-		validCount = 0;
-		for (int iter=0; iter<count; iter++)
-		{
-			if (pos2Index[iter]<a1 && pos2Index[iter]>b1)
-				continue;
-			
-			double residual = (double)pos2Index[iter]-(line.x+line.y*(double)pos1Index[iter]);
-			if (Math.abs(residual)<=400.0)
-			{
-				pos1GoodIndex[validCount] = pos1Index[iter];
-				pos2GoodIndex[validCount] = pos2Index[iter];
-				validCount++;
-			}
-		}
 
 		//compute the correlation over the valid region
 		double corr = 0.0;
-		if (validCount>10)
-			corr = Utils.pearsonCorr(pos1GoodIndex, pos2GoodIndex, validCount);
+		if (validCount>5)
+			corr = Math.abs(Utils.pearsonCorr(pos1GoodIndex, pos2GoodIndex, validCount));
 
-		
-		//int shiftb = -medianShift - this.size() + s.size();
-		//if (score>0.04)
-			//System.out.format("A=%d %d, B=%d %d\n", -medianShift, a1-a2, shiftb, -medianShift+(-medianShift-(a1-a2))-this.size()+s.size());
-		//	System.out.format("A=%d %d, B=%d %d\n", -medianShift, ahang, shiftb, bhang);
-		//return new OverlapInfo(score, -medianShift, shiftb);
-					
-		//if (corr>0.06)
-		//{
-		//	int[] test = Arrays.copyOf(pos1Index, count);
-		//	int[] test2 = Arrays.copyOf(pos2Index, count);
-
-		//	System.err.println("corr="+corr+": ["+Arrays.toString(test)+"; "+Arrays.toString(test2)+"];");
-		//}
-
-		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
-		//return new OverlapInfo(corr, ahang, bhang);
 		return new OverlapInfo(corr, validCount, a1, a2, b1, b2);
 	}
-	 */
+	*/
 	
 	public OverlapInfo getFullScore(OrderKmerHashes s, double maxShiftPercent)
 	{
