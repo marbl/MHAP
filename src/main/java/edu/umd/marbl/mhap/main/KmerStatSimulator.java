@@ -31,6 +31,8 @@ package edu.umd.marbl.mhap.main;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.GregorianCalendar;
 import java.util.Calendar;
@@ -154,9 +156,9 @@ public class KmerStatSimulator {
 	}
 
 	public double compareKmers(String first, String second) {
-		HashSet<String> firstSeqs = new HashSet<String>();
-		HashSet<String> totalSeqs = new HashSet<String>();
-		HashSet<String> shared = new HashSet<String>();
+		HashSet<String> firstSeqs = new HashSet<String>(first.length());
+		HashSet<String> totalSeqs = new HashSet<String>(first.length()+second.length());
+		HashSet<String> shared = new HashSet<String>(first.length());
 
 		for (int i = 0; i <= first.length() - this.kmer; i++) {
 			String fmer = first.substring(i, i + this.kmer);
@@ -212,6 +214,7 @@ public class KmerStatSimulator {
 			double errorRate, StringBuilder profile,
 			StringBuilder realErrorStr, double insertionRate,
 			double deletionRate, double substitutionRate, boolean trimRight) {
+				
 		StringBuilder firstSeq = new StringBuilder();
 		firstSeq.append(sequence.substring(firstPos,
 				Math.min(sequence.length(), firstPos + 2 * seqLength)));
@@ -222,37 +225,57 @@ public class KmerStatSimulator {
 					Math.min(sequence.length(),
 							(2 * seqLength - firstSeq.length()))));
 		}
+		
+		//use a linked list for insertions
+		LinkedList<Character> modifiedSequence = new LinkedList<>();
+		for (char a : firstSeq.toString().toCharArray())
+			modifiedSequence.add(a);
 
 		// now mutate
 		int realError = 0;
-		for (int i = 0; i < firstSeq.length();) {
+		ListIterator<Character> iter = modifiedSequence.listIterator();
+		while (iter.hasNext()) {
+			char i = iter.next();
+
 			if (generator.nextDouble() < errorRate) {
 				double errorType = generator.nextDouble();
 				if (errorType < substitutionRate) { // mismatch
 													// switch base
-					firstSeq.setCharAt(i, getRandomBase(firstSeq.charAt(i)));
+					
+					iter.set(getRandomBase(i));
+					
+					//firstSeq.setCharAt(i, getRandomBase(firstSeq.charAt(i)));
 					realError++;
 					i++;
 				} else if (errorType < insertionRate + substitutionRate) { // insert
-					firstSeq.insert(i + 1, getRandomBase(null));
+					
+					iter.add(getRandomBase(null));
+					//firstSeq.insert(i, getRandomBase(null));
 					// profile.insert(i+1,"X");
 					realError++;
-					i += 2;
+					//i += 2;
 				} else { // delete
-					firstSeq.deleteCharAt(i);
+					
+					iter.remove();
 					// firstSeq.setCharAt(i, 'D');
 					// profile.setCharAt(i, '-');
 					realError++;
 				}
 			} else {
-				i++;
+				//i++;
 			}
 		}
-
+		
+		firstSeq = new StringBuilder();
+		for (char c : modifiedSequence)
+			firstSeq.append(c);
+		
 		realErrorStr.append((double) realError / seqLength);
+		
 		if (trimRight) {
 			return firstSeq.substring(0, seqLength).toString();
 		}
+		
 		return firstSeq.substring(firstSeq.length()-seqLength, firstSeq.length()).toString();
 	}
 
@@ -302,7 +325,7 @@ public class KmerStatSimulator {
 				sequences[i++] = data.dequeue().getString().toUpperCase().replace("N", "");
 		}
 		System.err.println("Loaded reference");
-
+		
 		for (int i = 0; i < this.totalTrials; i++) {
 			if (i % 1000 == 0) {
 				System.err.println("Done " + i + "/" + this.totalTrials);
