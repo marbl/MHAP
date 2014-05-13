@@ -112,9 +112,9 @@ public class KmerStatSimulator {
 
 	public static void printUsage() {
 		System.err
-				.println("Example usage: simulateSharedKmers <#trials> <kmer size> <seq length> <overlap length> <insertion> <subst> <del> [only one sequence error] [reference genome] [kmers to ignore]");
+				.println("Example usage: simulateSharedKmers <#trials> <kmer size> <seq length> <overlap length> <insertion> <del> <subst> [only one sequence error] [reference genome] [kmers to ignore]");
 		System.err
-		.println("Usage 2: simulateSharedKmers <#trials> <seq length> <insertion> <subst> <del> [reference genome]");
+		.println("Usage 2: simulateSharedKmers <#trials> <seq length> <insertion> <del> <subst> [reference genome]");
 	}
 
 	@SuppressWarnings("unused")
