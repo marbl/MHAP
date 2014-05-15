@@ -245,10 +245,12 @@ public class KmerStatSimulator {
 					iter.set(getRandomBase(i));
 					
 					//firstSeq.setCharAt(i, getRandomBase(firstSeq.charAt(i)));
+					//System.err.println("sub");
 					realError++;
 					i++;
 				} else if (errorType < insertionRate + substitutionRate) { // insert
 					
+					iter.previous();
 					iter.add(getRandomBase(null));
 					//firstSeq.insert(i, getRandomBase(null));
 					// profile.insert(i+1,"X");
@@ -259,6 +261,7 @@ public class KmerStatSimulator {
 					iter.remove();
 					// firstSeq.setCharAt(i, 'D');
 					// profile.setCharAt(i, '-');
+					//System.err.println("delete");
 					realError++;
 				}
 			} else {
