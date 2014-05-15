@@ -87,6 +87,19 @@ public final class MinHash implements Serializable
 		this.seqLength = seq.length();
 
 		this.minHashes = Utils.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
+		
+		/*
+		int[] hashes = Utils.computeKmerHashesIntBasic(seq, kmerSize, 1, filter);
+		
+		Arrays.sort(hashes);
+		
+		this.minHashes = new int[numHashes];
+		int minValue = Math.min(numHashes, hashes.length);
+		for (int iter=0; iter<minValue; iter++)
+		{
+			this.minHashes[iter] = hashes[iter];
+		}
+		*/
 	}
 
 	public byte[] getAsByteArray()

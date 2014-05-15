@@ -155,8 +155,8 @@ public final class Utils
 
 		return hashes;
 	}
-
-	public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords)
+	
+	public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords, HashSet<Integer> filter)
 	{
 		final int numberKmers = seq.numKmers(kmerSize);
 
@@ -171,6 +171,13 @@ public final class Utils
 		// Random rand = new Random(0);
 		for (int iter = 0; iter < rabinHashes.length; iter++)
 		{
+			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
+			if (filter != null && filter.contains(rabinHashes[iter]))
+			{
+				Arrays.fill(hashes[iter], Integer.MAX_VALUE);
+				continue;
+			}
+
 			// rand.setSeed(rabinHashes[iter]);
 			long x = rabinHashes[iter];
 
@@ -187,6 +194,29 @@ public final class Utils
 		}
 
 		return hashes;
+	}
+
+	public final static int[] computeKmerHashesIntBasic(final Sequence seq, final int kmerSize, final int numWords, HashSet<Integer> filter)
+	{
+		final int numberKmers = seq.numKmers(kmerSize);
+
+		if (numberKmers < 1)
+			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
+
+		// get the rabin hashes
+		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
+
+		// Random rand = new Random(0);
+		for (int iter = 0; iter < rabinHashes.length; iter++)
+		{
+			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
+			if (filter != null && filter.contains(rabinHashes[iter]))
+			{
+				rabinHashes[iter] = Integer.MAX_VALUE;
+			}
+		}
+
+		return rabinHashes;
 	}
 	
 	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numHashes,
@@ -531,6 +561,48 @@ public final class Utils
 		return null;
 	}
 	
+	public final static <H> double hashEfficiency(HashMap<Integer,ArrayList<H>> c)
+	{
+		double e = hashEnthropy(c);
+		double log2inv = 1.0/Math.log(2);
+		double scaling = Math.log(c.size())*log2inv;
+		
+		return e/scaling;
+	}
+	
+	public final static <H> double hashEnthropy(HashMap<Integer,ArrayList<H>> c)
+	{
+		double sum = 0.0;
+		double log2inv = 1.0/Math.log(2);
+		
+		double[] p = new double[c.size()];
+		int size = 0;
+		int count = 0;
+		for (ArrayList<H> elem : c.values())
+		{
+			size += elem.size();
+			p[count++] = elem.size();
+		}
+		
+		for (int iter=0; iter<p.length; iter++)
+		{
+			double val = p[iter]/(double)size;
+			sum -= val*Math.log(val)*log2inv;
+		}
+		
+		return sum;
+	}
+	
+	public final static boolean isAContainedInB(int startA, int endA, int startB, int endB)
+	{
+		int minA = Math.min(startA, endA);
+		int minB = Math.min(startB, endB);
+		int maxA = Math.max(startA, endA);
+		int maxB = Math.max(startB, endB);
+
+		return (minB < minA && maxB > maxA);
+	}
+
 	public final static Pair<Double,Double> linearRegression(int[] a, int[] b, int size)
 	{
 		//take one pass and compute means
@@ -564,6 +636,15 @@ public final class Utils
 		return x/(double)size;
 	}
 	
+	public final static double mean(int[] a, int size)
+	{
+		int x = 0;
+		for (int iter=0; iter<size; iter++)
+			x += a[iter];
+
+		return x/(double)size;
+	}
+
 	public final static double pearsonCorr(int[] a, int[] b, int size)
 	{
 		if (size<2)
@@ -582,81 +663,6 @@ public final class Utils
 
 		
 		return r/(double)(size-1);
-	}
-
-	public final static double mean(int[] a, int size)
-	{
-		int x = 0;
-		for (int iter=0; iter<size; iter++)
-			x += a[iter];
-
-		return x/(double)size;
-	}
-	
-	public final static double std(int[] a, int size, double mean)
-	{
-		double x = 0.0;
-		for (int iter=0; iter<size; iter++)
-		{
-			double val = (double)a[iter]-mean;
-			x += val*val;
-		}
-
-		return Math.sqrt(x/(double)(size-1));
-	}
-	
-	public final static double std(double[] a, int size, double mean)
-	{
-		double x = 0.0;
-		for (int iter=0; iter<size; iter++)
-		{
-			double val = a[iter]-mean;
-			x += val*val;
-		}
-
-		return Math.sqrt(x/(double)(size-1));
-	}
-
-	public final static <H> double hashEfficiency(HashMap<Integer,ArrayList<H>> c)
-	{
-		double e = hashEnthropy(c);
-		double log2inv = 1.0/Math.log(2);
-		double scaling = Math.log(c.size())*log2inv;
-		
-		return e/scaling;
-	}
-
-	public final static <H> double hashEnthropy(HashMap<Integer,ArrayList<H>> c)
-	{
-		double sum = 0.0;
-		double log2inv = 1.0/Math.log(2);
-		
-		double[] p = new double[c.size()];
-		int size = 0;
-		int count = 0;
-		for (ArrayList<H> elem : c.values())
-		{
-			size += elem.size();
-			p[count++] = elem.size();
-		}
-		
-		for (int iter=0; iter<p.length; iter++)
-		{
-			double val = p[iter]/(double)size;
-			sum -= val*Math.log(val)*log2inv;
-		}
-		
-		return sum;
-	}
-
-	public final static boolean isAContainedInB(int startA, int endA, int startB, int endB)
-	{
-		int minA = Math.min(startA, endA);
-		int minB = Math.min(startB, endB);
-		int maxA = Math.max(startA, endA);
-		int maxB = Math.max(startB, endB);
-
-		return (minB < minA && maxB > maxA);
 	}
 
 	//adapted form http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
@@ -729,6 +735,30 @@ public final class Utils
 			}
 		}
 		return st.toString();
+	}
+
+	public final static double std(double[] a, int size, double mean)
+	{
+		double x = 0.0;
+		for (int iter=0; iter<size; iter++)
+		{
+			double val = a[iter]-mean;
+			x += val*val;
+		}
+
+		return Math.sqrt(x/(double)(size-1));
+	}
+
+	public final static double std(int[] a, int size, double mean)
+	{
+		double x = 0.0;
+		for (int iter=0; iter<size; iter++)
+		{
+			double val = (double)a[iter]-mean;
+			x += val*val;
+		}
+
+		return Math.sqrt(x/(double)(size-1));
 	}
 
 	public final static String toProtein(String genome, boolean isReversed, int frame)
