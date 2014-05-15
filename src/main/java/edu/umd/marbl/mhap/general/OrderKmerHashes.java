@@ -206,7 +206,7 @@ public class OrderKmerHashes
 	private int[][][] getFullHashes(Sequence seq, int subKmerSize)
 	{
 		// compute just direct hash of sequence
-		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1);
+		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1, null);
 
 		SortableIntPair[] completeHashAsPair = new SortableIntPair[hashes.length];
 		for (int iter = 0; iter < hashes.length; iter++)
