@@ -361,7 +361,7 @@ public class KmerStatSimulator {
 					deletionPercentage, subPercentage, false);
 
 			if (this.kmer < 0) { // we were only asked to simulate sequences not compare
-				System.out.println(">s" + i);
+				System.out.println(">s" + i + " " + seqID + " " + (firstPos+sequenceLength));
 				System.out.println(Utils.convertToFasta(firstSeq));
 				continue;
 			}
