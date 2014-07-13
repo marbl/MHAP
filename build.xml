@@ -338,28 +338,8 @@
       </fileset>
   </path>
   <property name="dep_cp" value="${toString:dep.runtime}" />
-  
-  <target depends="jar-mhap" name="proguard">
-    <taskdef resource="proguard/ant/task.properties"
-             classpath="lib/proguard.jar" />
-    <proguard forceprocessing = "true">
-      -libraryjars ${java.home}/lib/rt.jar
-      -injars      ${build.home}/mhap-${component.version}.jar
-      -outjars     ${build.home}/mhap-${component.version}-ob.jar
-      -dontwarn
-      -dontoptimize
-  
-      -keepclasseswithmembers public class * {
-          public static void main(java.lang.String[]);
-      }
-      -keepclassmembers,allowoptimization enum * {
-          public static **[] values();
-          public static ** valueOf(java.lang.String);
-      }
-    </proguard>
-  </target>
-  
-  <target name="main" depends="jar-mhap, proguard">
+ 
+  <target name="main" depends="jar-mhap">
   </target>
 
   <target name="jar-mhap" depends="compile">
