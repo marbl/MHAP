@@ -5,7 +5,7 @@ Quick Start
 Running MHAP
 -----------------
 
-Running MHAP provides command-line documenation if you run it without parameters. Assuming you have followed the ?? instructions, you can run:
+Running MHAP provides command-line documenation if you run it without parameters. Assuming you have followed the `installation instructions <installation.html>`_ instructions, you can run:
  
 .. code-block:: bash
 
@@ -39,17 +39,15 @@ Output
 Options
 -----------------
 
-   -k [int merSize], default: 16
-    --memory [do not store kmers in memory]
-    --num-hashes [int # hashes], default: 1024
-    --min-store-length [int # of minimum sequence length that is hashed], default: 0
-    --threshold [int threshold for % matching minimums], default: 0.05
-    --max-shift [double fraction of the overlap size where shift in k-mer match is still considered valid], default: 0.2
-    --num-min-matches [int # hashes that maches before performing local alignment], default: 3
-    --num-threads [int # threads to use for computation], default (2 x #cores): 16
-    --subsequence-size [depricated, int size of maximum minhashed sequence], default: 100000
-    --no-self [do not compute results to self], default: false
-    --store-full-id [use full sequence id rather than order in file], default: false
-    --threshold [int threshold for % matching minimums], default: 0.05
-    --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: 0.2
+   -k  [int merSize]  K-mer size, default=16
+   --memory  Experimental! Do not store kmers in memory.
+   --num-hashes  [int # hashes]  Sketch size, higher=more sensitive but more memory usage and runtime, default=1024
+   --min-store-length  [int length (in bp)]  The minimum sequence length to index. Sequences shorter than this are ignored in the index, default=0
+   --threshold  [int]   The threshold for percentage of matching min-mers for a hit to be considered significant. Lowering will output more overlaps but increase false positives, higher will reduce overlaps but remove false positives, default=0.05
+   --max-shift  [double]  The fraction of the overlap size by which the overlap sizes in two sequences may differ, default=0.2
+   --num-min-matches  [int]  The number of hashes that maches before performing local alignment, default=3
+   --num-threads  [int]  The number of threads to use for computation, default (2 x #cores on system)
+   --subsequence-size  [int]  Deprecated! Partition sequences into specified size chunks.
+   --no-self  Do not compute self-matches for sequences in the -s file, default=false
+    --store-full-id  Output full sequence ID from the input FastA file. Otherwise, the output is the position of the sequence in the file (i.e. first sequence gets ID=1, second gets ID=2, and so on), default=false
 

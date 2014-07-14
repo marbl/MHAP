@@ -4,11 +4,11 @@ Installation
 
 Before your start
 =================
-MHAP requires a recent version of the `JVM <https://www.java.com/inc/BrowserRedirect1.jsp>`_, version 1.7_51 is recommended but newer ones should work. If you would like to build the code from source, you need to have the full `JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`_ and the `ANT <http://ant.apache.org/>`_ build system available.
+MHAP requires a recent version of the `JVM <http://www.oracle.com/technetwork/java/javase/downloads/jre7-downloads-1880261.html>`_ (1.7u51+). JDK 1.6 or earlier will not work. If you would like to build the code from source, you need to have the full `JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`_ and the `ANT <http://ant.apache.org/>`_ build system available.
 
 Prerequisites
 ==============
-    * java (1.5_51+)
+    * java (1.7u51+)
     * ant (1.8.2+)
 
 Here is a list of currently supported Operating Systems:
