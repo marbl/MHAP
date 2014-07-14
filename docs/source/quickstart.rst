@@ -22,6 +22,7 @@ Finding overlaps
 
 Both the -s and -q options can accept either FastA sequences or binary dat files (generated as described below). The -q option can accept either a file or a directory, in which case all FastA/dat files in the specified directory will be used. By default, only the sequences specified by -s are indexed and the sequences in -q are streamed against the constructed index. Since MHAP is written in Java, the memory usage can be high. Generally, 32GB of RAM is sufficient to index 20K sequences. If you have more sequences, you can partition your data and run MHAP on the partitions.
 
+
 Constructing binary index
 -----------------
 
@@ -31,8 +32,13 @@ Constructing binary index
 
 In this use case, files in the -p directory will be converted to binary dat files in the -q directory. Subsequent runs using the dat files (instead of FastA files) will be faster as the sequences no longer need to be indexed, only loaded into memory.
 
+Output
+-----------------
+
+
 Options
 -----------------
+
    -k [int merSize], default: 16
     --memory [do not store kmers in memory]
     --num-hashes [int # hashes], default: 1024

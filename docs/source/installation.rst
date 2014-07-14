@@ -22,6 +22,7 @@ Pre-compiled
 -----------------
 
 To download a pre-compiled tar run:
+
 .. code-block:: bash
 
     $ wget https://github.com/marbl/MHAP/releases/download/v0.1/mhap-0.1.tar.gz
@@ -78,7 +79,7 @@ Once inside the MetAMOS directory, run:
 
 .. code-block:: bash
 
-    $ ant 
+    $ sh build.sh
 
-This will compile the program and create a target/mhap-0.1.jar which you can use to run MHAP. The 
+This will compile the program and create an mhap-0.1.jar which you can use to run MHAP. The 
 target directory also contains compiled classes for several utitilities packaged with MHAP.
