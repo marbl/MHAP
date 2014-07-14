@@ -8,7 +8,8 @@ You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/down
   
     git clone https://github.com/marbl/MHAP.git
     cd MHAP
-    sh build.sh
+    ant
+    java -jar target/mhap-0.1.jar
 
 ## Docs
 For the latest information please see http://mhap.readthedocs.org/en/
