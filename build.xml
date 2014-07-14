@@ -367,6 +367,11 @@
           basedir="${build.home}/classes"
          manifest="${build.home}/MANIFEST.MF"/>
 
+    <tar destfile="${build.home}/mhap-${component.version}.tar"
+         basedir="${build.home}"
+      includes="${lib.dir}/**, mhap-${component.version}.jar"
+    />
+    
   </target>
   
   <target name="jar-directalign" depends="compile">
