@@ -9,10 +9,6 @@ MHAP (pronounced MAP) is a reference implementation of a probabilistic
 sequence overlapping algorithm. Designed to efficiently detect all overlaps
 between noisy long-read sequence data. It efficiently estimates Jaccard similarity
 by compressing sequences to their representative fingerprints composed on min-mers (minimum k-mer).
-
-=================
-Overview
-=================
     
 Contents:
 
