@@ -34,19 +34,15 @@ In this use case, files in the -p directory will be converted to binary dat file
 
 Output
 -----------------
-MHAP outputs overlaps in a format similar to BLASR's M4 format. Example output
+MHAP outputs overlaps in a format similar to BLASR's M4 format. Example output::
 
-::
+   [A ID] [B ID] [Jaccard score] [# shared min-mers] [0=A fwd, 1=A rc] [A start] [A end] [A length] [0=B fwd, 1=B rc] [B start] [B end] [B length]
 
-[A ID] [B ID] [Jaccard score] [# shared min-mers] [0=A fwd, 1=A rc] [A start] [A end] [A length] [0=B fwd, 1=B rc] [B start] [B end] [B length]
+An example of output from a small dataset is below::
 
-An example of output from a small dataset is below
-
-::
-
-155 11 87.83225 206 0 69 1693 1704 0 1208 2831 5871
-155 15 85.08692 163 0 16 1041 1704 1 67 1088 2935
-155 27 87.11507 159 0 455 1678 1704 0 0 1225 1862
+   155 11 87.83225 206 0 69 1693 1704 0 1208 2831 5871
+   155 15 85.08692 163 0 16 1041 1704 1 67 1088 2935
+   155 27 87.11507 159 0 455 1678 1704 0 0 1225 1862
 
 In this case sequence 155 overlaps 11, 15, and 27.
 
