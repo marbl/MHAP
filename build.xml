@@ -143,7 +143,7 @@
 
   <!-- ========== Compile Targets =========================================== -->
 
-    <target name="compile" depends="init, buildinfo" description="Compile">
+    <target name="compile" depends="init,copy-lib,buildinfo" description="Compile">
 
       <javac  srcdir="${source.home}"
              destdir="${build.home}/classes"
@@ -323,17 +323,15 @@
   <property name="javac.exe" value="javac"/>
   <property name="java.exe" value="java"/>
 
-  <target name="copy">
-    <copy todir="${build.home}/opencl">
-        <fileset dir="${opencl.dir}"/>
-    </copy>
-    <copy todir="${build.home}/matlab">
-        <fileset dir="${matlab.dir}"/>
+  <target name="copy-lib">
+    <mkdir dir="${build.home}/${lib.dir}"/>
+    <copy todir="${build.home}/${lib.dir}">
+        <fileset dir="${lib.dir}"/>
     </copy>
   </target>
   
   <path id="dep.runtime">
-      <fileset dir="./lib">
+      <fileset dir="./${lib.dir}">
           <include name="**/*.jar" />
       </fileset>
   </path>
@@ -342,7 +340,7 @@
   <target name="main" depends="jar-mhap">
   </target>
 
-  <target name="jar-mhap" depends="compile">
+  <target name="jar-mhap" depends="clean,compile">
   
     <copy file="LICENSE.txt" tofile="${build.home}/classes/META-INF/LICENSE.txt"/>
     <copy file="NOTICE.txt"  tofile="${build.home}/classes/META-INF/NOTICE.txt"/>
