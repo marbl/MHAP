@@ -4,7 +4,7 @@ Installation
 
 Before your start
 =================
-MHAP requires a recent version of the `JVM <http://www.oracle.com/technetwork/java/javase/downloads/jre7-downloads-1880261.html>`_ (1.7u51+). JDK 1.6 or earlier will not work. If you would like to build the code from source, you need to have the full `JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`_ and the `ANT <http://ant.apache.org/>`_ build system available.
+MHAP requires a recent version of the `JVM <http://www.oracle.com/technetwork/java/javase/downloads/jre7-downloads-1880261.html>`_ (1.7u51+). JDK 1.6 or earlier will not work. If you would like to build the code from source, you need to have the `JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`_ and the `ANT <http://ant.apache.org/>`_ build system available.
 
 Prerequisites
 ==============
@@ -67,7 +67,7 @@ Once downloaded, extract to unpack:
 
 .. code-block:: bash
 
-    $ unzip 0.1.zip
+    $ unzip v0.1.zip
 
 Change to MetAMOS directory:
 
