@@ -1,0 +1,2 @@
+ant
+cd target
