@@ -15,13 +15,14 @@ Here is a list of currently supported Operating Systems:
 
 1. Mac OSX (10.7 or newer)
 2. Linux 64-bit (tested on CentOS, Fedora, RedHat, OpenSUSE and Ubuntu)
+3. Windows (XP or newer)
 
 Installation
 ======================
 Pre-compiled
 -----------------
 
-To download a pre-compiled tar run:
+The pre-compiled version is recommended to users who want to run MHAP, without doing development. To download a pre-compiled tar run:
 
 .. code-block:: bash
 
@@ -81,4 +82,4 @@ Once inside the MetAMOS directory, run:
 
     $ ant
 
-This will compile the program and create a target/mhap-0.1.jar file which you can use to run MHAP. 
+This will compile the program and create a target/mhap-0.1.jar file which you can use to run MHAP. The quick-start instructions assume you are in the target directory when running the program. You can also use the target/mhap-0.1.tar file to copy MHAP to a different system or directory. 
