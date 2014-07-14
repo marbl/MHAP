@@ -11,6 +11,7 @@ You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/down
     ant
     
 For a quick user-quide, run:
+
     java -jar target/mhap-0.1.jar
 
 ## Docs
