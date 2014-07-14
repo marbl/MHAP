@@ -79,7 +79,6 @@ Once inside the MetAMOS directory, run:
 
 .. code-block:: bash
 
-    $ sh build.sh
+    $ ant
 
-This will compile the program and create an mhap-0.1.jar which you can use to run MHAP. The 
-target directory also contains compiled classes for several utitilities packaged with MHAP.
+This will compile the program and create a target/mhap-0.1.jar file which you can use to run MHAP. 
