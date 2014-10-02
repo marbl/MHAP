@@ -390,40 +390,41 @@ public final class Utils
 	{
 		File file = new File(fileName);
 		
-		BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);
-		
-		//generate hashset
-		ArrayList<Integer> filterArray = new ArrayList<Integer>();
-		
-		String line = bf.readLine();
-		while (line!=null)
+		//make sure don't leak resources
+		try(BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);)
 		{
-			String[] str = line.split("\\s+", 3);
-
-			double percent = Double.parseDouble(str[1]);
+			//generate hashset
+			ArrayList<Integer> filterArray = new ArrayList<Integer>();
 			
-			//if greater, add to hashset
-			if (percent>maxPercent)
+			String line = bf.readLine();
+			while (line!=null)
 			{
-				int[] minHash = Utils.computeKmerMinHashes(str[0], kmerSize, 0, null);
+				String[] str = line.split("\\s+", 3);
 				
-				if (minHash.length>1)
-					System.err.println("Warning filter file kmer size larger than setting!");
+				if (str.length<2)
+					throw new FastAlignRuntimeException("Kmer filter file must have at least two column [kmer kmer_percent].");
+	
+				double percent = Double.parseDouble(str[1]);
 				
-				for (int val : minHash)
-					filterArray.add(val);
+				//if greater, add to hashset
+				if (percent>maxPercent)
+				{
+					int[] minHash = Utils.computeKmerMinHashes(str[0], kmerSize, 0, null);
+					
+					if (minHash.length>1)
+						System.err.println("Warning filter file kmer size larger than setting!");
+					
+					for (int val : minHash)
+						filterArray.add(val);
+				}
+				else
+					break;
+				
+				//read the next line
+				line = bf.readLine();
 			}
-			else
-				break;
-			
-			//read the next line
-			line = bf.readLine();
-		}
-		
-		//close the file
-		bf.close();
-		
-		return new HashSet<Integer>(filterArray);
+			return new HashSet<Integer>(filterArray);
+		}		
 	}
 
 	public final static int[] errorString(int[] s, double readError)

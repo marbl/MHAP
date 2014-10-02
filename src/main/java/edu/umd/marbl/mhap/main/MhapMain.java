@@ -81,7 +81,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 
 	private static final int DEFAULT_SUB_SEQUENCE_SIZE = 100000;
 
-	private static final double DEFAULT_ACCEPT_SCORE = 0.05;
+	private static final double DEFAULT_ACCEPT_SCORE = 0.04;
 
 	public static void main(String[] args) throws Exception
 	{
@@ -195,7 +195,15 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		if (filterFile != null)
 		{
 			System.err.println("Reading in filter file " + filterFile + ".");
-			filter = Utils.createKmerFilter(filterFile, filterThreshold, kmerSize);
+			try
+			{
+				filter = Utils.createKmerFilter(filterFile, filterThreshold, kmerSize);
+			}
+			catch (Exception e)
+			{
+				System.err.println("Could not parse k-mer filter file."+e.getMessage());
+				throw e;
+			}
 			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
 		}
 
@@ -280,7 +288,6 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 	protected void outputFinalStat(MinHashSearch matchSearch)
 	{
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
-		System.err.println("Hash tables average Shannon normalized entropy: " + matchSearch.hashTableNormalizedEnthropy());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()
 				/ (double) matchSearch.getNumberSequencesSearched());
 		System.err.println("Average number of table elements processed per lookup: " + (double) matchSearch.getNumberElementsProcessed()

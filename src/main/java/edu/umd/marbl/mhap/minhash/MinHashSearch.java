@@ -42,7 +42,6 @@ import edu.umd.marbl.mhap.general.MatchResult;
 import edu.umd.marbl.mhap.general.OverlapInfo;
 import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
-import edu.umd.marbl.mhap.utils.Utils;
 
 public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 {
@@ -293,18 +292,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	{
 		return this.numberSubSequencesHit.get();
 	}
-	
-	public double hashTableNormalizedEnthropy()
-	{
-		double sum = 0.0;
-		for (HashMap<Integer, ArrayList<SequenceId>> map : this.hashes)
-		{
-			sum+=Utils.hashEfficiency(map);
-		}
 		
-		return sum/(double)this.hashes.size();
-	}
-	
 	@Override
 	public List<SequenceId> getStoredForwardSequenceIds()
 	{
