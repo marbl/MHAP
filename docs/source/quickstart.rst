@@ -24,7 +24,9 @@ Both the -s and -q options can accept either FastA sequences or binary dat files
 
 The optional -f flag provides a file of repetitive k-mers which should not be selected as min-mers. The file is a two-column tab-delimited input specifying the kmer and the fraction of total kmers the k-mer comprises. For example:
 
-... code-block:: bash
+.. code-block:: bash
+
+   $ head kmers.ignore
    GGGGGGGGGGGGG	0.0005
 
 means the k-mer GGGGGGGGGGG represents 0.05% of the k-mers in the dataset (so if there are 100,000 total k-mers, it occurs 50 times).
