@@ -242,7 +242,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 				+ DEFAULT_SUB_SEQUENCE_SIZE);
 		System.err.println("\t  --no-self [do not compute results to self], default: " + DEFAULT_NO_SELF);
 		System.err.println("\t  --store-full-id [use full sequence id rather than order in file], default: " + DEFAULT_STORE_ID);
-		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
+		System.err.println("\t  --threshold [double threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
 		System.err
 				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
 						+ DEFAULT_MAX_SHIFT_PERCENT);
