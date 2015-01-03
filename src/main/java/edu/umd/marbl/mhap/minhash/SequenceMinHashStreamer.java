@@ -55,7 +55,6 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 	private final int offset;
 	private boolean readClosed;
 	private final int orderedKmerSize;
-	private final int subSequenceSize;
 
 	public SequenceMinHashStreamer(String file, int offset) throws FileNotFoundException
 	{
@@ -63,7 +62,6 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 		
 		this.kmerSize = 0;
 		this.numHashes = 0;
-		this.subSequenceSize = 0;
 		this.orderedKmerSize = 0;
 		this.filter = null;
 		this.numberSubSequencesProcessed = new AtomicLong();
@@ -80,7 +78,6 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 
 		this.kmerSize = kmerSize;
 		this.numHashes = numHashes;
-		this.subSequenceSize = subSequenceSize;
 		this.orderedKmerSize = orderedKmerSize;
 		this.filter = filter;
 		this.numberSubSequencesProcessed = new AtomicLong();
@@ -93,7 +90,7 @@ public class SequenceMinHashStreamer extends AbstractSequenceHashStreamer<Sequen
 	public SequenceMinHashes getHashes(Sequence seq)
 	{
 		//compute the hashes
-		return new SequenceMinHashes(seq, this.kmerSize, this.numHashes, this.subSequenceSize, this.orderedKmerSize, false, this.filter);
+		return new SequenceMinHashes(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.filter);
 	}
 	
 	@Override

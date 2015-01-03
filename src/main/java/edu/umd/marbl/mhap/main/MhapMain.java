@@ -29,6 +29,7 @@
  */
 package edu.umd.marbl.mhap.main;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Locale;
@@ -39,6 +40,8 @@ import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.minhash.MinHashSearch;
 import edu.umd.marbl.mhap.minhash.SequenceMinHashStreamer;
 import edu.umd.marbl.mhap.minhash.SequenceMinHashes;
+import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, SequenceMinHashes>
@@ -69,10 +72,6 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
 
-	private static final boolean DEFAULT_NO_SELF = false;
-
-	private static final boolean DEFAULT_STORE_ID = false;
-
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2;
@@ -87,181 +86,191 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 	{
 		// set the locale
 		Locale.setDefault(Locale.US);
-
-		String inFile = null;
-		String toFile = null;
-
-		int kmerSize = DEFAULT_KMER_SIZE;
-		int numHashes = DEFAULT_NUM_WORDS;
-		int numMinMatches = DEFAULT_NUM_MIN_MATCHES;
-		int subSequenceSize = DEFAULT_SUB_SEQUENCE_SIZE;
-		int numThreads = DEFAULT_NUM_THREADS;
-		boolean noSelf = DEFAULT_NO_SELF;
-		String filterFile = null;
-		double filterThreshold = DEFAULT_FILTER_CUTOFF;
-		double maxShift = DEFAULT_MAX_SHIFT_PERCENT;
-		int minStoreLength = DEFAULT_MIN_STORE_LENGTH;
-		String processFile = null;
-		double acceptScore = DEFAULT_ACCEPT_SCORE;
-
-		for (int i = 0; i < args.length; i++)
+		
+		ParseOptions options = new ParseOptions();
+		options.addStartTextLine("Usage 1 (direct execution): MHAP -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
+		options.addStartTextLine("Usage 2 (generate precomputed binaries): MHAP -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
+		options.addOption("-s", "Usage 1 only. The FASTA or binary dat file (see Usage 2) of reads that all subsequent reads will be compared to.", "");
+		options.addOption("-q", "Usage 1: The FASTA file of reads, or a directory of files, that will be compared to the set of reads in the box (see -s). Usage 2: The output directory for the binary formatted dat files.", "");
+		options.addOption("-p", "Usage 2 only. The directory containing FASTA files that should be converted to binary format for storage.", "");
+		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency.", "");
+		options.addOption("-k", "[int], k-mer size used for MinHashing.", DEFAULT_KMER_SIZE);
+		options.addOption("--num-hashes", "[int], number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
+		options.addOption("--threshold", "[double], the threshold similarity score cutoff for the second stage sort-merge filter.", DEFAULT_ACCEPT_SCORE);
+		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetative.", DEFAULT_FILTER_CUTOFF);
+		options.addOption("--max-seq-size", "[int], Not currently used.", DEFAULT_SUB_SEQUENCE_SIZE);
+		options.addOption("--max-shift", "[double], fraction of the overlap size where shift in k-mer match is still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
+		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter.", DEFAULT_NUM_MIN_MATCHES);
+		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to 2 x #cores.", DEFAULT_NUM_THREADS);
+		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box.", DEFAULT_MIN_STORE_LENGTH);
+		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
+		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. IDs not stored in compressed files.", false);
+		options.addOption("--pacbio_fast", "Set all the parameters for the pacbio fast setting. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--pacbio_sensitive", "Set all the parameters for the pacbio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
+		
+		if (!options.process(args))
+			System.exit(0);
+		
+		//set the defaults for different type of data
+		if (options.get("--pacbio_fast").getBoolean() || options.get("--pacbio_sensitive").getBoolean())
 		{
-			if (args[i].trim().equalsIgnoreCase("-k"))
+			if (!options.get("-k").isSet())
+				options.setOptions("-k", 16);
+			if (!options.get("--num-min-matches").isSet())
+				options.setOptions("--num-min-matches", 3);
+			
+			if (options.get("--pacbio_fast").getBoolean() && options.get("--pacbio_sensitive").getBoolean())
 			{
-				kmerSize = Integer.parseInt(args[++i]);
+				System.out.println("Two default sequence type parameters cannot be set at the same time.");
+				System.out.println(options.helpMenuString());
+				System.exit(1);
 			}
-			else if (args[i].trim().equalsIgnoreCase("-s"))
+			
+			if (!options.get("--num-hashes").isSet())
 			{
-				inFile = args[++i];
+				if (options.get("--pacbio_fast").getBoolean())
+					options.setOptions("--num-hashes", 512);
+				else
+				if (options.get("--pacbio_fast").getBoolean())
+					options.setOptions("--num-hashes", 1256);
 			}
-			else if (args[i].trim().equalsIgnoreCase("-q"))
-			{
-				toFile = args[++i];
-			}
-			else if (args[i].trim().equalsIgnoreCase("-p"))
-			{
-				processFile = args[++i];
-			}
-			else if (args[i].trim().equalsIgnoreCase("-f"))
-			{
-				filterFile = args[++i];
-			}
-			else if (args[i].trim().equalsIgnoreCase("--num-hashes"))
-			{
-				numHashes = Integer.parseInt(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--min-store-length"))
-			{
-				minStoreLength = Integer.parseInt(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--filter-threshold"))
-			{
-				filterThreshold = Double.parseDouble(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--num-min-matches"))
-			{
-				numMinMatches = Integer.parseInt(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--subsequence-size"))
-			{
-				subSequenceSize = Integer.parseInt(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--threshold"))
-			{
-				acceptScore = Double.parseDouble(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--max-shift"))
-			{
-				maxShift = Double.parseDouble(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--num-threads"))
-			{
-				numThreads = Integer.parseInt(args[++i]);
-			}
-			else if (args[i].trim().equalsIgnoreCase("--no-self"))
-			{
-				noSelf = !DEFAULT_NO_SELF;
-			}
-			else if (args[i].trim().equalsIgnoreCase("--store-full-id"))
-			{
-				SequenceId.STORE_FULL_ID = !DEFAULT_STORE_ID;
-			}
+		}		
+		
+		if (options.get("-s").getString().isEmpty() && options.get("-p").getString().isEmpty())
+		{
+			System.out.println("Please set the -s or the -p options. See options below:");
+			System.out.println(options.helpMenuString());
+			System.exit(1);
 		}
-		if (inFile == null && processFile == null)
+		
+		if (!options.get("-p").getString().isEmpty() && !options.get("-q").getString().isEmpty() )
 		{
-			printUsage("Error: no input or process files specified");
+			System.out.println("Please set the -q option. See options below:");
+			System.out.println(options.helpMenuString());
+			System.exit(1);
+		}
+		
+		//check for file existance
+		if (!options.get("-p").getString().isEmpty() && !new File(options.get("-p").getString()).exists())
+		{
+			System.out.println("Could not find the specified file: "+options.get("-p").getString());
+			System.exit(1);
 		}
 
-		System.err.println("Running with input fasta: " + inFile);
-		System.err.println("Running with process directory: " + processFile);
-		System.err.println("Running with to directory or file: " + toFile);
-		System.err.println("Running with kmer filter file: " + filterFile);
-		System.err.println("kmer size:\t" + kmerSize);
-		System.err.println("kmer filter percent cutoff:\t" + filterThreshold);
-		System.err.println("num hashed words:\t" + numHashes);
-		System.err.println("num min matches:\t" + numMinMatches);
-		System.err.println("min hashed seq length:\t" + minStoreLength);
-		System.err.println("subsequence size:\t" + subSequenceSize);
-		System.err.println("max shift:\t" + maxShift);
-		System.err.println("threshold:\t" + acceptScore);
-		System.err.println("number of threads:\t" + numThreads);
-		System.err.println("store full sequence ids:\t" + SequenceId.STORE_FULL_ID);
-		System.err.println("compute alignment to self of -s file:\t" + !noSelf);
-
-		long startTime = System.nanoTime();
-
-		// read in the kmer filter set
-		HashSet<Integer> filter = null;
-		if (filterFile != null)
+		//check for file existance
+		if (!options.get("-s").getString().isEmpty() && !new File(options.get("-s").getString()).exists())
 		{
-			System.err.println("Reading in filter file " + filterFile + ".");
-			try
-			{
-				filter = Utils.createKmerFilter(filterFile, filterThreshold, kmerSize);
-			}
-			catch (Exception e)
-			{
-				System.err.println("Could not parse k-mer filter file."+e.getMessage());
-				throw e;
-			}
-			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
+			System.out.println("Could not find the specified file: "+options.get("-s").getString());
+			System.exit(1);
 		}
+		
+		//check for file existance
+		if (!options.get("-q").getString().isEmpty() && !new File(options.get("-q").getString()).exists())
+		{
+			System.out.println("Could not find the specified file: "+options.get("-q").getString());
+			System.exit(1);
+		}
+		
+		//check for file existance
+		if (!options.get("-f").getString().isEmpty() && !new File(options.get("-f").getString()).exists())
+		{
+			System.out.println("Could not find the specified file: "+options.get("-f").getString());
+			System.exit(1);
+		}
+		
+		//check range
+		if (options.get("--num-threads").getInteger()<=0)
+		{
+			System.out.println("Number of threads must be positive.");
+			System.exit(1);
+		}
+
+		//check range
+		if (options.get("-k").getInteger()<=0)
+		{
+			System.out.println("k-mer size must be positive.");
+			System.exit(1);
+		}
+		
+		//check range
+		if (options.get("--num-min-matches").getInteger()<=0)
+		{
+			System.out.println("Minimum number of matches must be positive.");
+			System.exit(1);
+		}
+
+		//check range
+		if (options.get("--min-store-length").getInteger()<0)
+		{
+			System.out.println("The minimum read length stored must be >=0.");
+			System.exit(1);
+		}
+
+		//check range
+		if (options.get("--max-shift").getDouble()<-1.0)
+		{
+			System.out.println("The minimum shift must be greater than -1.");
+			System.exit(1);
+		}
+		
+		//check range
+		if (options.get("--threshold").getDouble()<0.0)
+		{
+			System.out.println("The second stage filter cutoff must be >=0.");
+			System.exit(1);
+		}
+
+		//check other options
+		//TODO move into the class
+		if (options.get("--store-full-id").getBoolean())
+			SequenceId.STORE_FULL_ID = true;
+		else
+			SequenceId.STORE_FULL_ID = false;
+
+		
+		//printing the options used
+		System.err.println("Running with these options:");
+		System.err.println(options);
+
 
 		// start the main program
-		MhapMain main = new MhapMain(processFile, inFile, toFile, noSelf, subSequenceSize, numHashes, kmerSize,
-				numMinMatches, numThreads, filter, minStoreLength, maxShift, acceptScore);
+		MhapMain main = new MhapMain(options);
 
 		main.computeMain();
 	}
 
-	public static void printUsage(String error)
+	public MhapMain(ParseOptions options)
 	{
-		if (error != null)
+		super(options.get("-p").getString(), options.get("-s").getString(), options.get("-q").getString(), options.get("--no-self").getBoolean(), options.get("--num-threads").getInteger());
+		
+		this.subSequenceSize = options.get("--max-seq-size").getInteger();
+		this.numHashes = options.get("--num-hashes").getInteger();
+		this.kmerSize = options.get("-k").getInteger();
+		this.numMinMatches = options.get("--num-min-matches").getInteger();
+		this.minStoreLength = options.get("--min-store-length").getInteger();
+		this.maxShift = options.get("--max-shift").getDouble();
+		this.acceptScore = options.get("--threshold").getDouble();
+		
+		// read in the kmer filter set
+		String filterFile = options.get("-f").getString();
+		
+		if (!options.get("-f").getString().isEmpty())
 		{
-			System.err.println(error);
+			long startTime = System.nanoTime();
+			System.err.println("Reading in filter file " + filterFile + ".");
+			try
+			{
+				this.filter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize);
+			}
+			catch (Exception e)
+			{
+				throw new FastAlignRuntimeException("Could not parse k-mer filter file.", e);
+			}
+			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
 		}
-		System.err
-				.println("Usage 1 (direct execution): MHAP -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
-		System.err
-				.println("Usage 2 (generate precomputed binaries): MHAP -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
-		System.err.println("Options: ");
-		System.err.println("\t -k [int merSize], default: " + DEFAULT_KMER_SIZE);
-		System.err.println("\t  --memory [do not store kmers in memory]");
-		System.err.println("\t  --num-hashes [int # hashes], default: " + DEFAULT_NUM_WORDS);
-		System.err.println("\t  --min-store-length [int # of minimum sequence length that is hashed], default: "
-				+ DEFAULT_MIN_STORE_LENGTH);
-		System.err.println("\t  --threshold [int threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
-		System.err
-				.println("\t  --max-shift [double fraction of the overlap size where shift in k-mer match is still considered valid], default: "
-						+ DEFAULT_MAX_SHIFT_PERCENT);
-		System.err.println("\t  --num-min-matches [int # hashes that maches before performing local alignment], default: "
-				+ DEFAULT_NUM_MIN_MATCHES);
-		System.err.println("\t  --num-threads [int # threads to use for computation], default (2 x #cores): "
-				+ DEFAULT_NUM_THREADS);
-		System.err.println("\t  --subsequence-size [depricated, int size of maximum minhashed sequence], default: "
-				+ DEFAULT_SUB_SEQUENCE_SIZE);
-		System.err.println("\t  --no-self [do not compute results to self], default: " + DEFAULT_NO_SELF);
-		System.err.println("\t  --store-full-id [use full sequence id rather than order in file], default: " + DEFAULT_STORE_ID);
-		System.err.println("\t  --threshold [double threshold for % matching minimums], default: " + DEFAULT_ACCEPT_SCORE);
-		System.err
-				.println("\t  --max-shift [int # max sequence shift allowed for a valid kmer relative to median value], default: "
-						+ DEFAULT_MAX_SHIFT_PERCENT);
-		System.exit(1);
-	}
+		else
+			this.filter = null;
 
-	public MhapMain(String processFile, String inFile, String toFile, boolean noSelf, int subSequenceSize,
-			int numHashes, int kmerSize, int numMinMatches, int numThreads, HashSet<Integer> filter, int minStoreLength,
-			double maxShift, double acceptScore)
-	{
-		super(processFile, inFile, toFile, noSelf, numThreads);
-		this.subSequenceSize = subSequenceSize;
-		this.numHashes = numHashes;
-		this.kmerSize = kmerSize;
-		this.numMinMatches = numMinMatches;
-		this.minStoreLength = minStoreLength;
-		this.filter = filter;
-		this.maxShift = maxShift;
-		this.acceptScore = acceptScore;
 	}
 
 	@Override
@@ -287,6 +296,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 	@Override
 	protected void outputFinalStat(MinHashSearch matchSearch)
 	{
+		System.err.println("MinHash search time (s): " + matchSearch.getMinHashSearchTime());
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()
 				/ (double) matchSearch.getNumberSequencesSearched());

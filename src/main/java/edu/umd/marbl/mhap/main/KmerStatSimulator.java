@@ -41,6 +41,9 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 
 import edu.umd.marbl.mhap.general.FastaData;
+import edu.umd.marbl.mhap.general.Sequence;
+import edu.umd.marbl.mhap.general.SequenceId;
+import edu.umd.marbl.mhap.minhash.MinHash;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class KmerStatSimulator {
@@ -49,12 +52,14 @@ public class KmerStatSimulator {
 	private int overlap = 100;
 
 	private ArrayList<Double> randomJaccard = new ArrayList<Double>();
+	private ArrayList<Double> randomMinHash = new ArrayList<Double>();
 	private ArrayList<Double> randomMerCounts = new ArrayList<Double>();
 	private String reference = null;
 	private double requestedLength = 5000;
 
 	private double sharedCount = 0;
 	private ArrayList<Double> sharedJaccard = new ArrayList<Double>();
+	private ArrayList<Double> sharedMinHash = new ArrayList<Double>();
 	private ArrayList<Double> sharedMerCounts = new ArrayList<Double>();
 	private HashMap<String, Integer> skipMers = new HashMap<String, Integer>();
 
@@ -178,6 +183,13 @@ public class KmerStatSimulator {
 		}
 		this.sharedCount = shared.size();
 		return shared.size() / (double) totalSeqs.size();
+	}
+	
+	public double compareMinHash(String first, String second) {
+		MinHash h1 = new MinHash(new Sequence(first, new SequenceId(1)), this.kmer, 1256, null);
+		MinHash h2 = new MinHash(new Sequence(second, new SequenceId(2)), this.kmer, 1256, null);
+		
+		return h1.jaccard(h2);
 	}
 
 	private char getRandomBase(Character toExclude) {
@@ -330,7 +342,7 @@ public class KmerStatSimulator {
 		System.err.println("Loaded reference");
 		
 		for (int i = 0; i < this.totalTrials; i++) {
-			if (i % 1000 == 0) {
+			if (i % 100 == 0) {
 				System.err.println("Done " + i + "/" + this.totalTrials);
 			}
 			int sequenceLength = (int) this.requestedLength;
@@ -384,6 +396,7 @@ public class KmerStatSimulator {
 				System.exit(1);
 			}
 			this.sharedJaccard.add(compareKmers(firstSeq, secondSeq));
+			this.sharedMinHash.add(compareMinHash(firstSeq, secondSeq));
 			this.sharedMerCounts.add(this.sharedCount);
 
 			// compare number of shared kmers out of total to another sequence
@@ -421,6 +434,7 @@ public class KmerStatSimulator {
 			// System.err.println("Second: "+secondSeq.length());
 
 			this.randomJaccard.add(compareKmers(firstSeq, secondSeq));
+			this.randomMinHash.add(compareMinHash(firstSeq, secondSeq));
 			this.randomMerCounts.add(this.sharedCount);
 		}
 
@@ -437,8 +451,10 @@ public class KmerStatSimulator {
 		for (int i = 0; i < this.totalTrials; i++) {
 			System.out.println(this.sharedMerCounts.get(i) + "\t"
 					+ this.sharedJaccard.get(i) + "\t"
+					+ this.sharedMinHash.get(i) + "\t"
 					+ this.randomMerCounts.get(i) + "\t"
-					+ this.randomJaccard.get(i));
+					+ this.randomJaccard.get(i) + "\t"
+					+ this.randomMinHash.get(i));
 		}
 		System.out.print("Shared mer counts stats: ");
 		outputStats(this.sharedMerCounts, System.out);
@@ -448,12 +464,20 @@ public class KmerStatSimulator {
 		outputStats(this.sharedJaccard, System.out);
 		System.out.println();
 
+		System.out.print("Shared MinHash jaccard stats: ");
+		outputStats(this.sharedMinHash, System.out);
+		System.out.println();
+
 		System.out.print("Random mer counts stats: ");
 		outputStats(this.randomMerCounts, System.out);
 		System.out.println();
 
 		System.out.print("Random jaccard stats: ");
 		outputStats(this.randomJaccard, System.out);
+		System.out.println();
+
+		System.out.print("Random MinHash jaccard stats: ");
+		outputStats(this.randomMinHash, System.out);
 		System.out.println();
 	}
 }

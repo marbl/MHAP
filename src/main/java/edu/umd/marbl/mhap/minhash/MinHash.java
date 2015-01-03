@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import edu.umd.marbl.mhap.general.Sequence;
+import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public final class MinHash implements Serializable
@@ -82,24 +83,11 @@ public final class MinHash implements Serializable
 		this.minHashes = minHashes;
 	}
 	
-	public MinHash(Sequence seq, int kmerSize, int numHashes, int subSequenceSize, HashSet<Integer> filter)
+	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Integer> filter)
 	{
 		this.seqLength = seq.length();
 
 		this.minHashes = Utils.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
-		
-		/*
-		int[] hashes = Utils.computeKmerHashesIntBasic(seq, kmerSize, 1, filter);
-		
-		Arrays.sort(hashes);
-		
-		this.minHashes = new int[numHashes];
-		int minValue = Math.min(numHashes, hashes.length);
-		for (int iter=0; iter<minValue; iter++)
-		{
-			this.minHashes[iter] = hashes[iter];
-		}
-		*/
 	}
 
 	public byte[] getAsByteArray()
@@ -120,6 +108,23 @@ public final class MinHash implements Serializable
 	public final int getSequenceLength()
 	{
 		return this.seqLength;
+	}
+	
+	public final double jaccard(MinHash h)
+	{
+		int count = 0;
+		int size = this.minHashes.length;
+		
+		if (h.minHashes.length!=size)
+			throw new FastAlignRuntimeException("MinHashes must be of same length in order to be comapred.");
+		
+		for (int iter=0; iter<size; iter++)
+		{
+			if (this.minHashes[iter]==h.minHashes[iter])
+				count++;
+		}
+		
+		return (double)count/(double)size;
 	}
 
 	/**
