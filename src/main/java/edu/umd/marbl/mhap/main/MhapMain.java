@@ -31,6 +31,7 @@ package edu.umd.marbl.mhap.main;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -41,6 +42,7 @@ import edu.umd.marbl.mhap.minhash.MinHashSearch;
 import edu.umd.marbl.mhap.minhash.SequenceMinHashStreamer;
 import edu.umd.marbl.mhap.minhash.SequenceMinHashes;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
 
@@ -88,25 +90,27 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		Locale.setDefault(Locale.US);
 		
 		ParseOptions options = new ParseOptions();
-		options.addStartTextLine("Usage 1 (direct execution): MHAP -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
-		options.addStartTextLine("Usage 2 (generate precomputed binaries): MHAP -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
-		options.addOption("-s", "Usage 1 only. The FASTA or binary dat file (see Usage 2) of reads that all subsequent reads will be compared to.", "");
+		options.addStartTextLine("MHAP: MinHash Alignment Protocol. A tool for overlapping long-read sequences in bioinformatics.");
+		options.addStartTextLine("\tVersion: "+PackageInfo.VERSION+", Build time: "+PackageInfo.BUILD_TIME);		
+		options.addStartTextLine("\tUsage 1 (direct execution): java -server -Xmx<memory> -jar <MHAP jar> -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
+		options.addStartTextLine("\tUsage 2 (generate precomputed binaries): java -server -Xmx<memory> -jar <MHAP jar> -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
+		options.addOption("-s", "Usage 1 only. The FASTA or binary dat file (see Usage 2) of reads that will be stored in a box, and that all subsequent reads will be compared to.", "");
 		options.addOption("-q", "Usage 1: The FASTA file of reads, or a directory of files, that will be compared to the set of reads in the box (see -s). Usage 2: The output directory for the binary formatted dat files.", "");
 		options.addOption("-p", "Usage 2 only. The directory containing FASTA files that should be converted to binary format for storage.", "");
-		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency.", "");
-		options.addOption("-k", "[int], k-mer size used for MinHashing.", DEFAULT_KMER_SIZE);
+		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency (second column).", "");
+		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is always set to "+DEFAULT_ORDERED_KMER_SIZE+", and currently cannot be modified.", DEFAULT_KMER_SIZE);
 		options.addOption("--num-hashes", "[int], number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
-		options.addOption("--threshold", "[double], the threshold similarity score cutoff for the second stage sort-merge filter.", DEFAULT_ACCEPT_SCORE);
-		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetative.", DEFAULT_FILTER_CUTOFF);
-		options.addOption("--max-seq-size", "[int], Not currently used.", DEFAULT_SUB_SEQUENCE_SIZE);
-		options.addOption("--max-shift", "[double], fraction of the overlap size where shift in k-mer match is still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
-		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter.", DEFAULT_NUM_MIN_MATCHES);
+		options.addOption("--threshold", "[double], the threshold similarity score cutoff for the second stage sort-merge filter. This is based on the average number of k-mers matching in the overlapping region.", DEFAULT_ACCEPT_SCORE);
+		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored.", DEFAULT_FILTER_CUTOFF);
+		options.addOption("--max-seq-size", "[int], not currently used.", DEFAULT_SUB_SEQUENCE_SIZE);
+		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
+		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to 2 x #cores.", DEFAULT_NUM_THREADS);
-		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box.", DEFAULT_MIN_STORE_LENGTH);
+		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
-		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. IDs not stored in compressed files.", false);
-		options.addOption("--pacbio_fast", "Set all the parameters for the pacbio fast setting. This is the current best guidance, and could change at any time without warning.", false);
-		options.addOption("--pacbio_sensitive", "Set all the parameters for the pacbio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
+		options.addOption("--pacbio_fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--pacbio_sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
 		
 		if (!options.process(args))
 			System.exit(0);
@@ -229,7 +233,10 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 
 		
 		//printing the options used
-		System.err.println("Running with these options:");
+		System.err.println("Running with these settings:");
+		System.err.println("Version = "+PackageInfo.VERSION);
+		System.err.println("Build time = "+PackageInfo.BUILD_TIME+"\n");
+		System.err.println("Execution date = "+Calendar.getInstance().toInstant());
 		System.err.println(options);
 
 
@@ -241,7 +248,11 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 
 	public MhapMain(ParseOptions options)
 	{
-		super(options.get("-p").getString(), options.get("-s").getString(), options.get("-q").getString(), options.get("--no-self").getBoolean(), options.get("--num-threads").getInteger());
+		super(options.get("-p").getString(), 
+				options.get("-s").getString(), 
+				options.get("-q").getString(), 
+				options.get("--no-self").getBoolean(), 
+				options.get("--num-threads").getInteger());
 		
 		this.subSequenceSize = options.get("--max-seq-size").getInteger();
 		this.numHashes = options.get("--num-hashes").getInteger();

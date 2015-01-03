@@ -273,8 +273,7 @@ public class ParseOptions
 	{
 		StringBuilder menuString = new StringBuilder();
 		for (String str : this.startText)
-			menuString.append("\t"+str+"\n");
-		menuString.append("\tBoolean flags do not contain a value key.\n");
+			menuString.append(str+"\n");
 
 		// sort the list
 		ArrayList<String> list = new ArrayList<String>(this.optionsByFlag.keySet());
