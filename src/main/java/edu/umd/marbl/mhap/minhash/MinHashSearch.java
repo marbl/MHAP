@@ -64,11 +64,11 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 
 	private final ArrayList<HashMap<Integer, ArrayList<SequenceId>>> hashes;
 	private final double maxShift;
+	private final AtomicLong minhashSearchTime;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
-	private final AtomicLong numberSequencesFullyCompared;
 
-	private final AtomicLong minhashSearchTime;
+	private final AtomicLong numberSequencesFullyCompared;
 	private final AtomicLong numberSequencesHit;
 	private final AtomicLong numberSequencesMinHashed;
 	private final AtomicLong numberSubSequences;
@@ -276,6 +276,11 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		return matches;
 	}
 
+	public double getMinHashSearchTime()
+	{
+		return this.minhashSearchTime.longValue() * 1.0e-3;
+	}
+
 	public long getNumberElementsProcessed()
 	{
 		return this.numberElementsProcessed.get();
@@ -290,7 +295,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	{
 		return this.numberSequencesFullyCompared.get();
 	}
-
+	
 	public long getNumberSequencesHit()
 	{
 		return this.numberSequencesHit.get();
@@ -299,11 +304,6 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	public long getNumberSubSequencesHit()
 	{
 		return this.numberSubSequencesHit.get();
-	}
-	
-	public double getMinHashSearchTime()
-	{
-		return this.minhashSearchTime.longValue() * 1.0e-3;
 	}
 		
 	@Override

@@ -68,6 +68,7 @@ public final class MinHashSearchArray extends AbstractMatchSearch<SequenceMinHas
 	private final double maxShift;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
+	private final AtomicLong minhashSearchTime;
 	private final AtomicLong numberSequencesFullyCompared;
 
 	private final AtomicLong numberSequencesHit;
@@ -95,6 +96,7 @@ public final class MinHashSearchArray extends AbstractMatchSearch<SequenceMinHas
 		this.numberSubSequences = new AtomicLong();
 		this.numberSequencesMinHashed = new AtomicLong();
 		this.numberElementsProcessed = new AtomicLong();
+		this.minhashSearchTime = new AtomicLong();
 		
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
@@ -104,7 +106,7 @@ public final class MinHashSearchArray extends AbstractMatchSearch<SequenceMinHas
 		this.hashes = new ArrayList[numHashes][];
 		int numElements = data.getNumberSubSequencesProcessed()+100;
 		for (int iter = 0; iter < numHashes; iter++)
-			this.hashes[iter] = new ArrayList[numElements*8];
+			this.hashes[iter] = new ArrayList[numElements*4];
 		
 		addData(data);
 	}
@@ -170,6 +172,9 @@ public final class MinHashSearchArray extends AbstractMatchSearch<SequenceMinHas
 	@Override
 	public List<MatchResult> findMatches(SequenceMinHashes seqHashes, boolean toSelf)
 	{
+		//for performance reasons it must be this
+		long startTime = System.currentTimeMillis();
+
 		MinHash minHash = seqHashes.getMinHashes();
 
 		if (this.hashes.length != minHash.numHashes())
@@ -208,6 +213,9 @@ public final class MinHashSearchArray extends AbstractMatchSearch<SequenceMinHas
 			
 			hashIndex++;
 		}
+		
+		//record the search time
+		this.minhashSearchTime.getAndAdd(System.currentTimeMillis() - startTime);
 		
 		//record number of hash matches processed
 		this.numberSequencesHit.getAndAdd(bestSequenceHit.size());
@@ -270,6 +278,11 @@ public final class MinHashSearchArray extends AbstractMatchSearch<SequenceMinHas
 		}
 
 		return matches;
+	}
+	
+	public double getMinHashSearchTime()
+	{
+		return this.minhashSearchTime.longValue() * 1.0e-3;
 	}
 
 	public long getNumberElementsProcessed()
