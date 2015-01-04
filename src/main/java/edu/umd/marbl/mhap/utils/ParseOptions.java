@@ -166,7 +166,8 @@ public class ParseOptions
 		this.optionsByFlag = new HashMap<String, Option<?>>();
 		this.optionsByName = new HashMap<String, Option<?>>();
 		addOption("-h", "Displays the help menu.", false);
-		addOption("-help", "Displays the help menu.", false);
+		addOption("--help", "Displays the help menu.", false);
+		addOption("--version", "Displays the version and build time.", false);
 	}
 	
 	public void addStartTextLine(String text)
@@ -214,6 +215,12 @@ public class ParseOptions
 			if (needsHelp())
 			{
 				System.out.println(helpMenuString());
+				return false;
+			}
+			else
+			if (needsVersion())
+			{
+				System.out.println("MHAP Version = "+PackageInfo.VERSION+", Build time = "+PackageInfo.BUILD_TIME);
 				return false;
 			}
 
@@ -309,8 +316,14 @@ public class ParseOptions
 
 	public boolean needsHelp()
 	{
-		return get("-help").getBoolean() || get("-h").getBoolean();
+		return get("--help").getBoolean() || get("-h").getBoolean();
 	}
+	
+	public boolean needsVersion()
+	{
+		return get("--version").getBoolean();
+	}
+
 
 	public void parse(String[] args) throws RuntimeException
 	{
