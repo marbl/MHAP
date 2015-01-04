@@ -49,6 +49,11 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	{
 		public int count;
 
+		public HitInfo(int count)
+		{
+			this.count = count;
+		}
+		
 		public HitInfo()
 		{
 			this.count = 0;
@@ -65,6 +70,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	private final ArrayList<HashMap<Integer, ArrayList<SequenceId>>> hashes;
 	private final double maxShift;
 	private final AtomicLong minhashSearchTime;
+	private final AtomicLong sortMergeSearchTime;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
 
@@ -94,6 +100,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		this.numberSequencesMinHashed = new AtomicLong();
 		this.numberElementsProcessed = new AtomicLong();
 		this.minhashSearchTime = new AtomicLong();
+		this.sortMergeSearchTime = new AtomicLong();
 		
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
@@ -113,7 +120,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		int[] currMinHashes = currHash.getMinHashes().getMinHashArray();
 
 		if (currMinHashes.length != this.hashes.size())
-			throw new FastAlignRuntimeException("Number of hashes does not match.");
+			throw new FastAlignRuntimeException("Number of minhashes of the sequence does not match current settings.");
 
 		// put the result into the hashmap
 		synchronized (this.sequenceVectorsHash)
@@ -198,12 +205,11 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 					// increment the count
 					if (currentHitInfo == null)
 					{
-						currentHitInfo = new HitInfo();
+						currentHitInfo = new HitInfo(1);
 						bestSequenceHit.put(sequenceId, currentHitInfo);
 					}
-
-					// record the match of the kmer hash
-					currentHitInfo.addHit();
+					else
+						currentHitInfo.addHit();
 				}
 			}
 			
@@ -211,7 +217,8 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		}
 		
 		//record the search time
-		this.minhashSearchTime.getAndAdd(System.nanoTime() - startTime);
+		long minHashEndTime = System.nanoTime();
+		this.minhashSearchTime.getAndAdd(minHashEndTime - startTime);
 		
 		//record number of hash matches processed
 		this.numberSequencesHit.getAndAdd(bestSequenceHit.size());
@@ -258,7 +265,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 				
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
-				
+
 				//if score is good add
 				if (result.score >= this.acceptScore)
 				{
@@ -272,6 +279,11 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 				}
 			}
 		}
+		
+		//record the search time
+		//TODO not clear why not working. Perhaps everything is too fast?
+		//long endTime = System.nanoTime();
+		//this.sortMergeSearchTime.getAndAdd(endTime-minHashEndTime);
 
 		return matches;
 	}
@@ -280,6 +292,12 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	{
 		return this.minhashSearchTime.longValue() * 1.0e-9;
 	}
+	
+	public double getSortMergeTime()
+	{
+		return this.sortMergeSearchTime.longValue() * 1.0e-9;
+	}
+
 
 	public long getNumberElementsProcessed()
 	{

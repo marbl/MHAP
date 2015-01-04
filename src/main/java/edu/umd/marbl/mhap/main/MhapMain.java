@@ -135,7 +135,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 				if (options.get("--pacbio_fast").getBoolean())
 					options.setOptions("--num-hashes", 512);
 				else
-				if (options.get("--pacbio_fast").getBoolean())
+				if (options.get("--pacbio_sensitive").getBoolean())
 					options.setOptions("--num-hashes", 1256);
 			}
 		}		
@@ -147,7 +147,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 			System.exit(1);
 		}
 		
-		if (!options.get("-p").getString().isEmpty() && !options.get("-q").getString().isEmpty() )
+		if (!options.get("-p").getString().isEmpty() && options.get("-q").getString().isEmpty() )
 		{
 			System.out.println("Please set the -q option. See options below:");
 			System.out.println(options.helpMenuString());
@@ -157,28 +157,28 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		//check for file existance
 		if (!options.get("-p").getString().isEmpty() && !new File(options.get("-p").getString()).exists())
 		{
-			System.out.println("Could not find the specified file: "+options.get("-p").getString());
+			System.out.println("Could not find requested file/folder: "+options.get("-p").getString());
 			System.exit(1);
 		}
 
 		//check for file existance
 		if (!options.get("-s").getString().isEmpty() && !new File(options.get("-s").getString()).exists())
 		{
-			System.out.println("Could not find the specified file: "+options.get("-s").getString());
+			System.out.println("Could not find requested file/folder: "+options.get("-s").getString());
 			System.exit(1);
 		}
 		
 		//check for file existance
 		if (!options.get("-q").getString().isEmpty() && !new File(options.get("-q").getString()).exists())
 		{
-			System.out.println("Could not find the specified file: "+options.get("-q").getString());
+			System.out.println("Could not find requested file/folder: "+options.get("-q").getString());
 			System.exit(1);
 		}
 		
 		//check for file existance
 		if (!options.get("-f").getString().isEmpty() && !new File(options.get("-f").getString()).exists())
 		{
-			System.out.println("Could not find the specified file: "+options.get("-f").getString());
+			System.out.println("Could not find requested file/folder: "+options.get("-f").getString());
 			System.exit(1);
 		}
 		
@@ -235,14 +235,14 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		//printing the options used
 		System.err.println("Running with these settings:");
 		System.err.println("Version = "+PackageInfo.VERSION);
-		System.err.println("Build time = "+PackageInfo.BUILD_TIME+"\n");
+		System.err.println("Build time = "+PackageInfo.BUILD_TIME);
 		System.err.println("Execution date = "+Calendar.getInstance().toInstant());
 		System.err.println(options);
-
 
 		// start the main program
 		MhapMain main = new MhapMain(options);
 
+		//execute main computation code
 		main.computeMain();
 	}
 
@@ -265,7 +265,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
 		
-		if (!options.get("-f").getString().isEmpty())
+		if (!filterFile.isEmpty())
 		{
 			long startTime = System.nanoTime();
 			System.err.println("Reading in filter file " + filterFile + ".");
@@ -308,6 +308,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 	protected void outputFinalStat(MinHashSearch matchSearch)
 	{
 		System.err.println("MinHash search time (s): " + matchSearch.getMinHashSearchTime());
+		//System.err.println("Sort-merge search time (s): " + matchSearch.getSortMergeTime());
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()
 				/ (double) matchSearch.getNumberSequencesSearched());
