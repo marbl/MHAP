@@ -176,7 +176,7 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 	public List<MatchResult> findMatches(SequenceMinHashes seqHashes, boolean toSelf)
 	{
 		//for performance reasons might need to change
-		long startTime = System.nanoTime();
+		//long startTime = System.nanoTime();
 
 		MinHash minHash = seqHashes.getMinHashes();
 
@@ -217,8 +217,8 @@ public final class MinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
 		}
 		
 		//record the search time
-		long minHashEndTime = System.nanoTime();
-		this.minhashSearchTime.getAndAdd(minHashEndTime - startTime);
+		//long minHashEndTime = System.nanoTime();
+		//this.minhashSearchTime.getAndAdd(minHashEndTime - startTime);
 		
 		//record number of hash matches processed
 		this.numberSequencesHit.getAndAdd(bestSequenceHit.size());

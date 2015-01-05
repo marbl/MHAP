@@ -305,7 +305,7 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 	@Override
 	protected void outputFinalStat(MinHashSearch matchSearch)
 	{
-		System.err.println("MinHash search time (s): " + matchSearch.getMinHashSearchTime());
+		//System.err.println("MinHash search time (s): " + matchSearch.getMinHashSearchTime());
 		//System.err.println("Sort-merge search time (s): " + matchSearch.getSortMergeTime());
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()
