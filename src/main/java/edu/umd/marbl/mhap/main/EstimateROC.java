@@ -328,6 +328,7 @@ public class EstimateROC {
 		String[] splitLine = line.trim().split("\\s+");
 
 		try {
+			// CA format
 			if (splitLine.length == 7 || splitLine.length == 6) {
 				overlap.id1 = splitLine[0];
 				overlap.id2 = splitLine[1];
@@ -344,6 +345,7 @@ public class EstimateROC {
 					overlap.bfirst = -1*Math.min(0, aoffset);
 					overlap.bsecond = Math.min(blen, blen - boffset);
 				}
+				//mhap format
 			} else if (splitLine.length == 12) {
 				overlap.id1 = splitLine[0];
 				overlap.id2 = splitLine[1];
@@ -364,7 +366,8 @@ public class EstimateROC {
 						overlap.bsecond = blen;
 					}
 				}
-			} else if (splitLine.length == 13) {
+				// blasr format
+			} else if (splitLine.length == 13 && !line.contains("[")) {
 				overlap.afirst = Integer.parseInt(splitLine[5]);
 				overlap.asecond = Integer.parseInt(splitLine[6]);
 				overlap.bfirst = Integer.parseInt(splitLine[9]);
@@ -395,6 +398,24 @@ public class EstimateROC {
 					if (overlap.bsecond > blen) {
 						overlap.bsecond = blen;
 					}
+				}
+				//         1      1,182 n   [ 4,746.. 8,108] x [     0.. 3,896] :   <    982 diffs  ( 34 trace pts)
+			} else if (splitLine.length >= 13 && splitLine.length <= 18) {
+				overlap.id1 = splitLine[0].replaceAll(",", "");
+				overlap.id2 = splitLine[1].replaceAll(",", "");	
+				overlap.isFwd = (splitLine[2].equalsIgnoreCase("n"));
+				String[] splitTwo = line.split("\\[");
+				String aInfo = splitTwo[1].substring(0, splitTwo[1].indexOf("]"));
+				String bInfo = splitTwo[2].substring(0, splitTwo[2].indexOf("]"));
+				String[] aSplit = aInfo.replaceAll(",", "").split("\\.\\.");
+				String[] bSplit = bInfo.replaceAll(",", "").split("\\.\\.");
+				overlap.afirst=Integer.parseInt(aSplit[0].trim());
+				overlap.asecond=Integer.parseInt(aSplit[1].trim());
+				overlap.bfirst=Integer.parseInt(bSplit[0].trim());
+				overlap.bsecond=Integer.parseInt(bSplit[1].trim());
+				if (!overlap.isFwd) {
+					overlap.bsecond = this.dataSeq[getSequenceId(overlap.id2)].length() - Integer.parseInt(bSplit[0].trim());
+					overlap.bfirst = this.dataSeq[getSequenceId(overlap.id2)].length() - Integer.parseInt(bSplit[1].trim());
 				}
 			}
 		} catch (NumberFormatException e) {
@@ -590,7 +611,7 @@ public class EstimateROC {
 		int length = Math.max(sequence1.length, sequence2.length);
 		int ovlLen = Math.min(sequence1.length, sequence2.length);
 		char GAP = '-';
-		//int errors = 0;
+		int errors = 0;
 		int matches = 0;
 		for (int i = 0; i <= length; i++)
 		{
@@ -603,7 +624,7 @@ public class EstimateROC {
 				c2 = sequence2[i];
 			}
 			if (c1 != c2 || c1 == GAP || c2 == GAP) {
-				//errors++;
+				errors++;
 			} else {
 				matches++;
 			}
@@ -637,9 +658,9 @@ public class EstimateROC {
 		Alignment alignment;
 		try {
 			if (ALIGN_SW) {
-				alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 1f);
+				alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("MATCH"), 2f, 1f);
 			} else {
-				alignment = NeedlemanWunschGotoh.align(s1, s2, MatrixLoader.load("IDENTITY"), 2f, 1f);
+				alignment = NeedlemanWunschGotoh.align(s1, s2, MatrixLoader.load("MATCH"), 2f, 1f);
 			}
 		} catch (MatrixLoaderException e) {
 			return false;
