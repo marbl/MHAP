@@ -62,18 +62,17 @@ public abstract class AbstractSequenceSearchMain<S extends AbstractMatchSearch<H
 	{
 		long startTotalTime = System.nanoTime();		
 		long startTime = System.nanoTime();
-
 		long processTime = System.nanoTime();
 		
 		//if processing a directory
-		if (this.processFile!=null)
+		if (this.processFile!=null && !this.processFile.isEmpty())
 		{
 			File file = new File(this.processFile);			
 			if (!file.exists())
 				throw new FastAlignRuntimeException("Process file does not exist.");
 
-			if (this.toFile==null)
-				throw new FastAlignRuntimeException("Target directory option -q must be defined.");
+			if (this.toFile==null || this.toFile.isEmpty())
+				throw new FastAlignRuntimeException("Target directory must be defined.");
 			
 			File toDirectory = new File(this.toFile);
 			if (!toDirectory.exists() || !toDirectory.isDirectory())
@@ -150,7 +149,7 @@ public abstract class AbstractSequenceSearchMain<S extends AbstractMatchSearch<H
 		//System.in.read();
 		
 		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
-		if (this.toFile==null)
+		if (this.toFile==null || this.toFile.isEmpty())
 		{
 			startTime = System.nanoTime();
 			hashSearch.findMatches();

@@ -93,11 +93,11 @@ public final class SequenceMinHashes implements SequenceHashes
 		this.orderedHashes = orderedHashes;
 	}
 	
-	public SequenceMinHashes(Sequence seq, int kmerSize, int numHashes, int subSequenceSize, int orderedKmerSize, 
+	public SequenceMinHashes(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, 
 			boolean storeHashes, HashSet<Integer> filter)
 	{
 		this.id = seq.getId();
-		this.mainHashes = new MinHash(seq, kmerSize, numHashes, subSequenceSize, filter);
+		this.mainHashes = new MinHash(seq, kmerSize, numHashes, filter);
 		this.orderedHashes = new OrderKmerHashes(seq, orderedKmerSize);
 	}
 	
