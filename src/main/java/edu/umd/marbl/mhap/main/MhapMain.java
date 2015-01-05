@@ -31,7 +31,6 @@ package edu.umd.marbl.mhap.main;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -236,7 +235,6 @@ public final class MhapMain extends AbstractSequenceSearchMain<MinHashSearch, Se
 		System.err.println("Running with these settings:");
 		System.err.println("Version = "+PackageInfo.VERSION);
 		System.err.println("Build time = "+PackageInfo.BUILD_TIME);
-		System.err.println("Execution date = "+Calendar.getInstance().toInstant());
 		System.err.println(options);
 
 		// start the main program
