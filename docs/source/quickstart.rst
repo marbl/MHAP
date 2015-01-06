@@ -58,14 +58,14 @@ Options
 -----------------
 The full list of options is available via command-line help (--help or -h). Below is a list of commonly used options.
 
-   -k [int]  K-mer size, default=16
+   -k  [int]  K-mer size, default=16
    --num-hashes  [int]  Sketch size, higher=more sensitive but more memory usage and runtime, default=1024
    --num-min-matches  [int]  The number of hashes that maches before performing local alignment, default=3
-		--pacbio_fast [boolean] Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning, default = false
-		--pacbio_sensitive [boolean] Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning, default = false
+   --pacbio_fast  [boolean]  Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning, default = false
+   --pacbio_sensitive  [boolean]  Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning, default = false
    --min-store-length  [int length (in bp)]  The minimum sequence length to index. Sequences shorter than this are ignored in the index, default=0
    --threshold  [int]   The threshold for percentage of matching min-mers for a hit to be considered significant. Lowering will output more overlaps but increase false positives, higher will reduce overlaps but remove false positives, default=0.04
-   --filter-threshold [double] The cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored, default = 1.0E-5
+   --filter-threshold  [double]  The cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored, default = 1.0E-5
    --max-shift  [double]  The fraction of the overlap size by which the overlap sizes in two sequences may differ, default=0.2
    --num-threads  [int]  The number of threads to use for computation, default (2 x #cores on system)
    --no-self  Do not compute self-matches for sequences in the -s file, default=false
