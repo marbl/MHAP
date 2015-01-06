@@ -39,8 +39,8 @@ import java.util.logging.LogManager;
 import edu.umd.marbl.mhap.general.FastaData;
 import edu.umd.marbl.mhap.general.MatchResult;
 import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.minhash.MinHashSearch;
-import edu.umd.marbl.mhap.minhash.SequenceMinHashStreamer;
+import edu.umd.marbl.mhap.sketch.MinHashSearch;
+import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
 
 public class AlignmentHashRun 
 {	
@@ -87,7 +87,7 @@ public class AlignmentHashRun
 		data.enqueueFullFile();
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		SequenceMinHashStreamer seqStreamer = new SequenceMinHashStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, 0);
+		SequenceSketchStreamer seqStreamer = new SequenceSketchStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, 0);
 
 		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numWords, DEFAULT_NUM_MIN_MATCHES, numThreads, true, 0, 800, DEFAULT_THRESHOLD);
 		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" sequences.");

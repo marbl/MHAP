@@ -27,13 +27,29 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.general;
+package edu.umd.marbl.mhap.sketch;
 
-import java.io.Serializable;
+import edu.umd.marbl.mhap.general.SequenceId;
 
-public interface SequenceHashes extends Serializable
+public final class KmerInfo
 {
-	public byte[] getAsByteArray();
-	public SequenceId getSequenceId();
-	public int getSequenceLength();
+	private final SequenceId id;
+	private final int pos;
+	
+	public KmerInfo(SequenceId id, int pos)
+	{
+		this.id = id;
+		this.pos = pos;
+	}
+	
+	public SequenceId getId()
+	{
+		return this.id;		
+	}
+	
+	public int getPosition()
+	{
+		return this.pos;		
+	}
+
 }

@@ -27,22 +27,21 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.minhash;
+package edu.umd.marbl.mhap.sketch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashSet;
 
-import edu.umd.marbl.mhap.general.OrderKmerHashes;
 import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.general.SequenceHashes;
 import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
 
-public final class SequenceMinHashes implements SequenceHashes
+public final class SequenceSketch implements Serializable
 {
 	/**
 	 * 
@@ -54,7 +53,7 @@ public final class SequenceMinHashes implements SequenceHashes
 	
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
 	
-	public static SequenceMinHashes fromByteStream(DataInputStream input, int offset) throws IOException
+	public static SequenceSketch fromByteStream(DataInputStream input, int offset) throws IOException
 	{
 		try
 		{
@@ -77,7 +76,7 @@ public final class SequenceMinHashes implements SequenceHashes
 			if (orderedHashes==null)
 				throw new FastAlignRuntimeException("Unexpected data read error.");
 			
-			return new SequenceMinHashes(id, mainHashes, orderedHashes);
+			return new SequenceSketch(id, mainHashes, orderedHashes);
 			
 		}
 		catch (EOFException e)
@@ -86,14 +85,14 @@ public final class SequenceMinHashes implements SequenceHashes
 		}
 	}
 	
-	public SequenceMinHashes(SequenceId id, MinHash mainHashes, OrderKmerHashes orderedHashes)
+	public SequenceSketch(SequenceId id, MinHash mainHashes, OrderKmerHashes orderedHashes)
 	{
 		this.id = id;
 		this.mainHashes = mainHashes;
 		this.orderedHashes = orderedHashes;
 	}
 	
-	public SequenceMinHashes(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, 
+	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, 
 			boolean storeHashes, HashSet<Integer> filter)
 	{
 		this.id = seq.getId();
@@ -101,12 +100,11 @@ public final class SequenceMinHashes implements SequenceHashes
 		this.orderedHashes = new OrderKmerHashes(seq, orderedKmerSize);
 	}
 	
-	public SequenceMinHashes createOffset(int offset)
+	public SequenceSketch createOffset(int offset)
 	{
-		return new SequenceMinHashes(this.id.createOffset(offset), this.mainHashes, this.orderedHashes);
+		return new SequenceSketch(this.id.createOffset(offset), this.mainHashes, this.orderedHashes);
 	}
 	
-	@Override
 	public byte[] getAsByteArray()
 	{
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(this.mainHashes.numHashes()*4+this.orderedHashes.size()*2);
@@ -138,13 +136,11 @@ public final class SequenceMinHashes implements SequenceHashes
 		return this.orderedHashes;
 	}
 	
-	@Override
 	public SequenceId getSequenceId()
 	{
 		return this.id;
 	}
 
-	@Override
 	public int getSequenceLength()
 	{
 		return this.mainHashes.getSequenceLength();

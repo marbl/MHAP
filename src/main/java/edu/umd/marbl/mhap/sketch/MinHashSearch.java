@@ -27,29 +27,33 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.minhash;
+package edu.umd.marbl.mhap.sketch;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
 import edu.umd.marbl.mhap.general.AbstractMatchSearch;
-import edu.umd.marbl.mhap.general.AbstractSequenceHashStreamer;
 import edu.umd.marbl.mhap.general.MatchResult;
 import edu.umd.marbl.mhap.general.OverlapInfo;
 import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
-import edu.umd.marbl.mhap.utils.Utils;
 
-public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashes>
+public final class MinHashSearch extends AbstractMatchSearch
 {
 	public static final class HitInfo
 	{
 		public int count;
 
+		public HitInfo(int count)
+		{
+			this.count = count;
+		}
+		
 		public HitInfo()
 		{
 			this.count = 0;
@@ -63,22 +67,24 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 
 	private final double acceptScore;
 
-	private final HashMap<Integer, ArrayList<SequenceId>> hashes;
+	private final ArrayList<Map<Integer, ArrayList<SequenceId>>> hashes;
 	private final double maxShift;
+	private final AtomicLong minhashSearchTime;
+	private final AtomicLong sortMergeSearchTime;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
-	private final AtomicLong numberSequencesFullyCompared;
 
+	private final AtomicLong numberSequencesFullyCompared;
 	private final AtomicLong numberSequencesHit;
 	private final AtomicLong numberSequencesMinHashed;
 	private final AtomicLong numberSubSequences;
 	private final AtomicLong numberSubSequencesHit;
 
 	private final int numMinMatches;
-	private final HashMap<SequenceId, SequenceMinHashes> sequenceVectorsHash;
+	private final HashMap<SequenceId, SequenceSketch> sequenceVectorsHash;
 
 	
-	public OneMinHashSearch(AbstractSequenceHashStreamer<SequenceMinHashes> data, int numHashes, int numMinMatches, int numThreads, 
+	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
 			boolean storeResults, int minStoreLength, double maxShift, double acceptScore) throws IOException
 	{
 		super(numThreads, storeResults);
@@ -93,26 +99,37 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 		this.numberSubSequences = new AtomicLong();
 		this.numberSequencesMinHashed = new AtomicLong();
 		this.numberElementsProcessed = new AtomicLong();
+		this.minhashSearchTime = new AtomicLong();
+		this.sortMergeSearchTime = new AtomicLong();
 		
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
 
-		this.sequenceVectorsHash = new HashMap<SequenceId, SequenceMinHashes>(data.getNumberProcessed() + 100, (float) 0.75);
+		this.sequenceVectorsHash = new HashMap<SequenceId, SequenceSketch>(data.getNumberProcessed() + 100, (float) 0.75);
 
-		this.hashes = new HashMap<Integer, ArrayList<SequenceId>>(numHashes);
+		this.hashes = new ArrayList<Map<Integer, ArrayList<SequenceId>>>(numHashes);
+		for (int iter = 0; iter < numHashes; iter++)
+		{
+			Map<Integer,ArrayList<SequenceId>> map = new HashMap<Integer, ArrayList<SequenceId>>(data.getNumberSubSequencesProcessed()+100);
+			
+			this.hashes.add(map);
+		}
 		
 		addData(data);
 	}
 
 	@Override
-	public boolean addSequence(SequenceMinHashes currHash)
+	public boolean addSequence(SequenceSketch currHash)
 	{
 		int[] currMinHashes = currHash.getMinHashes().getMinHashArray();
+
+		if (currMinHashes.length != this.hashes.size())
+			throw new FastAlignRuntimeException("Number of minhashes of the sequence does not match current settings.");
 
 		// put the result into the hashmap
 		synchronized (this.sequenceVectorsHash)
 		{
-			SequenceMinHashes minHash = this.sequenceVectorsHash.put(currHash.getSequenceId(), currHash);
+			SequenceSketch minHash = this.sequenceVectorsHash.put(currHash.getSequenceId(), currHash);
 			if (minHash != null)
 			{
 				this.sequenceVectorsHash.put(currHash.getSequenceId(), minHash);
@@ -122,21 +139,22 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 		}
 		
 		// add the hashes
+		int count = 0;
 		SequenceId id = currHash.getSequenceId();
-		for (int count = 0; count<currMinHashes.length; count++)
+		for (Map<Integer, ArrayList<SequenceId>> hash : this.hashes)
 		{
 			ArrayList<SequenceId> currList;
 			final int hashVal = currMinHashes[count];
 
 			// get the list
-			synchronized (this.hashes)
+			synchronized (hash)
 			{
-				currList = this.hashes.get(hashVal);
+				currList = hash.get(hashVal);
 
 				if (currList == null)
 				{
 					currList = new ArrayList<SequenceId>(2);
-					this.hashes.put(hashVal, currList);
+					hash.put(hashVal, currList);
 				}
 			}
 
@@ -145,6 +163,8 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 			{
 				currList.add(id);
 			}
+			
+			count++;
 		}
 
 		//increment the subsequence counter 
@@ -157,16 +177,24 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 	}
 
 	@Override
-	public List<MatchResult> findMatches(SequenceMinHashes seqHashes, boolean toSelf)
+	public List<MatchResult> findMatches(SequenceSketch seqHashes, boolean toSelf)
 	{
+		//for performance reasons might need to change
+		//long startTime = System.nanoTime();
+
 		MinHash minHash = seqHashes.getMinHashes();
+
+		if (this.hashes.size() != minHash.numHashes())
+			throw new FastAlignRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
+					+ ", input size " + minHash.numHashes() + ".");
 
 		HashMap<SequenceId, HitInfo> bestSequenceHit = new HashMap<SequenceId, HitInfo>(this.numberSequencesMinHashed.intValue()/5+1);
 		int[] minHashes = minHash.getMinHashArray();
 		
-		for (int hashIndex=0; hashIndex<minHashes.length; hashIndex++)
+		int hashIndex = 0;
+		for (Map<Integer,ArrayList<SequenceId>> currHash : this.hashes)
 		{
-			ArrayList<SequenceId> currentHashMatchList = this.hashes.get(minHashes[hashIndex]);
+			ArrayList<SequenceId> currentHashMatchList = currHash.get(minHashes[hashIndex]);
 
 			// if some matches exist add them
 			if (currentHashMatchList != null)
@@ -181,15 +209,20 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 					// increment the count
 					if (currentHitInfo == null)
 					{
-						currentHitInfo = new HitInfo();
+						currentHitInfo = new HitInfo(1);
 						bestSequenceHit.put(sequenceId, currentHitInfo);
 					}
-
-					// record the match of the kmer hash
-					currentHitInfo.addHit();
+					else
+						currentHitInfo.addHit();
 				}
 			}
+			
+			hashIndex++;
 		}
+		
+		//record the search time
+		//long minHashEndTime = System.nanoTime();
+		//this.minhashSearchTime.getAndAdd(minHashEndTime - startTime);
 		
 		//record number of hash matches processed
 		this.numberSequencesHit.getAndAdd(bestSequenceHit.size());
@@ -210,7 +243,7 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 			//see if the hit number is high enough			
 			if (match.getValue().count >= this.numMinMatches)
 			{
-				SequenceMinHashes matchedHashes = this.sequenceVectorsHash.get(match.getKey());
+				SequenceSketch matchedHashes = this.sequenceVectorsHash.get(match.getKey());
 				if (matchedHashes==null)
 					throw new FastAlignRuntimeException("Hashes not found for given id.");
 				
@@ -236,7 +269,7 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 				
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
-				
+
 				//if score is good add
 				if (result.score >= this.acceptScore)
 				{
@@ -250,9 +283,25 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 				}
 			}
 		}
+		
+		//record the search time
+		//TODO not clear why not working. Perhaps everything is too fast?
+		//long endTime = System.nanoTime();
+		//this.sortMergeSearchTime.getAndAdd(endTime-minHashEndTime);
 
 		return matches;
 	}
+
+	public double getMinHashSearchTime()
+	{
+		return this.minhashSearchTime.longValue() * 1.0e-9;
+	}
+	
+	public double getSortMergeTime()
+	{
+		return this.sortMergeSearchTime.longValue() * 1.0e-9;
+	}
+
 
 	public long getNumberElementsProcessed()
 	{
@@ -268,7 +317,7 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 	{
 		return this.numberSequencesFullyCompared.get();
 	}
-
+	
 	public long getNumberSequencesHit()
 	{
 		return this.numberSequencesHit.get();
@@ -278,17 +327,12 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 	{
 		return this.numberSubSequencesHit.get();
 	}
-	
-	public double hashTableNormalizedEnthropy()
-	{
-		return Utils.hashEfficiency(this.hashes);
-	}
-	
+		
 	@Override
 	public List<SequenceId> getStoredForwardSequenceIds()
 	{
 		ArrayList<SequenceId> seqIds = new ArrayList<SequenceId>(this.sequenceVectorsHash.size());
-		for (SequenceMinHashes hashes : this.sequenceVectorsHash.values())
+		for (SequenceSketch hashes : this.sequenceVectorsHash.values())
 			if (hashes.getSequenceId().isForward())
 				seqIds.add(hashes.getSequenceId());
 		
@@ -296,7 +340,7 @@ public final class OneMinHashSearch extends AbstractMatchSearch<SequenceMinHashe
 	}
 
 	@Override
-	public SequenceMinHashes getStoredSequenceHash(SequenceId id)
+	public SequenceSketch getStoredSequenceHash(SequenceId id)
 	{
 		return this.sequenceVectorsHash.get(id);
 	}

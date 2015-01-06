@@ -41,11 +41,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.umd.marbl.mhap.sketch.SequenceSketch;
+import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public abstract class AbstractMatchSearch<H extends SequenceHashes>
+public abstract class AbstractMatchSearch
 {
 	private final AtomicLong matchesProcessed;
 	protected final int numThreads;
@@ -54,8 +56,9 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 	private final boolean storeResults;
 
 	public final static int NUM_ELEMENTS_PER_OUTPUT = 20000;
-	protected final static BufferedWriter STD_OUT_BUFFER = new BufferedWriter(new OutputStreamWriter(System.out), Utils.BUFFER_BYTE_SIZE);
-	
+	protected final static BufferedWriter STD_OUT_BUFFER = new BufferedWriter(new OutputStreamWriter(System.out),
+			Utils.BUFFER_BYTE_SIZE);
+
 	public AbstractMatchSearch(int numThreads, boolean storeResults)
 	{
 		this.numThreads = numThreads;
@@ -64,225 +67,226 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 		this.sequencesSearched = new AtomicLong();
 	}
 
-	protected void addData(final AbstractSequenceHashStreamer<H> data)
+	protected void addData(final SequenceSketchStreamer data)
 	{
-		//figure out number of cores
+		// figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
-		
+
 		final AtomicInteger counter = new AtomicInteger();
-	  for (int iter=0; iter<this.numThreads; iter++)
+		for (int iter = 0; iter < this.numThreads; iter++)
 		{
 			Runnable task = new Runnable()
-			{					
+			{
 				@Override
 				public void run()
 				{
 					try
 					{
 						ReadBuffer buf = new ReadBuffer();
-			    	H seqHashes = data.dequeue(false, buf);
-				    while(seqHashes != null)
-				    {
-			    		addSequence(seqHashes);
+						SequenceSketch seqHashes = data.dequeue(false, buf);
+						while (seqHashes != null)
+						{
+							addSequence(seqHashes);
 
-			    		int currCount = counter.incrementAndGet();
-				    	if (currCount%5000==0)
-				    		System.err.println("Current # sequences stored: "+currCount+"...");
-				    	
-				    	seqHashes = data.dequeue(false, buf);
-				    }
-			    }
+							int currCount = counter.incrementAndGet();
+							if (currCount % 5000 == 0)
+								System.err.println("Current # sequences stored: " + currCount + "...");
+
+							seqHashes = data.dequeue(false, buf);
+						}
+					}
 					catch (IOException e)
 					{
 						throw new FastAlignRuntimeException(e);
 					}
 				}
 			};
-		
-	  	//enqueue the task
-			execSvc.execute(task);					
+
+			// enqueue the task
+			execSvc.execute(task);
 		}
-		
-		//shutdown the service
-	  execSvc.shutdown();
-	  try
+
+		// shutdown the service
+		execSvc.shutdown();
+		try
 		{
 			execSvc.awaitTermination(365L, TimeUnit.DAYS);
-		} 
-	  catch (InterruptedException e) 
-	  {
-	  	execSvc.shutdownNow();
-	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
-	  }
+		}
+		catch (InterruptedException e)
+		{
+			execSvc.shutdownNow();
+			throw new FastAlignRuntimeException("Unable to finish all tasks.");
+		}
 	}
-	
-	protected abstract boolean addSequence(H seqHashes);
-	
+
+	protected abstract boolean addSequence(SequenceSketch seqHashes);
+
 	public ArrayList<MatchResult> findMatches()
 	{
-		//figure out number of cores
+		// figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
-		
-		//allocate the storage and get the list of valeus
+
+		// allocate the storage and get the list of valeus
 		final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
-		final ConcurrentLinkedQueue<SequenceId> seqList = new ConcurrentLinkedQueue<SequenceId>(getStoredForwardSequenceIds());
-	
-		//for each thread create a task
-	  for (int iter=0; iter<this.numThreads; iter++)
+		final ConcurrentLinkedQueue<SequenceId> seqList = new ConcurrentLinkedQueue<SequenceId>(
+				getStoredForwardSequenceIds());
+
+		// for each thread create a task
+		for (int iter = 0; iter < this.numThreads; iter++)
 		{
 			Runnable task = new Runnable()
-			{ 			
+			{
 				@Override
 				public void run()
 				{
-	  			List<MatchResult> localMatches = new ArrayList<MatchResult>();
+					List<MatchResult> localMatches = new ArrayList<MatchResult>();
 
-      		//get next sequence
-	  			SequenceId nextSequence = seqList.poll();
+					// get next sequence
+					SequenceId nextSequence = seqList.poll();
 
-	  			while (nextSequence!=null)
-			    {		    		
-		    		H sequenceHashes = getStoredSequenceHash(nextSequence);
-		    		
-		    		//only search the forward sequences
-	      		localMatches.addAll(findMatches(sequenceHashes, true));
-	      		
-	      		//record search
-	      		AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
-		    		
-	      		//get next sequence
-		    		nextSequence = seqList.poll();
+					while (nextSequence != null)
+					{
+						SequenceSketch sequenceHashes = getStoredSequenceHash(nextSequence);
 
-		    		//output stored results
-		    		if (nextSequence==null || localMatches.size()>=NUM_ELEMENTS_PER_OUTPUT)
-		    		{
-			    		//count the number of matches
-			  			AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
-				    	
-			  			if (AbstractMatchSearch.this.storeResults)
-			  			{	  			
-				    		//combine the results
-				    		synchronized (combinedList)
+						// only search the forward sequences
+						localMatches.addAll(findMatches(sequenceHashes, true));
+
+						// record search
+						AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
+
+						// get next sequence
+						nextSequence = seqList.poll();
+
+						// output stored results
+						if (nextSequence == null || localMatches.size() >= NUM_ELEMENTS_PER_OUTPUT)
+						{
+							// count the number of matches
+							AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
+
+							if (AbstractMatchSearch.this.storeResults)
+							{
+								// combine the results
+								synchronized (combinedList)
 								{
 									combinedList.addAll(localMatches);
 								}
-			  			}
-			  			else
-			  				outputResults(localMatches);
-			  			
-			  			localMatches.clear();
-		    		}
-			    }
+							}
+							else
+								outputResults(localMatches);
+
+							localMatches.clear();
+						}
+					}
 				}
 			};
-		
-	  	//enqueue the task
-			execSvc.execute(task);					
+
+			// enqueue the task
+			execSvc.execute(task);
 		}
-		
-		//shutdown the service
-	  execSvc.shutdown();
-	  try
+
+		// shutdown the service
+		execSvc.shutdown();
+		try
 		{
 			execSvc.awaitTermination(365L, TimeUnit.DAYS);
-		} 
-	  catch (InterruptedException e) 
-	  {
-	  	execSvc.shutdownNow();
-	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
-	  }
-	  
-	  flushOutput();
+		}
+		catch (InterruptedException e)
+		{
+			execSvc.shutdownNow();
+			throw new FastAlignRuntimeException("Unable to finish all tasks.");
+		}
 
-	  return combinedList;
+		flushOutput();
+
+		return combinedList;
 	}
 
-	public ArrayList<MatchResult> findMatches(final AbstractSequenceHashStreamer<H> data) throws IOException
+	protected abstract List<MatchResult> findMatches(SequenceSketch hashes, boolean toSelf);
+
+	public ArrayList<MatchResult> findMatches(final SequenceSketchStreamer data) throws IOException
 	{
-		//figure out number of cores
+		// figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
-		
-		//allocate the storage and get the list of valeus
+
+		// allocate the storage and get the list of valeus
 		final ArrayList<MatchResult> combinedList = new ArrayList<MatchResult>();
-	
-		//for each thread create a task
-	  for (int iter=0; iter<this.numThreads; iter++)
+
+		// for each thread create a task
+		for (int iter = 0; iter < this.numThreads; iter++)
 		{
 			Runnable task = new Runnable()
-			{ 			
+			{
 				@Override
 				public void run()
 				{
-	  			List<MatchResult> localMatches = new ArrayList<MatchResult>();
-	  			
-	  			try
-	  			{
-	  				ReadBuffer buf = new ReadBuffer();
-	  				
-		  			H sequenceHashes = data.dequeue(true, buf);
-	
-		  			while (sequenceHashes!=null)
-				    {		    		
-			    		//only search the forward sequences
-		      		localMatches.addAll(findMatches(sequenceHashes, false));
-	
-		      		//record search
-		      		AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
-		      		
-		      		//get the sequence hashes
-		      		sequenceHashes = data.dequeue(true, buf);			    		
+					List<MatchResult> localMatches = new ArrayList<MatchResult>();
 
-			    		//output stored results
-			    		if (sequenceHashes==null || localMatches.size()>=NUM_ELEMENTS_PER_OUTPUT)
-			    		{
-				    		//count the number of matches
-				  			AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
-					    	
-				  			if (AbstractMatchSearch.this.storeResults)
-				  			{	  			
-					    		//combine the results
-					    		synchronized (combinedList)
+					try
+					{
+						ReadBuffer buf = new ReadBuffer();
+
+						SequenceSketch sequenceHashes = data.dequeue(true, buf);
+
+						while (sequenceHashes != null)
+						{
+							// only search the forward sequences
+							localMatches.addAll(findMatches(sequenceHashes, false));
+
+							// record search
+							AbstractMatchSearch.this.sequencesSearched.getAndIncrement();
+
+							// get the sequence hashes
+							sequenceHashes = data.dequeue(true, buf);
+
+							// output stored results
+							if (sequenceHashes == null || localMatches.size() >= NUM_ELEMENTS_PER_OUTPUT)
+							{
+								// count the number of matches
+								AbstractMatchSearch.this.matchesProcessed.getAndAdd(localMatches.size());
+
+								if (AbstractMatchSearch.this.storeResults)
+								{
+									// combine the results
+									synchronized (combinedList)
 									{
 										combinedList.addAll(localMatches);
 									}
-				  			}
-				  			else
-				  				outputResults(localMatches);
-				  			
-				  			localMatches.clear();
-			    		}
-				    }
-		  		}
-	  			catch (IOException e)
-	  			{
-	  				throw new FastAlignRuntimeException(e);
-	  			}
+								}
+								else
+									outputResults(localMatches);
+
+								localMatches.clear();
+							}
+						}
+					}
+					catch (IOException e)
+					{
+						throw new FastAlignRuntimeException(e);
+					}
 				}
 			};
-		
-	  	//enqueue the task
-			execSvc.execute(task);					
+
+			// enqueue the task
+			execSvc.execute(task);
 		}
-		
-		//shutdown the service
-	  execSvc.shutdown();
-	  try
+
+		// shutdown the service
+		execSvc.shutdown();
+		try
 		{
 			execSvc.awaitTermination(365L, TimeUnit.DAYS);
-		} 
-	  catch (InterruptedException e) 
-	  {
-	  	execSvc.shutdownNow();
-	  	throw new FastAlignRuntimeException("Unable to finish all tasks.");
-	  }
-		
-	  flushOutput();
-	  
-		return combinedList;	
+		}
+		catch (InterruptedException e)
+		{
+			execSvc.shutdownNow();
+			throw new FastAlignRuntimeException("Unable to finish all tasks.");
+		}
+
+		flushOutput();
+
+		return combinedList;
 	}
 
-	protected abstract List<MatchResult> findMatches(H hashes, boolean toSelf);
-	
 	protected void flushOutput()
 	{
 		try
@@ -294,7 +298,7 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 			throw new FastAlignRuntimeException(e);
 		}
 	}
-	
+
 	public long getMatchesProcessed()
 	{
 		return this.matchesProcessed.get();
@@ -310,13 +314,13 @@ public abstract class AbstractMatchSearch<H extends SequenceHashes>
 
 	public abstract List<SequenceId> getStoredForwardSequenceIds();
 
-	public abstract H getStoredSequenceHash(SequenceId id);
+	public abstract SequenceSketch getStoredSequenceHash(SequenceId id);
 
 	protected void outputResults(List<MatchResult> matches)
 	{
 		if (this.storeResults || matches.isEmpty())
 			return;
-		
+
 		try
 		{
 			synchronized (STD_OUT_BUFFER)

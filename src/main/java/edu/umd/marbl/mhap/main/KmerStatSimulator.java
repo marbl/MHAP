@@ -43,7 +43,7 @@ import java.io.PrintStream;
 import edu.umd.marbl.mhap.general.FastaData;
 import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.general.SequenceId;
-import edu.umd.marbl.mhap.minhash.MinHash;
+import edu.umd.marbl.mhap.sketch.MinHash;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class KmerStatSimulator {

@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.minhash;
+package edu.umd.marbl.mhap.sketch;
 
 import java.io.DataInputStream;
 import java.io.EOFException;

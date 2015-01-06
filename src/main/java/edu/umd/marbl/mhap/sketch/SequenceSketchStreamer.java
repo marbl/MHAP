@@ -27,13 +27,20 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.general;
+package edu.umd.marbl.mhap.sketch;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -41,26 +48,29 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.umd.marbl.mhap.general.FastaData;
+import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
+public class SequenceSketchStreamer
 {
+	private final DataInputStream buffInput;
+	private final HashSet<Integer> filter;
+	private final int kmerSize;
+	private final AtomicLong numberSubSequencesProcessed;
+	private final int numHashes;
+	private final int offset;
+	private boolean readClosed;
+	private final int orderedKmerSize;
+	
 	private final FastaData fastaData;
 	private final AtomicLong numberProcessed;
 	private final boolean readingFasta;
-	private final ConcurrentLinkedQueue<H> sequenceHashList;
+	private final ConcurrentLinkedQueue<SequenceSketch> sequenceHashList;
 
-	public AbstractSequenceHashStreamer(FastaData data, boolean readingFasta)
-	{
-		this.fastaData = data;
-		this.readingFasta = readingFasta;
-		this.sequenceHashList = new ConcurrentLinkedQueue<H>();
-		this.numberProcessed = new AtomicLong();
-	}
-
-	public H dequeue(boolean fwdOnly, ReadBuffer buf) throws IOException
+	public SequenceSketch dequeue(boolean fwdOnly, ReadBuffer buf) throws IOException
 	{
 		enqueue(fwdOnly, buf);
 
@@ -69,7 +79,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 
 	private boolean enqueue(boolean fwdOnly, ReadBuffer buf) throws IOException
 	{
-		H seqHashes;
+		SequenceSketch seqHashes;
 		if (this.readingFasta)
 		{
 			Sequence seq = this.fastaData.dequeue();
@@ -171,19 +181,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 		return this.fastaData.getNumberProcessed();
 	}
 
-	public abstract H getHashes(Sequence seq);
-
-	protected void processAddition(H seqHashes)
-	{
-		// increment counter
-		this.numberProcessed.getAndIncrement();
-
-		int numProcessed = getNumberProcessed();
-		if (numProcessed % 5000 == 0)
-			System.err.println("Current # sequences loaded and processed from file: " + numProcessed + "...");
-	}
-
-	public Iterator<H> getDataIterator()
+	public Iterator<SequenceSketch> getDataIterator()
 	{
 		return this.sequenceHashList.iterator();
 	}
@@ -192,13 +190,6 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 	{
 		return this.numberProcessed.intValue();
 	}
-
-	public int getNumberSubSequencesProcessed()
-	{
-		return this.getNumberProcessed();
-	}
-
-	protected abstract H readFromBinary(ReadBuffer buf, boolean fwdOnly) throws IOException;
 
 	public void writeToBinary(String file, final boolean fwdOnly, int numThreads) throws IOException
 	{
@@ -219,7 +210,7 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 					@Override
 					public void run()
 					{
-						H seqHashes;
+						SequenceSketch seqHashes;
 						ReadBuffer buf = new ReadBuffer();
 
 						try
@@ -274,4 +265,108 @@ public abstract class AbstractSequenceHashStreamer<H extends SequenceHashes>
 				output.close();
 		}
 	}
+
+	public SequenceSketchStreamer(String file, int offset) throws FileNotFoundException
+	{
+		this.fastaData = null;
+		this.readingFasta = false;
+		this.sequenceHashList = new ConcurrentLinkedQueue<SequenceSketch>();
+		this.numberProcessed = new AtomicLong();
+		
+		this.kmerSize = 0;
+		this.numHashes = 0;
+		this.orderedKmerSize = 0;
+		this.filter = null;
+		this.numberSubSequencesProcessed = new AtomicLong();
+		this.readClosed = false;
+		this.offset = offset;
+
+		this.buffInput = new DataInputStream(new BufferedInputStream(new FileInputStream(file), Utils.BUFFER_BYTE_SIZE));  	
+	}
+	
+	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int subSequenceSize, int orderedKmerSize, 
+			HashSet<Integer> filter, int offset) throws IOException
+	{	
+		this.fastaData = new FastaData(file, offset);
+		this.readingFasta = true;
+		this.sequenceHashList = new ConcurrentLinkedQueue<SequenceSketch>();
+		this.numberProcessed = new AtomicLong();
+
+		this.kmerSize = kmerSize;
+		this.numHashes = numHashes;
+		this.orderedKmerSize = orderedKmerSize;
+		this.filter = filter;
+		this.numberSubSequencesProcessed = new AtomicLong();
+		this.buffInput = null;
+		this.readClosed = false;
+		this.offset = offset;
+	}
+
+	public SequenceSketch getHashes(Sequence seq)
+	{
+		//compute the hashes
+		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.filter);
+	}
+	
+	public int getNumberSubSequencesProcessed()
+	{
+		return this.numberSubSequencesProcessed.intValue();
+	}
+
+	protected void processAddition(SequenceSketch seqHashes)
+	{
+		// increment counter
+		this.numberProcessed.getAndIncrement();
+
+		int numProcessed = getNumberProcessed();
+		if (numProcessed % 5000 == 0)
+			System.err.println("Current # sequences loaded and processed from file: " + numProcessed + "...");
+
+		if (seqHashes!=null)
+			this.numberSubSequencesProcessed.getAndAdd(1);
+	}
+
+	protected SequenceSketch readFromBinary(ReadBuffer buf, boolean fwdOnly) throws IOException
+	{
+		byte[] byteArray = null;
+		synchronized (this.buffInput)
+		{
+			if (this.readClosed)
+				return null;
+			
+			try
+			{
+				boolean keepReading = true;
+				while(keepReading)
+				{
+					byte isFwd = this.buffInput.readByte();
+					
+					if (!fwdOnly || isFwd==1)
+						keepReading = false;
+					
+					//get the size in bytes
+					int byteSize = this.buffInput.readInt();
+					
+					//allocate the array
+					byteArray = buf.getBuffer(byteSize);
+					//byteArray = new byte[byteSize];				
+					
+					//read that many bytes
+					this.buffInput.read(byteArray, 0, byteSize);
+				}
+			}
+			catch(EOFException e)
+			{
+	  		this.buffInput.close();
+	  		this.readClosed = true;			
+	  		
+	  		return null;
+			}
+		}
+			
+		//get as byte array stream
+  	SequenceSketch seqHashes = SequenceSketch.fromByteStream(new DataInputStream(new ByteArrayInputStream(byteArray)), this.offset);
+
+  	return seqHashes;
+  }
 }
