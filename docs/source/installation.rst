@@ -38,7 +38,7 @@ Then run
 
 .. code-block:: bash
 
-   $ tar xvzf mhap-0.1.tar.gz
+   $ tar xvzf mhap-1.0.tar.gz
 
 Source
 -----------------
