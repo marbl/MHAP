@@ -1,6 +1,6 @@
 # MHAP
 
-MinHash alignment process (MHAP pronounced MAP): locality sensitive hashing to detect overlaps and utilities.
+MinHash alignment process (MHAP pronounced MAP): locality sensitive hashing to detect overlaps and utilities. This is the development branch, please use the [latest tagged](https://github.com/marbl/MHAP/releases/tag/v1.0).
 
 ## Build
 
