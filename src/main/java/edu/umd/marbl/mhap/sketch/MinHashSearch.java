@@ -41,30 +41,11 @@ import edu.umd.marbl.mhap.general.AbstractMatchSearch;
 import edu.umd.marbl.mhap.general.MatchResult;
 import edu.umd.marbl.mhap.general.OverlapInfo;
 import edu.umd.marbl.mhap.general.SequenceId;
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
+import edu.umd.marbl.mhap.utils.HitCounter;
 
 public final class MinHashSearch extends AbstractMatchSearch
 {
-	public static final class HitInfo
-	{
-		public int count;
-
-		public HitInfo(int count)
-		{
-			this.count = count;
-		}
-		
-		public HitInfo()
-		{
-			this.count = 0;
-		}
-
-		public void addHit()
-		{
-			this.count++;
-		}
-	}
-
 	private final double acceptScore;
 
 	private final ArrayList<Map<Integer, ArrayList<SequenceId>>> hashes;
@@ -116,6 +97,8 @@ public final class MinHashSearch extends AbstractMatchSearch
 		}
 		
 		addData(data);
+		
+		System.err.println("Stored "+this.sequenceVectorsHash.size()+" sequences in the index.");
 	}
 
 	@Override
@@ -124,7 +107,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		int[] currMinHashes = currHash.getMinHashes().getMinHashArray();
 
 		if (currMinHashes.length != this.hashes.size())
-			throw new FastAlignRuntimeException("Number of minhashes of the sequence does not match current settings.");
+			throw new MhapRuntimeException("Number of MinHashes of the sequence does not match current settings.");
 
 		// put the result into the hashmap
 		synchronized (this.sequenceVectorsHash)
@@ -134,7 +117,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 			{
 				this.sequenceVectorsHash.put(currHash.getSequenceId(), minHash);
 
-				throw new FastAlignRuntimeException("Sequence id already exists in the hashtable.");
+				throw new MhapRuntimeException("Sequence ID already exists in the hash table.");
 			}			
 		}
 		
@@ -185,10 +168,10 @@ public final class MinHashSearch extends AbstractMatchSearch
 		MinHash minHash = seqHashes.getMinHashes();
 
 		if (this.hashes.size() != minHash.numHashes())
-			throw new FastAlignRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
+			throw new MhapRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
 					+ ", input size " + minHash.numHashes() + ".");
 
-		HashMap<SequenceId, HitInfo> bestSequenceHit = new HashMap<SequenceId, HitInfo>(this.numberSequencesMinHashed.intValue()/5+1);
+		HashMap<SequenceId, HitCounter> bestSequenceHit = new HashMap<SequenceId, HitCounter>(this.numberSequencesMinHashed.intValue()/5+1);
 		int[] minHashes = minHash.getMinHashArray();
 		
 		int hashIndex = 0;
@@ -204,12 +187,12 @@ public final class MinHashSearch extends AbstractMatchSearch
 				for (SequenceId sequenceId : currentHashMatchList)
 				{
 					// get current count in the list
-					HitInfo currentHitInfo = bestSequenceHit.get(sequenceId);
+					HitCounter currentHitInfo = bestSequenceHit.get(sequenceId);
 
 					// increment the count
 					if (currentHitInfo == null)
 					{
-						currentHitInfo = new HitInfo(1);
+						currentHitInfo = new HitCounter(1);
 						bestSequenceHit.put(sequenceId, currentHitInfo);
 					}
 					else
@@ -231,7 +214,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		// compute the proper counts for all sets and remove below threshold
 		ArrayList<MatchResult> matches = new ArrayList<MatchResult>(32);
 		
-		for (Entry<SequenceId, HitInfo> match : bestSequenceHit.entrySet())
+		for (Entry<SequenceId, HitCounter> match : bestSequenceHit.entrySet())
 		{
 			//get the match id
 			SequenceId matchId = match.getKey();
@@ -245,7 +228,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 			{
 				SequenceSketch matchedHashes = this.sequenceVectorsHash.get(match.getKey());
 				if (matchedHashes==null)
-					throw new FastAlignRuntimeException("Hashes not found for given id.");
+					throw new MhapRuntimeException("Hashes not found for given id.");
 				
 				//never process short to short
 				if (matchedHashes.getSequenceLength()<this.minStoreLength && seqHashes.getSequenceLength()<this.minStoreLength)

@@ -29,7 +29,7 @@
  */
 package edu.umd.marbl.mhap.utils;
 
-public class FastAlignRuntimeException extends RuntimeException
+public class MhapRuntimeException extends RuntimeException
 {
 
 	/**
@@ -37,22 +37,22 @@ public class FastAlignRuntimeException extends RuntimeException
 	 */
 	private static final long serialVersionUID = 56387323839744808L;
 
-	public FastAlignRuntimeException()
+	public MhapRuntimeException()
 	{
 		super();
 	}
 
-	public FastAlignRuntimeException(String message, Throwable cause)
+	public MhapRuntimeException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 
-	public FastAlignRuntimeException(String message)
+	public MhapRuntimeException(String message)
 	{
 		super(message);
 	}
 
-	public FastAlignRuntimeException(Throwable cause)
+	public MhapRuntimeException(Throwable cause)
 	{
 		super(cause);
 	}

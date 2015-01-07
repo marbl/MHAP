@@ -39,7 +39,7 @@ import java.util.HashSet;
 
 import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.general.SequenceId;
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 
 public final class SequenceSketch implements Serializable
 {
@@ -47,6 +47,7 @@ public final class SequenceSketch implements Serializable
 	 * 
 	 */
 	private static final long serialVersionUID = -3155689614837922443L;
+	
 	private final SequenceId id;
 	private final MinHash mainHashes;
 	private final OrderKmerHashes orderedHashes;
@@ -69,12 +70,12 @@ public final class SequenceSketch implements Serializable
 			MinHash mainHashes = MinHash.fromByteStream(input);
 			
 			if (mainHashes==null)
-				throw new FastAlignRuntimeException("Unexpected data read error.");
+				throw new MhapRuntimeException("Unexpected data read error.");
 			
 			//dos.write(this.orderedHashes.getAsByteArray());
 			OrderKmerHashes orderedHashes = OrderKmerHashes.fromByteStream(input);
 			if (orderedHashes==null)
-				throw new FastAlignRuntimeException("Unexpected data read error.");
+				throw new MhapRuntimeException("Unexpected data read error.");
 			
 			return new SequenceSketch(id, mainHashes, orderedHashes);
 			
@@ -93,10 +94,10 @@ public final class SequenceSketch implements Serializable
 	}
 	
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, 
-			boolean storeHashes, HashSet<Integer> filter)
+			boolean storeHashes, HashSet<Integer> filter, KmerCounts kmerCount)
 	{
 		this.id = seq.getId();
-		this.mainHashes = new MinHash(seq, kmerSize, numHashes, filter);
+		this.mainHashes = new MinHash(seq, kmerSize, numHashes, filter, kmerCount);
 		this.orderedHashes = new OrderKmerHashes(seq, orderedKmerSize);
 	}
 	
@@ -122,7 +123,7 @@ public final class SequenceSketch implements Serializable
 		}
     catch (IOException e)
     {
-    	throw new FastAlignRuntimeException("Unexpected IO error.");
+    	throw new MhapRuntimeException("Unexpected IO error.");
     }
 	}
 

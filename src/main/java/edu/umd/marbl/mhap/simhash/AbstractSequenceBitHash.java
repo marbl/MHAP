@@ -29,7 +29,7 @@
  */
 package edu.umd.marbl.mhap.simhash;
 
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 
 public abstract class AbstractSequenceBitHash<T extends AbstractSequenceBitHash<T>> implements VectorHash<T>, Comparable<T>
 {
@@ -64,7 +64,7 @@ public abstract class AbstractSequenceBitHash<T extends AbstractSequenceBitHash<
 	public final int getIntersectionCount(final T sh)
 	{
 		if (this.bits.length!=sh.bits.length)
-			throw new FastAlignRuntimeException("Size of bits in tables must match.");
+			throw new MhapRuntimeException("Size of bits in tables must match.");
 		
 		int count = 0;
 	  for (int longIndex=0; longIndex<this.bits.length; longIndex++)

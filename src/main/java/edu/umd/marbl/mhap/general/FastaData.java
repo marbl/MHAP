@@ -35,7 +35,7 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class FastaData implements Cloneable
@@ -68,7 +68,7 @@ public class FastaData implements Cloneable
 		}
 		catch (Exception e)
 		{
-			throw new FastAlignRuntimeException(e);
+			throw new MhapRuntimeException(e);
 		}
 
 		this.offset = offset;
@@ -93,7 +93,7 @@ public class FastaData implements Cloneable
 		}
 		catch (IOException e)
 		{
-			throw new FastAlignRuntimeException(e);
+			throw new MhapRuntimeException(e);
 		}
 
 		return new FastaData(this.sequenceList);
@@ -146,7 +146,7 @@ public class FastaData implements Cloneable
 
 			// process the header
 			if (!this.lastLine.startsWith(">"))
-				throw new FastAlignRuntimeException("Next sequence does not start with >. Invalid format.");
+				throw new MhapRuntimeException("Next sequence does not start with >. Invalid format.");
 
 			// process the current header
 			String header = null;

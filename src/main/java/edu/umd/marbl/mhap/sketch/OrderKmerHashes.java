@@ -39,7 +39,7 @@ import java.util.Arrays;
 
 import edu.umd.marbl.mhap.general.OverlapInfo;
 import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class OrderKmerHashes 
@@ -169,7 +169,7 @@ public class OrderKmerHashes
 		}
     catch (IOException e)
     {
-    	throw new FastAlignRuntimeException("Unexpected IO error.");
+    	throw new MhapRuntimeException("Unexpected IO error.");
     }
 	}
 	

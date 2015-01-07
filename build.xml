@@ -4,7 +4,7 @@
 	
   <!-- ========== Component Declarations ==================================== -->
 
-    <property name="component.version"       value="1.0"/>
+    <property name="component.version"       value="2.0b1"/>
 
     <!-- The name of this component -->
     <property name="copyright.name"          value="Konstantin Berlin and Sergey Koren"/>
@@ -75,8 +75,8 @@
     <property name="compile.optimize"        value="true"/>
       
     <!-- JDK level -->
-    <property name="compile.source"          value="1.7"/>
-    <property name="compile.target"          value="1.7"/>
+    <property name="compile.source"          value="1.8"/>
+    <property name="compile.target"          value="1.8"/>
 
     <!-- Base compile classpath -->
   

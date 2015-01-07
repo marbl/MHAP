@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import edu.umd.marbl.mhap.sketch.SequenceSketch;
 import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;
 
@@ -97,7 +97,7 @@ public abstract class AbstractMatchSearch
 					}
 					catch (IOException e)
 					{
-						throw new FastAlignRuntimeException(e);
+						throw new MhapRuntimeException(e);
 					}
 				}
 			};
@@ -115,7 +115,7 @@ public abstract class AbstractMatchSearch
 		catch (InterruptedException e)
 		{
 			execSvc.shutdownNow();
-			throw new FastAlignRuntimeException("Unable to finish all tasks.");
+			throw new MhapRuntimeException("Unable to finish all tasks.");
 		}
 	}
 
@@ -193,7 +193,7 @@ public abstract class AbstractMatchSearch
 		catch (InterruptedException e)
 		{
 			execSvc.shutdownNow();
-			throw new FastAlignRuntimeException("Unable to finish all tasks.");
+			throw new MhapRuntimeException("Unable to finish all tasks.");
 		}
 
 		flushOutput();
@@ -261,7 +261,7 @@ public abstract class AbstractMatchSearch
 					}
 					catch (IOException e)
 					{
-						throw new FastAlignRuntimeException(e);
+						throw new MhapRuntimeException(e);
 					}
 				}
 			};
@@ -279,7 +279,7 @@ public abstract class AbstractMatchSearch
 		catch (InterruptedException e)
 		{
 			execSvc.shutdownNow();
-			throw new FastAlignRuntimeException("Unable to finish all tasks.");
+			throw new MhapRuntimeException("Unable to finish all tasks.");
 		}
 
 		flushOutput();
@@ -295,7 +295,7 @@ public abstract class AbstractMatchSearch
 		}
 		catch (IOException e)
 		{
-			throw new FastAlignRuntimeException(e);
+			throw new MhapRuntimeException(e);
 		}
 	}
 
@@ -336,7 +336,7 @@ public abstract class AbstractMatchSearch
 		}
 		catch (IOException e)
 		{
-			throw new FastAlignRuntimeException(e);
+			throw new MhapRuntimeException(e);
 		}
 	}
 

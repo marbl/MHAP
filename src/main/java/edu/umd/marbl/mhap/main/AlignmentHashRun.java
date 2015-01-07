@@ -87,7 +87,7 @@ public class AlignmentHashRun
 		data.enqueueFullFile();
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		SequenceSketchStreamer seqStreamer = new SequenceSketchStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, 0);
+		SequenceSketchStreamer seqStreamer = new SequenceSketchStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, null, 0);
 
 		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numWords, DEFAULT_NUM_MIN_MATCHES, numThreads, true, 0, 800, DEFAULT_THRESHOLD);
 		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" sequences.");

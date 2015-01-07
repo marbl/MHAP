@@ -36,11 +36,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import edu.umd.marbl.mhap.general.FastaData;
+import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.general.SequenceId;
+import edu.umd.marbl.mhap.sketch.CountMin;
+import edu.umd.marbl.mhap.sketch.KmerCounts;
 import edu.umd.marbl.mhap.sketch.MinHashSearch;
 import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
@@ -72,6 +80,8 @@ public final class MhapMain
 	private final int subSequenceSize;
 
 	private final String toFile;
+	
+	private final KmerCounts kmerCounter;
 
 	private static final double DEFAULT_ACCEPT_SCORE = 0.04;
 
@@ -116,17 +126,27 @@ public final class MhapMain
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
 		options.addOption("--pacbio_fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
 		options.addOption("--pacbio_sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--pacbio_experimental", "Set all the parameters for the PacBio experimental settings. This is the current best guidance, and could change at any time without warning.", false);
 		
 		if (!options.process(args))
 			System.exit(0);
 		
 		//set the defaults for different type of data
-		if (options.get("--pacbio_fast").getBoolean() || options.get("--pacbio_sensitive").getBoolean())
+		if (options.get("--pacbio_fast").getBoolean() || options.get("--pacbio_sensitive").getBoolean() || options.get("--pacbio_experimental").getBoolean())
 		{
 			if (!options.get("-k").isSet())
+			{
 				options.setOptions("-k", 16);
+				if (options.get("--pacbio_experimental").getBoolean())
+					options.setOptions("-k", 14);
+			}
+			
 			if (!options.get("--num-min-matches").isSet())
+			{
 				options.setOptions("--num-min-matches", 3);
+				if (options.get("--pacbio_experimental").getBoolean())
+					options.setOptions("--num-min-matches", 1);
+			}
 			
 			if (options.get("--pacbio_fast").getBoolean() && options.get("--pacbio_sensitive").getBoolean())
 			{
@@ -141,6 +161,9 @@ public final class MhapMain
 					options.setOptions("--num-hashes", 512);
 				else
 				if (options.get("--pacbio_sensitive").getBoolean())
+					options.setOptions("--num-hashes", 1256);
+				else
+				if (options.get("--pacbio_experimental").getBoolean())
 					options.setOptions("--num-hashes", 1256);
 			}
 		}		
@@ -251,7 +274,7 @@ public final class MhapMain
 	}
 	
 
-	public MhapMain(ParseOptions options)
+	public MhapMain(ParseOptions options) throws IOException 
 	{
 		this.processFile = options.get("-p").getString();
 		this.inFile = options.get("-s").getString();
@@ -266,7 +289,9 @@ public final class MhapMain
 		this.minStoreLength = options.get("--min-store-length").getInteger();
 		this.maxShift = options.get("--max-shift").getDouble();
 		this.acceptScore = options.get("--threshold").getDouble();
-		
+
+		this.kmerCounter = recordFastaKmerCounts(inFile);		
+	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
 		
@@ -280,13 +305,78 @@ public final class MhapMain
 			}
 			catch (Exception e)
 			{
-				throw new FastAlignRuntimeException("Could not parse k-mer filter file.", e);
+				throw new MhapRuntimeException("Could not parse k-mer filter file.", e);
 			}
 			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
 		}
 		else
 			this.filter = null;
 
+	}
+	
+	public KmerCounts recordFastaKmerCounts(String file) throws IOException
+	{
+		final FastaData data = new FastaData(this.inFile, 0);
+		
+		final CountMin<Integer> countMin = new CountMin<>(1.0e-5, 1.0-1.0e-5, 0);
+		//System.err.println(countMin.getDepth()+" "+countMin.getWidth());
+		
+		// figure out number of cores
+		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
+
+		final AtomicInteger counter = new AtomicInteger();
+		for (int iter = 0; iter < this.numThreads; iter++)
+		{
+			Runnable task = new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					try
+					{
+						Sequence seq = data.dequeue();
+						while (seq != null)
+						{
+							//get the kmers integers
+							int[] kmerHashes = Utils.computeSequenceHashes(seq.getString(), MhapMain.this.kmerSize);
+							
+							//store the values
+							for (int val : kmerHashes)
+								countMin.add(val);
+
+							int currCount = counter.incrementAndGet();
+							if (currCount % 5000 == 0)
+								System.err.println("Kmers counted for # sequences: " + currCount + "...");
+
+							seq = data.dequeue();
+						}
+					}
+					catch (IOException e)
+					{
+						throw new MhapRuntimeException(e);
+					}
+				}
+			};
+
+			// enqueue the task
+			execSvc.execute(task);
+		}
+
+		// shutdown the service
+		execSvc.shutdown();
+		try
+		{
+			execSvc.awaitTermination(365L, TimeUnit.DAYS);
+		}
+		catch (InterruptedException e)
+		{
+			execSvc.shutdownNow();
+			throw new MhapRuntimeException("Unable to finish all tasks.");
+		}
+		
+		System.err.println("Computed k-mer counts for "+counter.get()+" sequences.");
+		
+		return new KmerCounts(countMin, counter.get());
 	}
 
 	public void computeMain() throws IOException
@@ -300,14 +390,14 @@ public final class MhapMain
 		{
 			File file = new File(this.processFile);			
 			if (!file.exists())
-				throw new FastAlignRuntimeException("Process file does not exist.");
+				throw new MhapRuntimeException("Process file does not exist.");
 
 			if (this.toFile==null || this.toFile.isEmpty())
-				throw new FastAlignRuntimeException("Target directory must be defined.");
+				throw new MhapRuntimeException("Target directory must be defined.");
 			
 			File toDirectory = new File(this.toFile);
 			if (!toDirectory.exists() || !toDirectory.isDirectory())
-				throw new FastAlignRuntimeException("Target directory doesn't exit.");
+				throw new MhapRuntimeException("Target directory doesn't exit.");
 			
 			//allocate directory files
 			ArrayList<File> processFiles = new ArrayList<>();
@@ -391,7 +481,7 @@ public final class MhapMain
 					File file = new File(this.toFile);
 					
 					if (!file.exists())
-						throw new FastAlignRuntimeException("To-file does not exist.");
+						throw new MhapRuntimeException("To-file does not exist.");
 					
 					ArrayList<File> toFiles = new ArrayList<>();
 					
@@ -475,7 +565,7 @@ public final class MhapMain
 			seqStreamer = new SequenceSketchStreamer(file, offset);
 		else
 			seqStreamer = new SequenceSketchStreamer(file, this.kmerSize, this.numHashes, this.subSequenceSize,
-					DEFAULT_ORDERED_KMER_SIZE, this.filter, offset);
+					DEFAULT_ORDERED_KMER_SIZE, this.filter, this.kmerCounter, offset);
 
 		return seqStreamer;
 	}
