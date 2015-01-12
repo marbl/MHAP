@@ -8,6 +8,6 @@ public interface Counter<T extends Object>
 
 	public long maxCount();
 
-	public void add(T obj, int count);
+	public void add(T obj, long count);
 
 }

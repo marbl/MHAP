@@ -77,6 +77,7 @@ public class OrderKmerHashes
 	private final int seqLength;
 
 	public final static int MAX_ARRAY_SIZE = 1000;
+	public final static int REDUCTION = 4;
 	
 	private final static int[][][] allocateMemory(int size)
 	{
@@ -143,7 +144,7 @@ public class OrderKmerHashes
 	
 	public OrderKmerHashes(Sequence seq, int kmerSize)
 	{
-		this.seqLength = seq.length();
+		this.seqLength = seq.length()-kmerSize+1;
 		this.orderedHashes = getFullHashes(seq, kmerSize);
 	}
 
@@ -207,171 +208,30 @@ public class OrderKmerHashes
 	
 	private int[][][] getFullHashes(Sequence seq, int subKmerSize)
 	{
+		int cutoff = (int)((long)Integer.MIN_VALUE+((long)Integer.MAX_VALUE-(long)Integer.MIN_VALUE)/(long)REDUCTION);
+		
 		// compute just direct hash of sequence
-		int[][] hashes = Utils.computeKmerHashesInt(seq, subKmerSize, 1, null);
+		int[] hashes = Utils.computeSequenceHashes(seq.getString(), subKmerSize);
+		
+		int count = 0;
+		for (int val : hashes)
+			if (val<=cutoff)
+				count++;
 
-		SortableIntPair[] completeHashAsPair = new SortableIntPair[hashes.length];
+		SortableIntPair[] completeHashAsPair = new SortableIntPair[count];
+		count = 0;
 		for (int iter = 0; iter < hashes.length; iter++)
-			completeHashAsPair[iter] = new SortableIntPair(hashes[iter][0], iter);
+			if (hashes[iter]<=cutoff)
+			{
+				completeHashAsPair[count] = new SortableIntPair(hashes[iter], iter);
+				count++;
+			}
 
 		// sort the results, sort is in place so no need to look at second
 		Arrays.sort(completeHashAsPair);
 		
 		return storeAsArray(completeHashAsPair);
 	}
-	
-	/*
-	public OverlapInfo getFullScoreExperimental(OrderKmerHashes s, double maxShiftPercent)
-	{
-		int[][][] allKmerHashes = this.orderedHashes;
-
-		// get the kmers of the second sequence
-		int[][][] sAllKmerHashes = s.orderedHashes;
-		
-		//get sizes
-		int size1 = this.size();
-		int size2 = s.size();
-		
-		int count = 0;
-		//int[] posShift = new int[Math.min(size1, size2)/8+1];
-		int[] pos1Index = new int[Math.min(size1, size2)/8+1];
-		int[] pos2Index = new int[pos1Index.length];
-		
-		//init counters
-		count = 0;
-		int ii1 = 0;
-		int ii2 = 0;
-		int i1 = 0;
-		int i2 = 0;			
-		
-		//init the loop storage
-		int hash1 = 0;
-		int hash2 = 0;
-		int pos1;
-		int pos2;
-
-		// perform merge operation to get the shift and the kmer count
-		while (true)
-		{
-			//store previous value
-			//int prevHash1 = hash1;
-			//int prevHash2 = hash2;
-			//int prevIndex1 = i1;
-			//int prevIndex2 = i2;
-
-			if (i1>=allKmerHashes[ii1].length)
-			{
-				ii1++;
-				i1 = 0;
-				
-				//break if reached end
-				if (ii1>=allKmerHashes.length)
-					break;
-			}
-			if (i2>=sAllKmerHashes[ii2].length)
-			{
-				ii2++;
-				i2 = 0;
-
-				//break if reached end
-				if (ii2>=sAllKmerHashes.length)
-					break;
-			}				
-			
-			//get the values in the array
-			hash1 = allKmerHashes[ii1][i1][0];
-			pos1 = allKmerHashes[ii1][i1][1];
-
-			hash2 = sAllKmerHashes[ii2][i2][0];
-			pos2 = sAllKmerHashes[ii2][i2][1];
-
-			if (hash1 < hash2)
-				i1++;
-			else if (hash2 < hash1)
-				i2++;
-			else
-			{
-				//check if current shift makes sense positionally
-				//int currShift = pos2-pos1;
-				
-				//adjust array size if needed
-				if (pos1Index.length<=count)
-				{
-					//posShift = Arrays.copyOf(posShift, posShift.length*2);
-					pos1Index = Arrays.copyOf(pos1Index, pos1Index.length*2);
-					pos2Index = Arrays.copyOf(pos2Index, pos2Index.length*2);
-				}
-				
-				// compute the shift
-				//posShift[count] = currShift;								
-				pos1Index[count] = pos1;
-				pos2Index[count] = pos2;
-				
-				count++;
-				i1++;
-				i2++;
-			}
-		}
-
-		//fit a regression line
-		double eps = 1.0e-1;
-		double outlier = 4.0;
-		double[] r = new double[pos1Index.length];
-		
-		//create the copies of data
-		int[] pos1GoodIndex = Arrays.copyOf(pos1Index, pos1Index.length);
-		int[] pos2GoodIndex = Arrays.copyOf(pos2Index, pos2Index.length);
-		
-		Pair<Double,Double> linePrev = new Pair<Double,Double>(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-		Pair<Double,Double> line = Utils.linearRegression(pos1GoodIndex, pos2GoodIndex, count);
-		
-		int validCount = count;
-  	int steps = 0;
-		while (steps<10 && count>10 && (Math.abs(linePrev.x-line.x)>eps || Math.abs(linePrev.y-line.y)>eps))
-		{
-			//compute residuals
-			for (int iter=0; iter<count; iter++)
-			{
-				r[iter] = (double)pos2Index[iter]-(line.x+line.y*(double)pos1Index[iter]);
-				//System.err.print(" "+r[iter]);
-			}
-			
-			double rmean = Utils.mean(r, count);
-			double std = Utils.std(r, count, rmean);
-			
-			//go through the list and put valid regions at start
-			validCount = 0;
-			for (int iter=0; iter<count; iter++)
-			{
-				if (Math.abs(r[iter])<Math.max(100.0,outlier*std))
-				{
-					pos1GoodIndex[validCount] = pos1Index[iter];
-					pos2GoodIndex[validCount] = pos2Index[iter];
-					validCount++;
-				}
-			}
-						
-			//perform another round of regression
-			linePrev = line;
-			line = Utils.linearRegression(pos1GoodIndex, pos2GoodIndex, validCount);
-			
-			steps++;
-		}
-				
-		//extrapolate to 0 and end point
-		int a1 = Math.max(0,(int)Math.round(-line.x/line.y));
-		int a2 = Math.max(0,(int)line.x.doubleValue());
-		int b1 = Math.min(size(), (int)Math.round(((double)s.size()-line.x)/line.y));
-		int b2 = Math.min(s.size(),(int)(line.x+line.y*(double)size()));
-
-		//compute the correlation over the valid region
-		double corr = 0.0;
-		if (validCount>5)
-			corr = Math.abs(Utils.pearsonCorr(pos1GoodIndex, pos2GoodIndex, validCount));
-
-		return new OverlapInfo(corr, validCount, a1, a2, b1, b2);
-	}
-	*/
 	
 	public OverlapInfo getFullScore(OrderKmerHashes s, double maxShiftPercent)
 	{
@@ -384,15 +244,18 @@ public class OrderKmerHashes
 		int size1 = this.size();
 		int size2 = s.size();
 		
+		int kmerSize1 = this.seqLength;
+		int kmerSize2 = s.seqLength;
+		
 		// init the ok regions
 		int valid1Lower = 0;
-		int valid1Upper = size1;
+		int valid1Upper = kmerSize1;
 		int valid2Lower = 0;
-		int valid2Upper = size2;
+		int valid2Upper = kmerSize2;
 
 		int medianShift = 0;
-		int overlapSize = Math.min(size1, size2);
-		int absMaxShiftInOverlap = Math.max(size1, size2);
+		int overlapSize = Math.min(kmerSize1, kmerSize2);
+		int absMaxShiftInOverlap = Math.max(kmerSize1, kmerSize2);
 
 		int count = 0;
 		int[] posShift = new int[Math.min(size1, size2)/8+1];
@@ -530,17 +393,17 @@ public class OrderKmerHashes
 			
 			// get the actual overlap size
 			int leftPosition = Math.max(0, -medianShift);
-			int rightPosition = Math.min(size1, size2 - medianShift);
-			overlapSize = Math.max(this.seqLength-size1, rightPosition - leftPosition);
+			int rightPosition = Math.min(kmerSize1, kmerSize2 - medianShift);
+			overlapSize = Math.max(this.seqLength-kmerSize1, rightPosition - leftPosition);
 
 			//compute the max possible allowed shift in kmers
-			absMaxShiftInOverlap = Math.min(Math.max(size1, size2), (int)((double)overlapSize*maxShiftPercent));
+			absMaxShiftInOverlap = Math.min(Math.max(kmerSize1, kmerSize2), (int)((double)overlapSize*maxShiftPercent));
 
 			// get the updated borders
 			valid1Lower = Math.max(0, -medianShift - absMaxShiftInOverlap);
-			valid1Upper = Math.min(size1, size2 - medianShift + absMaxShiftInOverlap);
+			valid1Upper = Math.min(kmerSize1, kmerSize2 - medianShift + absMaxShiftInOverlap);
 			valid2Lower = Math.max(0, medianShift - absMaxShiftInOverlap);
-			valid2Upper = Math.min(size2, size1 + medianShift + absMaxShiftInOverlap);
+			valid2Upper = Math.min(kmerSize2, kmerSize1 + medianShift + absMaxShiftInOverlap);
 
 			/*
 			System.err.println(overlapSize);
@@ -610,7 +473,7 @@ public class OrderKmerHashes
 		//the hangs are adjusted by the rate of slide*distance traveled relative to median, -medianShift-(a1-a2)
 		//return new OverlapInfo(score, ahang, bhang);
 		
-		return new OverlapInfo(score, validCount, a1, a2, b1, b2);
+		return new OverlapInfo(score*(double)REDUCTION, validCount, a1, a2, b1, b2);
 	}
 
 	public int size()

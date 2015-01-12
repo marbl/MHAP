@@ -2,10 +2,10 @@ package edu.umd.marbl.mhap.sketch;
 
 public class KmerCounts
 {
-	private final CountMin<Integer> counter;
+	private final CountMin<Long> counter;
 	private final long totalReads;
 	
-	public KmerCounts(CountMin<Integer> counter, int totalReads)
+	public KmerCounts(CountMin<Long> counter, int totalReads)
 	{
 		this.counter = counter;
 		this.totalReads = totalReads;
@@ -16,7 +16,7 @@ public class KmerCounts
 		return this.totalReads;
 	}
 	
-	public double inverseDocumentFrequency(int kmer)
+	public double inverseDocumentFrequency(long kmer)
 	{
 		long count = counter.getCount(kmer);
 		long total = counter.totalAdded();
@@ -24,7 +24,7 @@ public class KmerCounts
 		return Math.log10((double)total/(double)(count+1)); 
 	}
 	
-	public double documentFrequencyRatio(int kmer)
+	public double documentFrequencyRatio(long kmer)
 	{
 		long count = counter.getCount(kmer);
 		long total = counter.totalAdded();
@@ -32,7 +32,7 @@ public class KmerCounts
 		return (double)count/(double)total; 
 	}
 	
-	public double weight(int kmer, int countInRead, int numKmers)
+	public double weight(long kmer, int countInRead, int numKmers)
 	{
 		double freqInData = inverseDocumentFrequency(kmer);
 		

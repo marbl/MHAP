@@ -290,7 +290,8 @@ public final class MhapMain
 		this.maxShift = options.get("--max-shift").getDouble();
 		this.acceptScore = options.get("--threshold").getDouble();
 
-		this.kmerCounter = recordFastaKmerCounts(inFile);		
+		//this.kmerCounter = recordFastaKmerCounts(inFile);
+		this.kmerCounter = null;
 	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
@@ -318,7 +319,7 @@ public final class MhapMain
 	{
 		final FastaData data = new FastaData(this.inFile, 0);
 		
-		final CountMin<Integer> countMin = new CountMin<>(1.0e-5, 1.0-1.0e-5, 0);
+		final CountMin<Long> countMin = new CountMin<>(1.0e-5, 1.0-1.0e-5, 0);
 		//System.err.println(countMin.getDepth()+" "+countMin.getWidth());
 		
 		// figure out number of cores
@@ -338,10 +339,10 @@ public final class MhapMain
 						while (seq != null)
 						{
 							//get the kmers integers
-							int[] kmerHashes = Utils.computeSequenceHashes(seq.getString(), MhapMain.this.kmerSize);
+							long[] kmerHashes = Utils.computeSequenceHashesLong(seq.getString(), MhapMain.this.kmerSize);
 							
 							//store the values
-							for (int val : kmerHashes)
+							for (long val : kmerHashes)
 								countMin.add(val);
 
 							int currCount = counter.incrementAndGet();

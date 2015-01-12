@@ -61,10 +61,10 @@ public final class CountMin<T extends Object> implements Counter<T>
 	 * @see com.invincea.labs.pace.hash.Counter#add(java.lang.Object, int)
 	 */
 	@Override
-	public void add(T obj, int increment)
+	public void add(T obj, long increment)
 	{
-		if (increment < 0)
-			throw new MhapRuntimeException("Nonnegative value expected for count.");
+		if (increment <= 0)
+			throw new MhapRuntimeException("Positive value expected for increment.");
 
 		// compute the hash
 		int[] hashes = Utils.computeHashesInt(obj, depth, seed);
