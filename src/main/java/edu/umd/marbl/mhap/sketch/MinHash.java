@@ -96,20 +96,17 @@ public final class MinHash implements Serializable
 			long key = kmer.getKey();
 			int weight = kmer.getValue().count;
 			
-			//weight = Math.min(5, weight);
-			
-			if (kmerCount!=null && kmerCount.documentFrequencyRatio(key)>1.0e-5)
-			{
-				//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));								
-				//continue;
-				weight = 1;
+			if (kmerCount!=null || filter != null)
+			{				
+				if ((kmerCount!=null && kmerCount.documentFrequencyRatio(key)>kmerCount.getFilterCutoff()) || (filter != null && filter.contains(key)))
+				{
+					//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));								
+				}
+				else
+					weight = weight*3;
 			}
 			//System.err.println("Good = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
 			//int weight = Math.min(1, (int)Math.round(kmerCount.weight(key, kmer.getValue().count, maxCount)));
-
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(key))
-				continue;
 		
 			long x = key;
 			

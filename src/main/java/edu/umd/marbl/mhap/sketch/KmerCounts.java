@@ -4,11 +4,13 @@ public class KmerCounts
 {
 	private final CountMin<Long> counter;
 	private final long totalReads;
+	private final double filterCutoff;
 	
-	public KmerCounts(CountMin<Long> counter, int totalReads)
+	public KmerCounts(CountMin<Long> counter, int totalReads, double filterCutoff)
 	{
 		this.counter = counter;
 		this.totalReads = totalReads;
+		this.filterCutoff = filterCutoff;
 	}
 	
 	public long getTotalReads()
@@ -42,5 +44,10 @@ public class KmerCounts
 		double freqInRead = 0.5+0.5*(double)countInRead/numKmers;
 		
 		return freqInRead*freqInData; 
+	}
+	
+	public double getFilterCutoff()
+	{
+		return this.filterCutoff;
 	}
 }

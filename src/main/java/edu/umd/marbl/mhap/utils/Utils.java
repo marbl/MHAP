@@ -358,6 +358,23 @@ public final class Utils
 
 		return hashes;
 	}
+	
+	public final static long[] computeSequenceHashesLong(final String seq, final int kmerSize)
+	{
+		// RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
+		// final int[] rabinHashes = rabinHash.hashInt(seq);
+
+		HashFunction hf = Hashing.murmur3_128(0);
+
+		long[] hashes = new long[seq.length() - kmerSize + 1];
+		for (int iter = 0; iter < hashes.length; iter++)
+		{
+			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + kmerSize)).hash();
+			hashes[iter] = hc.asLong();
+		}
+
+		return hashes;
+	}
 
 	public final static int[] computeStringNGramHashes(final String seq, final int ngramSize, final int seed)
 	{

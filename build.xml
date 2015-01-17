@@ -4,7 +4,7 @@
 	
   <!-- ========== Component Declarations ==================================== -->
 
-    <property name="component.version"       value="2.0b1"/>
+    <property name="component.version"       value="1.5b1"/>
 
     <!-- The name of this component -->
     <property name="copyright.name"          value="Konstantin Berlin and Sergey Koren"/>
