@@ -57,7 +57,7 @@ public final class MhapMain
 {
 	private final double acceptScore;
 
-	private final HashSet<Integer> filter;
+	private final HashSet<Long> filter;
 
 	private final String inFile;
 
@@ -289,9 +289,6 @@ public final class MhapMain
 		this.minStoreLength = options.get("--min-store-length").getInteger();
 		this.maxShift = options.get("--max-shift").getDouble();
 		this.acceptScore = options.get("--threshold").getDouble();
-
-		this.kmerCounter = recordFastaKmerCounts(inFile, options.get("--filter-threshold").getDouble());
-		//this.kmerCounter = null;
 	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
@@ -309,9 +306,14 @@ public final class MhapMain
 				throw new MhapRuntimeException("Could not parse k-mer filter file.", e);
 			}
 			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
+			
+			this.kmerCounter = null;
 		}
 		else
+		{
 			this.filter = null;
+			this.kmerCounter = recordFastaKmerCounts(inFile, options.get("--filter-threshold").getDouble());
+		}
 
 	}
 	

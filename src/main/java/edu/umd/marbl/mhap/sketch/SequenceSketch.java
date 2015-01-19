@@ -94,7 +94,7 @@ public final class SequenceSketch implements Serializable
 	}
 	
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, 
-			boolean storeHashes, HashSet<Integer> filter, KmerCounts kmerCount)
+			boolean storeHashes, HashSet<Long> filter, KmerCounts kmerCount)
 	{
 		this.id = seq.getId();
 		this.mainHashes = new MinHash(seq, kmerSize, numHashes, filter, kmerCount);

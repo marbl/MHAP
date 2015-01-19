@@ -58,7 +58,7 @@ public class SequenceSketchStreamer
 {
 	private final DataInputStream buffInput;
 	private final FastaData fastaData;
-	private final HashSet<Integer> filter;
+	private final HashSet<Long> filter;
 	private final KmerCounts kmerCounter;
 	private final int kmerSize;
 	private final AtomicLong numberProcessed;
@@ -91,7 +91,7 @@ public class SequenceSketchStreamer
 	}
 
 	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int subSequenceSize, int orderedKmerSize,
-			HashSet<Integer> filter, KmerCounts kmerCounter, int offset) throws IOException
+			HashSet<Long> filter, KmerCounts kmerCounter, int offset) throws IOException
 	{
 		this.fastaData = new FastaData(file, offset);
 		this.readingFasta = true;

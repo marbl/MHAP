@@ -58,7 +58,7 @@ public final class MinHash implements Serializable
 
 	
 	public final static int[] computeKmerMinHashesWeightedIntSuper(String seq, final int kmerSize, final int numHashes,
-			HashSet<Integer> filter, KmerCounts kmerCount)
+			HashSet<Long> filter, KmerCounts kmerCount)
 	{
 		final int numberKmers = seq.length() - kmerSize + 1;
 	
@@ -241,7 +241,7 @@ public final class MinHash implements Serializable
 		this.minHashes = minHashes;
 	}
 
-	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Integer> filter, KmerCounts kmerCount)
+	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount)
 	{
 		this.seqLength = seq.length();
 

@@ -49,7 +49,6 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
 import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.sketch.MinHash;
 
 public final class Utils
 {
@@ -460,7 +459,7 @@ public final class Utils
 		return count;
 	}
 
-	public final static HashSet<Integer> createKmerFilter(String fileName, double maxPercent, int kmerSize)
+	public final static HashSet<Long> createKmerFilter(String fileName, double maxPercent, int kmerSize)
 			throws IOException
 	{
 		File file = new File(fileName);
@@ -469,7 +468,7 @@ public final class Utils
 		try (BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);)
 		{
 			// generate hashset
-			ArrayList<Integer> filterArray = new ArrayList<Integer>();
+			ArrayList<Long> filterArray = new ArrayList<Long>();
 
 			String line = bf.readLine();
 			while (line != null)
@@ -485,12 +484,12 @@ public final class Utils
 				// if greater, add to hashset
 				if (percent > maxPercent)
 				{
-					int[] minHash = MinHash.computeKmerMinHashes(str[0], kmerSize, 0, null);
+					long[] minHash = Utils.computeSequenceHashesLong(str[0], kmerSize);
 
 					if (minHash.length > 1)
 						System.err.println("Warning filter file kmer size larger than setting!");
 
-					for (int val : minHash)
+					for (long val : minHash)
 						filterArray.add(val);
 				}
 				else
@@ -499,7 +498,7 @@ public final class Utils
 				// read the next line
 				line = bf.readLine();
 			}
-			return new HashSet<Integer>(filterArray);
+			return new HashSet<Long>(filterArray);
 		}
 	}
 
