@@ -58,7 +58,7 @@ public final class MinHash implements Serializable
 
 	
 	public final static int[] computeKmerMinHashesWeightedIntSuper(String seq, final int kmerSize, final int numHashes,
-			HashSet<Long> filter, KmerCounts kmerCount)
+			HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
 	{
 		final int numberKmers = seq.length() - kmerSize + 1;
 	
@@ -66,7 +66,7 @@ public final class MinHash implements Serializable
 			throw new MhapRuntimeException("Kmer size bigger than string length.");
 	
 		// get the kmer hashes
-		final long[] kmerHashes = Utils.computeSequenceHashesLong(seq, kmerSize);
+		final long[] kmerHashes = Utils.computeSequenceHashesLong(seq, kmerSize, 0);
 		
 		//now compute the counts of occurance
 		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
@@ -100,13 +100,23 @@ public final class MinHash implements Serializable
 			{				
 				if ((kmerCount!=null && kmerCount.documentFrequencyRatio(key)>kmerCount.getFilterCutoff()) || (filter != null && filter.contains(key)))
 				{
-					//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));								
+					//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
+					if (!weighted)
+						weight = 0;
 				}
 				else
-					weight = weight*3;
+				{
+					if (weighted)
+						weight = weight*3;
+					else
+						weight = 1;
+				}
 			}
 			//System.err.println("Good = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
 			//int weight = Math.min(1, (int)Math.round(kmerCount.weight(key, kmer.getValue().count, maxCount)));
+			
+			if (weight<=0)
+				continue;
 		
 			long x = key;
 			
@@ -241,14 +251,20 @@ public final class MinHash implements Serializable
 		this.minHashes = minHashes;
 	}
 
-	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount)
+	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
 	{
 		this.seqLength = seq.length();
 
 		//this.minHashes = MinHash.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
 		//this.minHashes = MinHash.computeKmerMinHashesWeighted(seq.getString(), kmerSize, numHashes, filter);
 		//this.minHashes = MinHash.computeKmerMinHashesWeightedInt(seq.getString(), kmerSize, numHashes, filter, kmerCount);
-		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(seq.getString(), kmerSize, numHashes, filter, kmerCount);
+		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(seq.getString(), kmerSize, numHashes, filter, kmerCount, weighted);
+	}
+	
+	public MinHash(String str, int kmerSize, int numHashes)
+	{
+		this.seqLength = str.length();
+		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(str, kmerSize, numHashes, null, null, true);
 	}
 	
 	public byte[] getAsByteArray()

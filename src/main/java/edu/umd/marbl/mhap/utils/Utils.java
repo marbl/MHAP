@@ -32,7 +32,6 @@ package edu.umd.marbl.mhap.utils;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
@@ -47,8 +46,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-
-import edu.umd.marbl.mhap.general.Sequence;
 
 public final class Utils
 {
@@ -243,15 +240,15 @@ public final class Utils
 		return hashes;
 	}
 
-	public final static long[][] computeKmerHashes(final Sequence seq, final int kmerSize, final int numWords)
+	public final static long[][] computeKmerHashes(final String seq, final int kmerSize, final int numWords, final int seed)
 	{
-		final int numberKmers = seq.numKmers(kmerSize);
+		final int numberKmers = seq.length()-kmerSize+1;
 
 		if (numberKmers < 1)
 			throw new MhapRuntimeException("Kmer size bigger than string length.");
 
 		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
+		final long[] rabinHashes = computeSequenceHashesLong(seq, kmerSize, seed);
 
 		final long[][] hashes = new long[rabinHashes.length][numWords];
 
@@ -272,75 +269,29 @@ public final class Utils
 				hashes[iter][word] = x;
 			}
 		}
-
+		
 		return hashes;
 	}
-
-	public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords,
-			HashSet<Integer> filter)
+	
+	public final static long[][] computeKmerHashesExact(final String seq, final int kmerSize, final int numWords, final int seed)
 	{
-		final int numberKmers = seq.numKmers(kmerSize);
+		HashFunction hf = Hashing.murmur3_128(seed);
 
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
-
-		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
-
-		final int[][] hashes = new int[rabinHashes.length][numWords];
-
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < rabinHashes.length; iter++)
+		long[][] hashes = new long[seq.length() - kmerSize + 1][numWords];
+		for (int iter = 0; iter < hashes.length; iter++)
 		{
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(rabinHashes[iter]))
+			String subStr = seq.substring(iter, iter + kmerSize);
+			
+			for (int word=0; word<numWords; word++)
 			{
-				Arrays.fill(hashes[iter], Integer.MAX_VALUE);
-				continue;
-			}
-
-			// rand.setSeed(rabinHashes[iter]);
-			long x = rabinHashes[iter];
-
-			for (int word = 0; word < numWords; word++)
-			{
-				// hashes[iter][word] = rand.nextInt();
-
-				// XORShift Random Number Generators
-				x ^= (x << 21);
-				x ^= (x >>> 35);
-				x ^= (x << 4);
-				hashes[iter][word] = (int) x;
+				HashCode hc = hf.newHasher().putUnencodedChars(subStr).putInt(word).hash();
+				hashes[iter][word] = hc.asLong();
 			}
 		}
-
+		
 		return hashes;
 	}
-
-	public final static int[] computeKmerHashesIntBasic(final Sequence seq, final int kmerSize, final int numWords,
-			HashSet<Integer> filter)
-	{
-		final int numberKmers = seq.numKmers(kmerSize);
-
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
-
-		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
-
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < rabinHashes.length; iter++)
-		{
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(rabinHashes[iter]))
-			{
-				rabinHashes[iter] = Integer.MAX_VALUE;
-			}
-		}
-
-		return rabinHashes;
-	}
-
+	
 	public final static int[] computeSequenceHashes(final String seq, final int kmerSize)
 	{
 		// RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
@@ -358,32 +309,15 @@ public final class Utils
 		return hashes;
 	}
 	
-	public final static long[] computeSequenceHashesLong(final String seq, final int kmerSize)
+	public final static long[] computeSequenceHashesLong(final String seq, final int kmerSize, final int seed)
 	{
-		// RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
-		// final int[] rabinHashes = rabinHash.hashInt(seq);
-
-		HashFunction hf = Hashing.murmur3_128(0);
+		HashFunction hf = Hashing.murmur3_128(seed);
 
 		long[] hashes = new long[seq.length() - kmerSize + 1];
 		for (int iter = 0; iter < hashes.length; iter++)
 		{
 			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + kmerSize)).hash();
 			hashes[iter] = hc.asLong();
-		}
-
-		return hashes;
-	}
-
-	public final static int[] computeStringNGramHashes(final String seq, final int ngramSize, final int seed)
-	{
-		HashFunction hf = Hashing.murmur3_32(seed);
-
-		int[] hashes = new int[seq.length() - ngramSize + 1];
-		for (int iter = 0; iter < hashes.length; iter++)
-		{
-			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + ngramSize)).hash();
-			hashes[iter] = hc.asInt();
 		}
 
 		return hashes;
@@ -427,7 +361,7 @@ public final class Utils
 		}
 		return converted.toString();
 	}
-
+	
 	public final static int countLetterInRead(String fasta, String letter)
 	{
 		return countLetterInRead(fasta, letter, false);
@@ -459,7 +393,7 @@ public final class Utils
 		return count;
 	}
 
-	public final static HashSet<Long> createKmerFilter(String fileName, double maxPercent, int kmerSize)
+	public final static HashSet<Long> createKmerFilter(String fileName, double maxPercent, int kmerSize, int seed)
 			throws IOException
 	{
 		File file = new File(fileName);
@@ -484,7 +418,7 @@ public final class Utils
 				// if greater, add to hashset
 				if (percent > maxPercent)
 				{
-					long[] minHash = Utils.computeSequenceHashesLong(str[0], kmerSize);
+					long[] minHash = Utils.computeSequenceHashesLong(str[0], kmerSize, seed);
 
 					if (minHash.length > 1)
 						System.err.println("Warning filter file kmer size larger than setting!");
@@ -893,5 +827,51 @@ public final class Utils
 		}
 
 		return result.toString();
+	}
+
+	public static String toString(double[][] A)
+	{
+		StringBuilder s = new StringBuilder();
+
+		s.append("[");
+
+		for (double[] a : A)
+		{
+			if (a != null)
+			{
+				for (int iter = 0; iter < a.length - 1; iter++)
+					s.append("" + a[iter] + ",");
+
+				if (a.length > 0)
+					s.append("" + a[a.length - 1]);
+			}
+			s.append("\n");
+		}
+		s.append("]");
+
+		return new String(s);
+	}
+
+	public static String toString(long[][] A)
+	{
+		StringBuilder s = new StringBuilder();
+
+		s.append("[");
+
+		for (long[] a : A)
+		{
+			if (a != null)
+			{
+				for (int iter = 0; iter < a.length - 1; iter++)
+					s.append("" + a[iter] + ",");
+
+				if (a.length > 0)
+					s.append("" + a[a.length - 1]);
+			}
+			s.append("\n");
+		}
+		s.append("]");
+
+		return new String(s);
 	}
 }

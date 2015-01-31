@@ -31,5 +31,5 @@ package edu.umd.marbl.mhap.simhash;
 
 public interface VectorHash<T>
 {
-	double jaccord(T sh);
+	double jaccard(T sh);
 }
