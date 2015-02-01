@@ -27,25 +27,28 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.simhash;
+package edu.umd.marbl.mhap.sketch;
 
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 
-public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implements VectorHash<T>,
+public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implements Sketch<T>,
 		Comparable<T>
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3392030412388403092L;
 	protected final long[] bits;
 
 	protected AbstractBitSketch(long[] bits)
 	{
 		this.bits = bits;
 	}
-
-	public final double adjScore(T sh)
+	
+	@Override
+	public double similarity(T v)
 	{
-		double score = jaccard(sh);
-
-		return score;
+		return jaccard(v);
 	}
 
 	public long[] getBits()
@@ -83,7 +86,6 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		return this.bits.length * 64 - count;
 	}
 
-	@Override
 	public final double jaccard(final T sh)
 	{
 		int count = getIntersectionCount(sh);

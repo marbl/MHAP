@@ -27,9 +27,11 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.simhash;
+package edu.umd.marbl.mhap.sketch;
 
-public interface VectorHash<T>
+import java.io.Serializable;
+
+public interface Sketch<T extends Sketch<T>> extends Serializable
 {
-	double jaccard(T sh);
+	double similarity(T sh);
 }

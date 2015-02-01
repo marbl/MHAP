@@ -32,7 +32,6 @@ package edu.umd.marbl.mhap.sketch;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,119 +45,15 @@ import edu.umd.marbl.mhap.utils.HitCounter;
 import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public final class MinHash implements Serializable
+public final class MinHash implements Sketch<MinHash>
 {
 	private final int[] minHashes;
-	private final int seqLength;
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 8846482698636860862L;
 	
 
-	
-	public final static int[] computeKmerMinHashesWeightedIntSuper(String seq, final int kmerSize, final int numHashes,
-			HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
-	{
-		final int numberKmers = seq.length() - kmerSize + 1;
-	
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
-	
-		// get the kmer hashes
-		final long[] kmerHashes = Utils.computeSequenceHashesLong(seq, kmerSize, 0);
-		
-		//now compute the counts of occurance
-		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
-		int maxCount = 0;
-		for (long kmer : kmerHashes)
-		{
-			HitCounter counter = hitMap.get(kmer);
-			if (counter==null)
-			{
-				counter = new HitCounter(1);
-				hitMap.put(kmer, counter);
-			}
-			else
-				counter.addHit();
-
-			if (maxCount<counter.count)
-				maxCount = counter.count;
-		}
-	
-		int[] hashes = new int[Math.max(1,numHashes)];		
-	
-		long[] best = new long[numHashes];
-		Arrays.fill(best, Long.MAX_VALUE);
-
-		for (Entry<Long, HitCounter> kmer : hitMap.entrySet())
-		{
-			long key = kmer.getKey();
-			int weight = kmer.getValue().count;
-			
-			if (kmerCount!=null || filter != null)
-			{				
-				if ((kmerCount!=null && kmerCount.documentFrequencyRatio(key)>kmerCount.getFilterCutoff()) || (filter != null && filter.contains(key)))
-				{
-					//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
-					if (!weighted)
-						weight = 0;
-				}
-				else
-				{
-					if (weighted)
-						weight = weight*3;
-					else
-						weight = 1;
-				}
-			}
-			//System.err.println("Good = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
-			//int weight = Math.min(1, (int)Math.round(kmerCount.weight(key, kmer.getValue().count, maxCount)));
-			
-			if (weight<=0)
-				continue;
-		
-			long x = key;
-			
-			for (int word = 0; word < numHashes; word++)
-			{
-				for (int count = 0; count<weight; count++)
-				{				
-					// XORShift Random Number Generators
-					x ^= (x << 21);
-					x ^= (x >>> 35);
-					x ^= (x << 4);
-		
-					if (x < best[word])
-					{
-						best[word] = x;
-						hashes[word] = (int)key;
-					}
-				}
-			}
-		}
-		
-		//now combine into super shingles
-		/*
-		HashFunction hf = Hashing.murmur3_32(0);
-		
-		int[] superShingles = new int[numHashes];
-		for (int iter=0; iter<hashes.length; iter++)
-		{
-			int i1 = iter;
-			int i2 = (iter+1)%numHashes;
-			
-			HashCode hc = hf.newHasher().
-					putInt(hashes[i1]).
-					putInt(hashes[i2]).
-					hash();
-			superShingles[iter] = hc.asInt();
-		}
-		hashes = superShingles;
-		*/ 
-		
-		return hashes;
-	}
 	
 	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numHashes,
 			HashSet<Integer> filter)
@@ -216,114 +111,6 @@ public final class MinHash implements Serializable
 		}
 	
 		return hashes;
-	}
-	
-	public static MinHash fromByteStream(DataInputStream input) throws IOException
-	{
-		try
-		{
-			//store the size
-			//bb.putInt(this.seqLength);
-			int seqLength = input.readInt();
-			
-			//bb.putInt(this.minHashes.length);
-			int hashNum = input.readInt();
-			
-			//store the array
-			int[] minHashes = new int[hashNum];
-			for (int hash=0; hash<hashNum; hash++)
-			{
-				//bb.putInt(this.minHashes[seq][hash]);
-				minHashes[hash] = input.readInt();
-			}
-			
-			return new MinHash(seqLength, minHashes);
-		}
-		catch (EOFException e)
-		{
-			return null;
-		}
-	}
-	
-	private MinHash(int seqLength, int[] minHashes)
-	{
-		this.seqLength = seqLength;
-		this.minHashes = minHashes;
-	}
-
-	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
-	{
-		this.seqLength = seq.length();
-
-		//this.minHashes = MinHash.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
-		//this.minHashes = MinHash.computeKmerMinHashesWeighted(seq.getString(), kmerSize, numHashes, filter);
-		//this.minHashes = MinHash.computeKmerMinHashesWeightedInt(seq.getString(), kmerSize, numHashes, filter, kmerCount);
-		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(seq.getString(), kmerSize, numHashes, filter, kmerCount, weighted);
-	}
-	
-	public MinHash(String str, int kmerSize, int numHashes)
-	{
-		this.seqLength = str.length();
-		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(str, kmerSize, numHashes, null, null, true);
-	}
-	
-	public byte[] getAsByteArray()
-	{
-		ByteBuffer bb = ByteBuffer.allocate(4*(2+this.minHashes.length));
-		
-		//store the size
-		bb.putInt(this.seqLength);
-		bb.putInt(this.minHashes.length);
-		
-		//store the array
-		for (int hash=0; hash<this.minHashes.length; hash++)
-			bb.putInt(this.minHashes[hash]); 
-    
-    return bb.array();
-	}
-	
-	/**
-	 * @return the minHashes
-	 */
-	public final int[] getMinHashArray()
-	{
-		return this.minHashes;
-	}
-
-	public final int getSequenceLength()
-	{
-		return this.seqLength;
-	}
-	
-	public final double jaccard(MinHash h)
-	{
-		int count = 0;
-		int size = this.minHashes.length;
-		
-		if (h.minHashes.length!=size)
-			throw new MhapRuntimeException("MinHashes must be of same length in order to be comapred.");
-		
-		for (int iter=0; iter<size; iter++)
-		{
-			if (this.minHashes[iter]==h.minHashes[iter])
-				count++;
-		}
-		
-		return (double)count/(double)size;
-	}
-
-	public final int numHashes()
-	{
-		return this.minHashes.length;
-	}
-
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString()
-	{
-		return "MinHash "+Arrays.toString(this.minHashes) + "";
 	}
 	
 	public final static int[] computeKmerMinHashesWeighted(String seq, final int kmerSize, final int numHashes,
@@ -484,5 +271,213 @@ public final class MinHash implements Serializable
 		}
 		
 		return hashes;
+	}
+	
+	public final static int[] computeKmerMinHashesWeightedIntSuper(String seq, final int kmerSize, final int numHashes,
+			HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+	{
+		final int numberKmers = seq.length() - kmerSize + 1;
+	
+		if (numberKmers < 1)
+			throw new MhapRuntimeException("Kmer size bigger than string length.");
+	
+		// get the kmer hashes
+		final long[] kmerHashes = Utils.computeSequenceHashesLong(seq, kmerSize, 0);
+		
+		//now compute the counts of occurance
+		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
+		int maxCount = 0;
+		for (long kmer : kmerHashes)
+		{
+			HitCounter counter = hitMap.get(kmer);
+			if (counter==null)
+			{
+				counter = new HitCounter(1);
+				hitMap.put(kmer, counter);
+			}
+			else
+				counter.addHit();
+
+			if (maxCount<counter.count)
+				maxCount = counter.count;
+		}
+	
+		int[] hashes = new int[Math.max(1,numHashes)];		
+	
+		long[] best = new long[numHashes];
+		Arrays.fill(best, Long.MAX_VALUE);
+
+		for (Entry<Long, HitCounter> kmer : hitMap.entrySet())
+		{
+			long key = kmer.getKey();
+			int weight = kmer.getValue().count;
+			
+			if (kmerCount!=null || filter != null)
+			{				
+				if ((kmerCount!=null && kmerCount.documentFrequencyRatio(key)>kmerCount.getFilterCutoff()) || (filter != null && filter.contains(key)))
+				{
+					//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
+					if (!weighted)
+						weight = 0;
+				}
+				else
+				{
+					if (weighted)
+						weight = weight*3;
+					else
+						weight = 1;
+				}
+			}
+			//System.err.println("Good = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
+			//int weight = Math.min(1, (int)Math.round(kmerCount.weight(key, kmer.getValue().count, maxCount)));
+			
+			if (weight<=0)
+				continue;
+		
+			long x = key;
+			
+			for (int word = 0; word < numHashes; word++)
+			{
+				for (int count = 0; count<weight; count++)
+				{				
+					// XORShift Random Number Generators
+					x ^= (x << 21);
+					x ^= (x >>> 35);
+					x ^= (x << 4);
+		
+					if (x < best[word])
+					{
+						best[word] = x;
+						hashes[word] = (int)key;
+					}
+				}
+			}
+		}
+		
+		//now combine into super shingles
+		/*
+		HashFunction hf = Hashing.murmur3_32(0);
+		
+		int[] superShingles = new int[numHashes];
+		for (int iter=0; iter<hashes.length; iter++)
+		{
+			int i1 = iter;
+			int i2 = (iter+1)%numHashes;
+			
+			HashCode hc = hf.newHasher().
+					putInt(hashes[i1]).
+					putInt(hashes[i2]).
+					hash();
+			superShingles[iter] = hc.asInt();
+		}
+		hashes = superShingles;
+		*/ 
+		
+		return hashes;
+	}
+
+	public static MinHash fromByteStream(DataInputStream input) throws IOException
+	{
+		try
+		{
+			//store the size
+			//bb.putInt(this.seqLength);
+			//int seqLength = input.readInt();
+			
+			//bb.putInt(this.minHashes.length);
+			int hashNum = input.readInt();
+			
+			//store the array
+			int[] minHashes = new int[hashNum];
+			for (int hash=0; hash<hashNum; hash++)
+			{
+				//bb.putInt(this.minHashes[seq][hash]);
+				minHashes[hash] = input.readInt();
+			}
+			
+			return new MinHash(minHashes);
+		}
+		catch (EOFException e)
+		{
+			return null;
+		}
+	}
+	
+	private MinHash(int[] minHashes)
+	{
+		this.minHashes = minHashes;
+	}
+	
+	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+	{
+		//this.minHashes = MinHash.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
+		//this.minHashes = MinHash.computeKmerMinHashesWeighted(seq.getString(), kmerSize, numHashes, filter);
+		//this.minHashes = MinHash.computeKmerMinHashesWeightedInt(seq.getString(), kmerSize, numHashes, filter, kmerCount);
+		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(seq.getString(), kmerSize, numHashes, filter, kmerCount, weighted);
+	}
+	
+	public MinHash(String str, int kmerSize, int numHashes)
+	{
+		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(str, kmerSize, numHashes, null, null, true);
+	}
+
+	public byte[] getAsByteArray()
+	{
+		ByteBuffer bb = ByteBuffer.allocate(4*(2+this.minHashes.length));
+		
+		//store the size
+		//bb.putInt(this.seqLength);
+		bb.putInt(this.minHashes.length);
+		
+		//store the array
+		for (int hash=0; hash<this.minHashes.length; hash++)
+			bb.putInt(this.minHashes[hash]); 
+    
+    return bb.array();
+	}
+	
+	/**
+	 * @return the minHashes
+	 */
+	public final int[] getMinHashArray()
+	{
+		return this.minHashes;
+	}
+
+	public final double jaccard(MinHash h)
+	{
+		int count = 0;
+		int size = this.minHashes.length;
+		
+		if (h.minHashes.length!=size)
+			throw new MhapRuntimeException("MinHashes must be of same length in order to be comapred.");
+		
+		for (int iter=0; iter<size; iter++)
+		{
+			if (this.minHashes[iter]==h.minHashes[iter])
+				count++;
+		}
+		
+		return (double)count/(double)size;
+	}
+	
+	public final int numHashes()
+	{
+		return this.minHashes.length;
+	}
+	
+	@Override
+	public double similarity(MinHash sh)
+	{
+		return jaccard(sh);
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return "MinHash "+Arrays.toString(this.minHashes) + "";
 	}
 }

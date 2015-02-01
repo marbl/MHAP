@@ -47,96 +47,104 @@ public final class SequenceSketch implements Serializable
 	 * 
 	 */
 	private static final long serialVersionUID = -3155689614837922443L;
-	
+
 	private final SequenceId id;
 	private final MinHash mainHashes;
 	private final OrderKmerHashes orderedHashes;
-	
+	private final int sequenceLength;
+
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
-	
+
 	public static SequenceSketch fromByteStream(DataInputStream input, int offset) throws IOException
 	{
 		try
 		{
-			//input.
-			
-			//dos.writeBoolean(this.id.isForward());
+			// input.
+
+			// dos.writeBoolean(this.id.isForward());
 			boolean isFwd = input.readBoolean();
+
+			// dos.writeInt(this.id.getHeaderId());
+			SequenceId id = new SequenceId(input.readInt() + offset, isFwd);
 			
-			//dos.writeInt(this.id.getHeaderId());
-			SequenceId id = new SequenceId(input.readInt()+offset, isFwd);
-			
-			//dos.write(this.mainHashes.getAsByteArray());
+			//dos.writeInt(this.sequenceLength);
+			int sequenceLength = input.readInt();
+
+			// dos.write(this.mainHashes.getAsByteArray());
 			MinHash mainHashes = MinHash.fromByteStream(input);
-			
-			if (mainHashes==null)
+
+			if (mainHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error.");
-			
-			//dos.write(this.orderedHashes.getAsByteArray());
+
+			// dos.write(this.orderedHashes.getAsByteArray());
 			OrderKmerHashes orderedHashes = OrderKmerHashes.fromByteStream(input);
-			if (orderedHashes==null)
+			if (orderedHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error.");
-			
-			return new SequenceSketch(id, mainHashes, orderedHashes);
-			
+
+			return new SequenceSketch(id, sequenceLength, mainHashes, orderedHashes);
+
 		}
 		catch (EOFException e)
 		{
 			return null;
 		}
 	}
-	
-	public SequenceSketch(SequenceId id, MinHash mainHashes, OrderKmerHashes orderedHashes)
+
+	public SequenceSketch(SequenceId id, int sequenceLength, MinHash mainHashes, OrderKmerHashes orderedHashes)
 	{
+		this.sequenceLength = sequenceLength;
 		this.id = id;
 		this.mainHashes = mainHashes;
 		this.orderedHashes = orderedHashes;
 	}
-	
-	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, 
-			boolean storeHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+
+	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, boolean storeHashes,
+			HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
 	{
+		this.sequenceLength = seq.length();
 		this.id = seq.getId();
 		this.mainHashes = new MinHash(seq, kmerSize, numHashes, filter, kmerCount, weighted);
 		this.orderedHashes = new OrderKmerHashes(seq, orderedKmerSize);
 	}
-	
+
 	public SequenceSketch createOffset(int offset)
 	{
-		return new SequenceSketch(this.id.createOffset(offset), this.mainHashes, this.orderedHashes);
+		return new SequenceSketch(this.id.createOffset(offset), this.sequenceLength, this.mainHashes, this.orderedHashes);
 	}
-	
+
 	public byte[] getAsByteArray()
 	{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream(this.mainHashes.numHashes()*4+this.orderedHashes.size()*2);
-    DataOutputStream dos = new DataOutputStream(bos);
-    
-    try
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(this.mainHashes.numHashes() * 4
+				+ this.orderedHashes.size() * 2);
+		DataOutputStream dos = new DataOutputStream(bos);
+
+		try
 		{
-      dos.writeBoolean(this.id.isForward());
-      dos.writeInt(this.id.getHeaderId());
+			dos.writeBoolean(this.id.isForward());
+			dos.writeInt(this.id.getHeaderId());
+			dos.writeInt(this.sequenceLength);
 			dos.write(this.mainHashes.getAsByteArray());
 			dos.write(this.orderedHashes.getAsByteArray());
-			
-	    dos.flush();
-	    return bos.toByteArray();
+
+			dos.flush();
+			return bos.toByteArray();
 		}
-    catch (IOException e)
-    {
-    	throw new MhapRuntimeException("Unexpected IO error.");
-    }
+		catch (IOException e)
+		{
+			throw new MhapRuntimeException("Unexpected IO error.");
+		}
 	}
 
 	public MinHash getMinHashes()
 	{
 		return this.mainHashes;
 	}
-	
+
 	public OrderKmerHashes getOrderedHashes()
 	{
 		return this.orderedHashes;
 	}
-	
+
 	public SequenceId getSequenceId()
 	{
 		return this.id;
@@ -144,6 +152,6 @@ public final class SequenceSketch implements Serializable
 
 	public int getSequenceLength()
 	{
-		return this.mainHashes.getSequenceLength();
+		return this.sequenceLength;
 	}
 }
