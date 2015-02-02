@@ -31,10 +31,12 @@ public class AlignmentTry
 		//String c= a;
 		//a = b;
 		//b = c;
+		System.out.println("First string: " + a);
+		System.out.println("Second string: " + b);
 		
-		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1.00);
+		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1);
 		
-		Alignment<AlignElementString> alignment = aligner.customAlignSmithWaterGotoh(new AlignElementString(a), new AlignElementString(b));
+		Alignment<AlignElementString> alignment = aligner.localAlignSmithWaterGotoh(new AlignElementString(a), new AlignElementString(b));
 		
 		System.out.println(alignment.outputAlignment());
 		

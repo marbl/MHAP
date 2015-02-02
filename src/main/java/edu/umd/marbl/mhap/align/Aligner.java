@@ -118,6 +118,9 @@ public final class Aligner<S extends AlignElement<S>>
 			Q[0][j] = Float.NEGATIVE_INFINITY;
 		}
 		
+		float maxValue = 0;
+		int maxI = 0;
+		int maxJ = 0;
 		for (int i=1; i<=a.length(); i++)
 			for (int j=1; j<=b.length(); j++)
 			{				
@@ -128,35 +131,53 @@ public final class Aligner<S extends AlignElement<S>>
 				
 				//compute the actual score
 				D[i][j] = Math.max(score, Math.max(P[i][j], Q[i][j]));
+				if (D[i][j] > maxValue) {
+					maxValue = D[i][j];
+					maxI = i;
+					maxJ = j;
+				}
 			}
 		
-		float bestValue = D[a.length()][b.length()];
-		float score = bestValue/(float)Math.max(a.length(), b.length());
+		//float bestValue = D[maxI][maxJ];
+		float score = maxValue/(float)Math.max(a.length(), b.length());
 				
 		if (storePath)
 		{
 			//figure out the path
 			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());
 		
-		
 			int i = a.length();
+			while (i > maxI) {
+				backOperations.add(Operation.INSERT);
+				i--;
+			}
 			int j = b.length();
+			while (j > maxJ) {
+				backOperations.add(Operation.DELETE);
+				j--;
+			}
+			i = maxI;
+			j = maxJ;
 			while (i>0 || j>0)
 			{
+				System.err.println("At position " + i + " and " + j + " scores in P are " + P[i][j] + " and Q " + Q[i][j] + " and D " + D[i][j]);
 				if ((P[i][j]>=Q[i][j] && P[i][j]==D[i][j]) || j==0)
 				{
 					backOperations.add(Operation.INSERT);
 					i--;
+					System.err.println("Operation is INSERT");
 				}
 				else
 				if (Q[i][j]==D[i][j] || i==0)
 				{
 					backOperations.add(Operation.DELETE);
 					j--;
+					System.err.println("Operation is DELETE");
 				}
 				else
 				{
 					backOperations.add(Operation.MATCH);
+					System.err.println("Operation is MATCH");
 					i--;
 					j--;
 				}
