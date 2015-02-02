@@ -56,9 +56,11 @@ import edu.umd.marbl.mhap.utils.Utils;
 
 public class EstimateROC {
 	private static final boolean ALIGN_SW = true;
-	private static final double MIN_OVERLAP_DIFFERENCE = 0.8;
-	private static final double MIN_IDENTITY = 0.70;
-	private static final double MIN_REF_IDENTITY = MIN_IDENTITY + 0.10;
+	private static final double MIN_REF_OVERLAP_DIFFERENCE = 0.8;
+	private static double MIN_IDENTITY = 0.70;
+	private static final double REF_IDENTITY_ADJUSTMENT = 0.1;
+	private static double MIN_REF_IDENTITY = MIN_IDENTITY + REF_IDENTITY_ADJUSTMENT;
+	private static double MIN_OVERLAP_DIFFERENCE = 0.30;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 2000;
 	private static final boolean DEFAULT_DO_DP = false;
@@ -129,7 +131,7 @@ public class EstimateROC {
 	private HashMap<String, Pair> seqToPosition = new HashMap<String, Pair>(10000000);
 	private HashMap<Integer, String> seqToName = new HashMap<Integer, String>(10000000);
 	private HashMap<String, Integer> seqNameToIndex = new HashMap<String, Integer>(10000000);
-	private HashSet<String> ovlNames = new HashSet<String>(10000000*10);
+	private HashMap<String, Integer> ovlNames = new HashMap<String, Integer>(10000000*10);
 	private HashMap<String, Overlap> ovlInfo = new HashMap<String, Overlap>(10000000*10);
 	private HashMap<Integer, String> ovlToName = new HashMap<Integer, String>(10000000*10);
 	
@@ -177,10 +179,20 @@ public class EstimateROC {
 		if (args.length > 6) {
 			DEBUG = Boolean.parseBoolean(args[6]);
 		}
+		if (args.length > 7) {
+			MIN_IDENTITY = Double.parseDouble(args[7]);
+			MIN_REF_IDENTITY = MIN_IDENTITY + REF_IDENTITY_ADJUSTMENT;
+		}
+		if (args.length > 8) {
+			MIN_OVERLAP_DIFFERENCE = Double.parseDouble(args[8]);
+		}
 		
 		System.err.println("Running, reference: " + args[0] + " matches: " + args[1]);
 		System.err.println("Number trials:  " + (g.numTrials == 0 ? "all" : g.numTrials));
 		System.err.println("Minimum ovl:  " + g.minOvlLen);
+		System.err.println("Minimum acceptable %" + MIN_IDENTITY);
+		System.err.println("Minimum acceptable shift " + MIN_OVERLAP_DIFFERENCE);
+		System.err.println("Minimum overlap to ref %" + MIN_REF_IDENTITY);
 		
 		// load and cluster reference
 		System.err.print("Loading reference...");
@@ -444,6 +456,7 @@ public class EstimateROC {
 		int counter = 0;
 		while ((line = bf.readLine()) != null) {
 			Overlap ovl = getOverlapInfo(line);
+			int ovlLen = ovl.getSize();
 			String id = ovl.id1;
 			String id2 = ovl.id2;
 
@@ -457,13 +470,20 @@ public class EstimateROC {
 				continue;
 			}
 			String ovlName = getOvlName(id, id2);
-			if (this.ovlNames.contains(ovlName)) {
+			if (this.ovlNames.containsKey(ovlName) && ovlLen < this.ovlNames.get(ovlName)) {
 				continue;
 			}
-			this.ovlNames.add(ovlName);
-			this.ovlToName.put(counter, ovlName);
-			this.ovlInfo.put(ovlName, ovl);
-			counter++;
+			
+			// if we see same overlap between a pair of sequences, dont update counter just update its length and info
+			if (this.ovlNames.containsKey(ovlName)) {
+				this.ovlNames.put(ovlName, ovlLen);				
+				this.ovlInfo.put(ovlName, ovl);
+			} else {
+				this.ovlNames.put(ovlName, ovlLen);
+				this.ovlToName.put(counter, ovlName);
+				this.ovlInfo.put(ovlName, ovl);
+				counter++;
+			}
 			
 			if (counter % 100000 == 0) {
 				System.err.println("Loaded " + counter);
@@ -526,7 +546,7 @@ public class EstimateROC {
 				continue;
 			}
 			double diff = ((double)(end - start) / (double)(endInRef-startInRef));
-			if (diff < MIN_OVERLAP_DIFFERENCE) {
+			if (diff < MIN_REF_OVERLAP_DIFFERENCE) {
 				continue;
 			}
 			String chr = splitLine[1];
@@ -570,7 +590,7 @@ public class EstimateROC {
 	}
 
 	private boolean overlapExists(String id, String id2) {
-		return this.ovlNames.contains(getOvlName(id, id2));
+		return this.ovlNames.containsKey(getOvlName(id, id2));
 	}
 	
 	private boolean overlapMatches(String id, String m) {
@@ -582,7 +602,7 @@ public class EstimateROC {
 		int diff = Math.abs(ovl.getSize() - refOverlap);
 		double diffPercent = (double)diff / (double)refOverlap;
 		if (DEBUG) { System.err.println("Overlap " + ovl + " " + ovl.getSize() + " versus ref " + refOverlap + " " + " diff is " + diff + "(" + diffPercent + ")"); }
-		if (diffPercent > 0.3) {
+		if (diffPercent > MIN_OVERLAP_DIFFERENCE) {
 			return false;
 		}
 		return true;
@@ -611,7 +631,7 @@ public class EstimateROC {
 		int length = Math.max(sequence1.length, sequence2.length);
 		int ovlLen = Math.min(sequence1.length, sequence2.length);
 		char GAP = '-';
-		//int errors = 0;
+		int errors = 0;
 		int matches = 0;
 		for (int i = 0; i <= length; i++)
 		{
@@ -624,7 +644,7 @@ public class EstimateROC {
 				c2 = sequence2[i];
 			}
 			if (c1 != c2 || c1 == GAP || c2 == GAP) {
-				//errors++;
+				errors++;
 			} else {
 				matches++;
 			}
