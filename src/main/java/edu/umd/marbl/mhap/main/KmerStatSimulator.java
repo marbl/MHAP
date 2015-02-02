@@ -40,7 +40,7 @@ import java.util.HashSet;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 
-import edu.umd.marbl.mhap.general.FastaData;
+import edu.umd.marbl.mhap.impl.FastaData;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.utils.Utils;
 

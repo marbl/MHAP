@@ -29,10 +29,7 @@ public class SketchRuntimeException extends RuntimeException
 
 	public SketchRuntimeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
 	{
-		super(message, cause, enableSuppression, writableStackTrace); // TODO
-																		// Auto-generated
-																		// constructor
-																		// stub
+		super(message, cause, enableSuppression, writableStackTrace); 
 	}
 
 }

@@ -130,15 +130,15 @@ public class HashUtils
 		return hashes;
 	}
 
-	public final static long[][] computeNGramHashes(final String seq, final int kmerSize, final int numWords, final int seed)
+	public final static long[][] computeNGramHashes(final String seq, final int nGramSize, final int numWords, final int seed)
 	{
-		final int numberKmers = seq.length()-kmerSize+1;
+		final int numberNGrams = seq.length()-nGramSize+1;
 	
-		if (numberKmers < 1)
-			throw new SketchRuntimeException("Kmer size bigger than string length.");
+		if (numberNGrams < 1)
+			throw new SketchRuntimeException("N-gram size bigger than string length.");
 	
 		// get the rabin hashes
-		final long[] rabinHashes = computeSequenceHashesLong(seq, kmerSize, seed);
+		final long[] rabinHashes = computeSequenceHashesLong(seq, nGramSize, seed);
 	
 		final long[][] hashes = new long[rabinHashes.length][numWords];
 	
@@ -163,14 +163,14 @@ public class HashUtils
 		return hashes;
 	}
 
-	public final static long[][] computeNGramHashesExact(final String seq, final int kmerSize, final int numWords, final int seed)
+	public final static long[][] computeNGramHashesExact(final String seq, final int nGramSize, final int numWords, final int seed)
 	{
 		HashFunction hf = Hashing.murmur3_128(seed);
 	
-		long[][] hashes = new long[seq.length() - kmerSize + 1][numWords];
+		long[][] hashes = new long[seq.length() - nGramSize + 1][numWords];
 		for (int iter = 0; iter < hashes.length; iter++)
 		{
-			String subStr = seq.substring(iter, iter + kmerSize);
+			String subStr = seq.substring(iter, iter + nGramSize);
 			
 			for (int word=0; word<numWords; word++)
 			{
@@ -182,31 +182,28 @@ public class HashUtils
 		return hashes;
 	}
 
-	public final static int[] computeSequenceHashes(final String seq, final int kmerSize)
+	public final static int[] computeSequenceHashes(final String seq, final int nGramSize)
 	{
-		// RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
-		// final int[] rabinHashes = rabinHash.hashInt(seq);
-	
 		HashFunction hf = Hashing.murmur3_32(0);
 	
-		int[] hashes = new int[seq.length() - kmerSize + 1];
+		int[] hashes = new int[seq.length() - nGramSize + 1];
 		for (int iter = 0; iter < hashes.length; iter++)
 		{
-			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + kmerSize)).hash();
+			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + nGramSize)).hash();
 			hashes[iter] = hc.asInt();
 		}
 	
 		return hashes;
 	}
 
-	public final static long[] computeSequenceHashesLong(final String seq, final int kmerSize, final int seed)
+	public final static long[] computeSequenceHashesLong(final String seq, final int nGramSize, final int seed)
 	{
 		HashFunction hf = Hashing.murmur3_128(seed);
 	
-		long[] hashes = new long[seq.length() - kmerSize + 1];
+		long[] hashes = new long[seq.length() - nGramSize + 1];
 		for (int iter = 0; iter < hashes.length; iter++)
 		{
-			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + kmerSize)).hash();
+			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + nGramSize)).hash();
 			hashes[iter] = hc.asLong();
 		}
 	

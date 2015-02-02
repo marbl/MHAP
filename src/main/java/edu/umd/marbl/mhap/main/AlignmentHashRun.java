@@ -36,11 +36,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.logging.LogManager;
 
-import edu.umd.marbl.mhap.general.FastaData;
-import edu.umd.marbl.mhap.general.MatchResult;
-import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.sketch.MinHashSearch;
-import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
+import edu.umd.marbl.mhap.impl.FastaData;
+import edu.umd.marbl.mhap.impl.MatchResult;
+import edu.umd.marbl.mhap.impl.MinHashSearch;
+import edu.umd.marbl.mhap.impl.Sequence;
+import edu.umd.marbl.mhap.impl.SequenceSketchStreamer;
 
 public class AlignmentHashRun 
 {	

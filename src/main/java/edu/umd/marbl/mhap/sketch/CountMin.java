@@ -2,9 +2,6 @@ package edu.umd.marbl.mhap.sketch;
 
 import java.util.concurrent.atomic.LongAdder;
 
-import edu.umd.marbl.mhap.general.Counter;
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
-
 public final class CountMin<T extends Object> implements Counter<T>
 {
 	private final LongAdder[][] countTable;
@@ -63,7 +60,7 @@ public final class CountMin<T extends Object> implements Counter<T>
 	public void add(T obj, long increment)
 	{
 		if (increment <= 0)
-			throw new MhapRuntimeException("Positive value expected for increment.");
+			throw new SketchRuntimeException("Positive value expected for increment.");
 
 		// compute the hash
 		int[] hashes = HashUtils.computeHashesInt(obj, depth, seed);
@@ -118,7 +115,7 @@ public final class CountMin<T extends Object> implements Counter<T>
 	@Override
 	public long maxCount()
 	{
-		throw new MhapRuntimeException("Method not implemented.");
+		throw new SketchRuntimeException("Method not implemented.");
 	}
 
 	public long totalAdded()

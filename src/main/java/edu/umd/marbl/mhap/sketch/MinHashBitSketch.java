@@ -7,9 +7,9 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 	 */
 	private static final long serialVersionUID = -44448450811302477L;
 
-	private final static long[] getAsBits(String seq, int kmerSize, int numWords)
+	private final static long[] getAsBits(String seq, int nGramSize, int numWords)
 	{
-		int[] minHashes = MinHashSketch.computeKmerMinHashesWeightedIntSuper(seq, kmerSize, numWords*64, null, null, true);
+		int[] minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(seq, nGramSize, numWords*64, null, null, true);
 		
 		//now convert them to bits
 		long[] bits = new long[numWords];

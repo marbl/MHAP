@@ -3,7 +3,7 @@ package edu.umd.marbl.mhap.sketch;
 import edu.umd.marbl.mhap.align.AlignElementSketch;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.align.Alignment;
-import edu.umd.marbl.mhap.general.OverlapInfo;
+import edu.umd.marbl.mhap.impl.OverlapInfo;
 
 
 public abstract class AbstractSketchSequence<T extends AbstractSketchSequence<T,S>, S extends Sketch<S>>

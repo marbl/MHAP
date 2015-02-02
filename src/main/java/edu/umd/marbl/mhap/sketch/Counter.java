@@ -1,4 +1,4 @@
-package edu.umd.marbl.mhap.general;
+package edu.umd.marbl.mhap.sketch;
 
 public interface Counter<T extends Object>
 {

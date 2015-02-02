@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.sketch;
+package edu.umd.marbl.mhap.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,10 +39,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import edu.umd.marbl.mhap.align.AlignElementSketch;
 import edu.umd.marbl.mhap.align.Aligner;
-import edu.umd.marbl.mhap.general.AbstractMatchSearch;
-import edu.umd.marbl.mhap.general.MatchResult;
-import edu.umd.marbl.mhap.general.OverlapInfo;
-import edu.umd.marbl.mhap.general.SequenceId;
+import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
+import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.HitCounter;
 

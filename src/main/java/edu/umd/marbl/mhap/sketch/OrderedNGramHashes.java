@@ -37,11 +37,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import edu.umd.marbl.mhap.general.OverlapInfo;
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
+import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public class OrderKmerHashes 
+public class OrderedNGramHashes 
 {
 	private static final class SortableIntPair implements Comparable<SortableIntPair>, Serializable
 	{
@@ -98,7 +97,7 @@ public class OrderKmerHashes
 		return completeHash;
 	}
 
-	public final static OrderKmerHashes fromByteStream(DataInputStream input) throws IOException
+	public final static OrderedNGramHashes fromByteStream(DataInputStream input) throws IOException
 	{
 		try
 		{
@@ -126,7 +125,7 @@ public class OrderKmerHashes
 				i++;
 			}
 			
-			return new OrderKmerHashes(seqLength, orderedHashes);
+			return new OrderedNGramHashes(seqLength, orderedHashes);
 			
 		}
 		catch (EOFException e)
@@ -135,13 +134,13 @@ public class OrderKmerHashes
 		}
 	}
 
-	private OrderKmerHashes(int seqLength, int[][][] orderedHashes)
+	private OrderedNGramHashes(int seqLength, int[][][] orderedHashes)
 	{
 		this.seqLength = seqLength;
 		this.orderedHashes = orderedHashes;
 	}
 	
-	public OrderKmerHashes(String seq, int kmerSize)
+	public OrderedNGramHashes(String seq, int kmerSize)
 	{
 		this.seqLength = seq.length()-kmerSize+1;
 		this.orderedHashes = getFullHashes(seq, kmerSize);
@@ -169,7 +168,7 @@ public class OrderKmerHashes
 		}
     catch (IOException e)
     {
-    	throw new MhapRuntimeException("Unexpected IO error.");
+    	throw new SketchRuntimeException("Unexpected IO error.");
     }
 	}
 	
@@ -232,7 +231,7 @@ public class OrderKmerHashes
 		return storeAsArray(completeHashAsPair);
 	}
 	
-	public OverlapInfo getOverlapInfo(OrderKmerHashes s, double maxShiftPercent)
+	public OverlapInfo getOverlapInfo(OrderedNGramHashes s, double maxShiftPercent)
 	{
 		int[][][] allKmerHashes = this.orderedHashes;
 

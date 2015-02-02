@@ -39,7 +39,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.HitCounter;
 import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
 
@@ -50,22 +49,20 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	 * 
 	 */
 	private static final long serialVersionUID = 8846482698636860862L;
-	
-
-	
-	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numHashes,
+		
+	public final static int[] computeKmerMinHashes(String seq, final int ngramSize, final int numHashes,
 			HashSet<Integer> filter)
 	{
 		if (numHashes % 2 != 0)
-			throw new MhapRuntimeException("Number of words must be multiple of 2.");
+			throw new SketchRuntimeException("Number of words must be multiple of 2.");
 	
-		final int numberKmers = seq.length() - kmerSize + 1;
+		final int numberNGrams = seq.length() - ngramSize + 1;
 	
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
+		if (numberNGrams < 1)
+			throw new SketchRuntimeException("N-gram size bigger than string length.");
 	
 		// get the rabin hashes
-		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, kmerSize);
+		final int[] ngramHashes = HashUtils.computeSequenceHashes(seq, ngramSize);
 	
 		int[] hashes = new int[Math.max(1,numHashes)];
 		
@@ -74,20 +71,20 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		int numWordsBy2 = numHashes / 2;
 	
 		// Random rand = new Random(0);
-		for (int iter = 0; iter < kmerHashes.length; iter++)
+		for (int iter = 0; iter < ngramHashes.length; iter++)
 		{
 			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(kmerHashes[iter]))
+			if (filter != null && filter.contains(ngramHashes[iter]))
 				continue;
 	
 			// set it in case requesting 0
 			if (numHashes==0)
 			{
-				hashes[0] = kmerHashes[iter];
+				hashes[0] = ngramHashes[iter];
 				continue;
 			}
 	
-			long x = kmerHashes[iter];
+			long x = ngramHashes[iter];
 			for (int word = 0; word < numWordsBy2; word++)
 			{
 				// hashes[iter][word] = rand.nextLong();
@@ -111,16 +108,16 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		return hashes;
 	}
 	
-	public final static int[] computeKmerMinHashesWeighted(String seq, final int kmerSize, final int numHashes,
-			HashSet<Integer> filter, KmerCounts kmerCount)
+	public final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
+			HashSet<Integer> filter, NGramCounts kmerCount)
 	{
-		final int numberKmers = seq.length() - kmerSize + 1;
+		final int numberNGrams = seq.length() - nGramSize + 1;
 	
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
+		if (numberNGrams < 1)
+			throw new SketchRuntimeException("N-gram size bigger than string length.");
 	
 		// get the rabin hashes
-		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, kmerSize);
+		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, nGramSize);
 		
 		//now compute the counts of occurance
 		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
@@ -175,24 +172,24 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		return hashes;
 	}
 	
-	public final static int[] computeKmerMinHashesWeightedInt(String seq, final int kmerSize, final int numHashes,
-			HashSet<Integer> filter, KmerCounts kmerCount)
+	public final static int[] computeNGramMinHashesWeightedInt(String seq, final int nGramSize, final int numHashes,
+			HashSet<Integer> filter, NGramCounts kmerCount)
 	{
 		if (numHashes % 2 != 0)
-			throw new MhapRuntimeException("Number of words must be multiple of 2.");
+			throw new SketchRuntimeException("Number of words must be multiple of 2.");
 	
-		final int numberKmers = seq.length() - kmerSize + 1;
+		final int numberNGrams = seq.length() - nGramSize + 1;
 	
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
+		if (numberNGrams < 1)
+			throw new SketchRuntimeException("N-gram size bigger than string length.");
 	
 		// get the rabin hashes
-		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, kmerSize);
+		final int[] ngramHashes = HashUtils.computeSequenceHashes(seq, nGramSize);
 		
 		//now compute the counts of occurance
-		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
+		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(ngramHashes.length);
 		int maxCount = 0;
-		for (int kmer : kmerHashes)
+		for (int kmer : ngramHashes)
 		{
 			HitCounter counter = hitMap.get(kmer);
 			if (counter==null)
@@ -271,16 +268,16 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		return hashes;
 	}
 	
-	public final static int[] computeKmerMinHashesWeightedIntSuper(String seq, final int kmerSize, final int numHashes,
-			HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+	public final static int[] computeNgramMinHashesWeightedIntSuper(String seq, final int nGramSize, final int numHashes,
+			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
 	{
-		final int numberKmers = seq.length() - kmerSize + 1;
+		final int numberNGrams = seq.length() - nGramSize + 1;
 	
-		if (numberKmers < 1)
-			throw new MhapRuntimeException("Kmer size bigger than string length.");
+		if (numberNGrams < 1)
+			throw new SketchRuntimeException("N-gram size bigger than string length.");
 	
 		// get the kmer hashes
-		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, kmerSize, 0);
+		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, nGramSize, 0);
 		
 		//now compute the counts of occurance
 		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
@@ -406,17 +403,17 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		this.minHashes = minHashes;
 	}
 	
-	public MinHashSketch(String seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+	public MinHashSketch(String seq, int nGramSize, int numHashes, HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
 	{
 		//this.minHashes = MinHash.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
 		//this.minHashes = MinHash.computeKmerMinHashesWeighted(seq.getString(), kmerSize, numHashes, filter);
 		//this.minHashes = MinHash.computeKmerMinHashesWeightedInt(seq.getString(), kmerSize, numHashes, filter, kmerCount);
-		this.minHashes = MinHashSketch.computeKmerMinHashesWeightedIntSuper(seq, kmerSize, numHashes, filter, kmerCount, weighted);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(seq, nGramSize, numHashes, filter, kmerCount, weighted);
 	}
 	
-	public MinHashSketch(String str, int kmerSize, int numHashes)
+	public MinHashSketch(String str, int nGramSize, int numHashes)
 	{
-		this.minHashes = MinHashSketch.computeKmerMinHashesWeightedIntSuper(str, kmerSize, numHashes, null, null, true);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(str, nGramSize, numHashes, null, null, true);
 	}
 
 	public byte[] getAsByteArray()
@@ -448,7 +445,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		int size = this.minHashes.length;
 		
 		if (h.minHashes.length!=size)
-			throw new MhapRuntimeException("MinHashes must be of same length in order to be comapred.");
+			throw new SketchRuntimeException("MinHashes must be of same length in order to be compared.");
 		
 		for (int iter=0; iter<size; iter++)
 		{

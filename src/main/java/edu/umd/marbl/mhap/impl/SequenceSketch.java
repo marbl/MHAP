@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.sketch;
+package edu.umd.marbl.mhap.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -37,8 +37,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashSet;
 
-import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.general.SequenceId;
+import edu.umd.marbl.mhap.sketch.MinHashSketch;
+import edu.umd.marbl.mhap.sketch.MinHashSketchSequence;
+import edu.umd.marbl.mhap.sketch.NGramCounts;
+import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 
 public final class SequenceSketch implements Serializable
@@ -50,7 +52,7 @@ public final class SequenceSketch implements Serializable
 
 	private final SequenceId id;
 	private final MinHashSketch mainHashes;
-	private final OrderKmerHashes orderedHashes;
+	private final OrderedNGramHashes orderedHashes;
 	private final MinHashSketchSequence bitSequence;
 	private final int sequenceLength;
 
@@ -79,7 +81,7 @@ public final class SequenceSketch implements Serializable
 				throw new MhapRuntimeException("Unexpected data read error.");
 
 			// dos.write(this.orderedHashes.getAsByteArray());
-			OrderKmerHashes orderedHashes = OrderKmerHashes.fromByteStream(input);
+			OrderedNGramHashes orderedHashes = OrderedNGramHashes.fromByteStream(input);
 			if (orderedHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error.");
 
@@ -92,7 +94,7 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 
-	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderKmerHashes orderedHashes)
+	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderedNGramHashes orderedHashes)
 	{
 		this.sequenceLength = sequenceLength;
 		this.id = id;
@@ -102,12 +104,12 @@ public final class SequenceSketch implements Serializable
 	}
 
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, boolean storeHashes,
-			HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
 		this.mainHashes = new MinHashSketch(seq.toString(), kmerSize, numHashes, filter, kmerCount, weighted);
-		this.orderedHashes = new OrderKmerHashes(seq.toString(), orderedKmerSize);
+		this.orderedHashes = new OrderedNGramHashes(seq.toString(), orderedKmerSize);
 		
 		//bit sequence
 		this.bitSequence = new MinHashSketchSequence(seq.toString(), 6, 200, BIT_SKETCH_SIZE);
@@ -146,7 +148,7 @@ public final class SequenceSketch implements Serializable
 		return this.mainHashes;
 	}
 
-	public OrderKmerHashes getOrderedHashes()
+	public OrderedNGramHashes getOrderedHashes()
 	{
 		return this.orderedHashes;
 	}

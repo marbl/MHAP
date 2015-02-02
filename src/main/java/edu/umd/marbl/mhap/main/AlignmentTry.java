@@ -4,11 +4,11 @@ import edu.umd.marbl.mhap.align.AlignElementSketch;
 import edu.umd.marbl.mhap.align.AlignElementString;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.align.Alignment;
-import edu.umd.marbl.mhap.general.OverlapInfo;
+import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketchSequence;
-import edu.umd.marbl.mhap.sketch.OrderKmerHashes;
+import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 import edu.umd.marbl.mhap.sketch.SimHash;
 import edu.umd.marbl.mhap.utils.RandomSequenceGenerator;
 
@@ -56,8 +56,8 @@ public class AlignmentTry
 		System.err.println(info.a2);
 		System.err.println(info.b2);		
 		
-		OrderKmerHashes hashes1 = new OrderKmerHashes(a, 10);
-		OrderKmerHashes hashes2 = new OrderKmerHashes(b, 10);
+		OrderedNGramHashes hashes1 = new OrderedNGramHashes(a, 10);
+		OrderedNGramHashes hashes2 = new OrderedNGramHashes(b, 10);
 		
 		System.err.println("Ordered=");
 		System.err.println(hashes1.getOverlapInfo(hashes2, .2).a1);

@@ -29,8 +29,6 @@
  */
 package edu.umd.marbl.mhap.sketch;
 
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
-
 public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implements Sketch<T>,
 		Comparable<T>
 {
@@ -73,7 +71,7 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 	public final int getIntersectionCount(final T sh)
 	{
 		if (this.bits.length != sh.bits.length)
-			throw new MhapRuntimeException("Size of bits in tables must match.");
+			throw new SketchRuntimeException("Size of bits in tables must match.");
 
 		int count = 0;
 		for (int longIndex = 0; longIndex < this.bits.length; longIndex++)

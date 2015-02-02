@@ -41,14 +41,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import edu.umd.marbl.mhap.general.FastaData;
-import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.general.SequenceId;
+import edu.umd.marbl.mhap.impl.FastaData;
+import edu.umd.marbl.mhap.impl.MinHashSearch;
+import edu.umd.marbl.mhap.impl.Sequence;
+import edu.umd.marbl.mhap.impl.SequenceId;
+import edu.umd.marbl.mhap.impl.SequenceSketchStreamer;
 import edu.umd.marbl.mhap.sketch.CountMin;
 import edu.umd.marbl.mhap.sketch.HashUtils;
-import edu.umd.marbl.mhap.sketch.KmerCounts;
-import edu.umd.marbl.mhap.sketch.MinHashSearch;
-import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
+import edu.umd.marbl.mhap.sketch.NGramCounts;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
@@ -71,7 +71,7 @@ public final class MhapMain
 	private final String toFile;
 	private final boolean weighted;
 	
-	private final KmerCounts kmerCounter;
+	private final NGramCounts kmerCounter;
 
 	private static final double DEFAULT_ACCEPT_SCORE = 0.04;
 
@@ -310,7 +310,7 @@ public final class MhapMain
 
 	}
 	
-	public KmerCounts recordFastaKmerCounts(String file, double filterCutoff) throws IOException
+	public NGramCounts recordFastaKmerCounts(String file, double filterCutoff) throws IOException
 	{
 		System.err.println("Computing k-mer counts...");
 		
@@ -381,7 +381,7 @@ public final class MhapMain
 		
 		System.err.println("Computed k-mer counts for "+counter.get()+" sequences.");
 		
-		return new KmerCounts(countMin, counter.get(), filterCutoff);
+		return new NGramCounts(countMin, counter.get(), filterCutoff);
 	}
 
 	public void computeMain() throws IOException

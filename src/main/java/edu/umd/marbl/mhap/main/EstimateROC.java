@@ -49,8 +49,8 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.umd.marbl.mhap.general.FastaData;
-import edu.umd.marbl.mhap.general.Sequence;
+import edu.umd.marbl.mhap.impl.FastaData;
+import edu.umd.marbl.mhap.impl.Sequence;
 import edu.umd.marbl.mhap.utils.IntervalTree;
 import edu.umd.marbl.mhap.utils.Utils;
 

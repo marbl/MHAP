@@ -36,13 +36,12 @@ public final class SimHash extends AbstractBitSketch<SimHash>
 	 * 
 	 */
 	private static final long serialVersionUID = -2655482279264410602L;
-	public final int seqLength;
 	
 	private static final long[] recordHashes(final long[][] hashes, final int numWords)
 	{
 		final int[] counts = new int[numWords * 64];
 		
-		// perform count for each kmer
+		// perform count for each ngram
 		for (long[] objectHashes : hashes)
 		{
 			for (int wordIndex = 0; wordIndex < numWords; wordIndex++)
@@ -87,10 +86,9 @@ public final class SimHash extends AbstractBitSketch<SimHash>
 		return bits;
 	}
 
-	public SimHash(String string, int kmerSize, int numberWords)
+	public SimHash(String string, int nGramSize, int numberWords)
 	{
-		super(recordHashes(HashUtils.computeNGramHashesExact(string, kmerSize, numberWords, 0), numberWords));
-		this.seqLength = string.length();
+		super(recordHashes(HashUtils.computeNGramHashesExact(string, nGramSize, numberWords, 0), numberWords));
 	}
 
 

@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.general;
+package edu.umd.marbl.mhap.impl;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -41,8 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.umd.marbl.mhap.sketch.SequenceSketch;
-import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;

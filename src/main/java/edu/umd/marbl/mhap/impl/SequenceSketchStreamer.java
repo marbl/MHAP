@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.sketch;
+package edu.umd.marbl.mhap.impl;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -48,8 +48,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.umd.marbl.mhap.general.FastaData;
-import edu.umd.marbl.mhap.general.Sequence;
+import edu.umd.marbl.mhap.sketch.NGramCounts;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;
@@ -59,7 +58,7 @@ public class SequenceSketchStreamer
 	private final DataInputStream buffInput;
 	private final FastaData fastaData;
 	private final HashSet<Long> filter;
-	private final KmerCounts kmerCounter;
+	private final NGramCounts kmerCounter;
 	private final int kmerSize;
 	private final AtomicLong numberProcessed;
 	private final AtomicLong numberSubSequencesProcessed;
@@ -93,7 +92,7 @@ public class SequenceSketchStreamer
 	}
 
 	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int subSequenceSize, int orderedKmerSize,
-			HashSet<Long> filter, KmerCounts kmerCounter, boolean weighted, int offset) throws IOException
+			HashSet<Long> filter, NGramCounts kmerCounter, boolean weighted, int offset) throws IOException
 	{
 		this.fastaData = new FastaData(file, offset);
 		this.readingFasta = true;

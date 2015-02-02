@@ -1,12 +1,12 @@
 package edu.umd.marbl.mhap.sketch;
 
-public class KmerCounts
+public class NGramCounts
 {
 	private final CountMin<Long> counter;
 	private final long totalReads;
 	private final double filterCutoff;
 	
-	public KmerCounts(CountMin<Long> counter, int totalReads, double filterCutoff)
+	public NGramCounts(CountMin<Long> counter, int totalReads, double filterCutoff)
 	{
 		this.counter = counter;
 		this.totalReads = totalReads;
