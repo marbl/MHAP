@@ -42,7 +42,6 @@ import java.util.Map.Entry;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.HitCounter;
 import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
-import edu.umd.marbl.mhap.utils.Utils;
 
 public final class MinHashSketch implements Sketch<MinHashSketch>
 {
@@ -66,7 +65,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			throw new MhapRuntimeException("Kmer size bigger than string length.");
 	
 		// get the rabin hashes
-		final int[] kmerHashes = Utils.computeSequenceHashes(seq, kmerSize);
+		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, kmerSize);
 	
 		int[] hashes = new int[Math.max(1,numHashes)];
 		
@@ -121,7 +120,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			throw new MhapRuntimeException("Kmer size bigger than string length.");
 	
 		// get the rabin hashes
-		final int[] kmerHashes = Utils.computeSequenceHashes(seq, kmerSize);
+		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, kmerSize);
 		
 		//now compute the counts of occurance
 		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
@@ -188,7 +187,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			throw new MhapRuntimeException("Kmer size bigger than string length.");
 	
 		// get the rabin hashes
-		final int[] kmerHashes = Utils.computeSequenceHashes(seq, kmerSize);
+		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, kmerSize);
 		
 		//now compute the counts of occurance
 		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
@@ -281,7 +280,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			throw new MhapRuntimeException("Kmer size bigger than string length.");
 	
 		// get the kmer hashes
-		final long[] kmerHashes = Utils.computeSequenceHashesLong(seq, kmerSize, 0);
+		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, kmerSize, 0);
 		
 		//now compute the counts of occurance
 		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);

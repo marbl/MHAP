@@ -210,7 +210,7 @@ public class OrderKmerHashes
 		int cutoff = (int)((long)Integer.MIN_VALUE+((long)Integer.MAX_VALUE-(long)Integer.MIN_VALUE)/(long)REDUCTION);
 		
 		// compute just direct hash of sequence
-		int[] hashes = Utils.computeSequenceHashes(seq, subKmerSize);
+		int[] hashes = HashUtils.computeSequenceHashes(seq, subKmerSize);
 		
 		int count = 0;
 		for (int val : hashes)

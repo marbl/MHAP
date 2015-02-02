@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import edu.umd.marbl.mhap.general.Counter;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
-import edu.umd.marbl.mhap.utils.Utils;
 
 public final class CountMin<T extends Object> implements Counter<T>
 {
@@ -67,7 +66,7 @@ public final class CountMin<T extends Object> implements Counter<T>
 			throw new MhapRuntimeException("Positive value expected for increment.");
 
 		// compute the hash
-		int[] hashes = Utils.computeHashesInt(obj, depth, seed);
+		int[] hashes = HashUtils.computeHashesInt(obj, depth, seed);
 
 		for (int iter = 0; iter < depth; iter++)
 		{
@@ -87,7 +86,7 @@ public final class CountMin<T extends Object> implements Counter<T>
 	public long getCount(Object obj)
 	{
 		// compute the hash
-		int[] hashes = Utils.computeHashesInt(obj, depth, seed);
+		int[] hashes = HashUtils.computeHashesInt(obj, depth, seed);
 
 		long mincount = Long.MAX_VALUE;
 

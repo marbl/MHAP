@@ -45,6 +45,7 @@ import edu.umd.marbl.mhap.general.FastaData;
 import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.general.SequenceId;
 import edu.umd.marbl.mhap.sketch.CountMin;
+import edu.umd.marbl.mhap.sketch.HashUtils;
 import edu.umd.marbl.mhap.sketch.KmerCounts;
 import edu.umd.marbl.mhap.sketch.MinHashSearch;
 import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
@@ -335,14 +336,14 @@ public final class MhapMain
 						while (seq != null)
 						{
 							//get the kmers integers
-							long[] kmerHashes = Utils.computeSequenceHashesLong(seq.getString(), MhapMain.this.kmerSize, 0);
+							long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq.getString(), MhapMain.this.kmerSize, 0);
 							
 							//store the values
 							for (long val : kmerHashes)
 								countMin.add(val);
 
 							//get the kmers integers for reverse compliment
-							kmerHashes = Utils.computeSequenceHashesLong(seq.getReverseCompliment().getString(), MhapMain.this.kmerSize, 0);
+							kmerHashes = HashUtils.computeSequenceHashesLong(seq.getReverseCompliment().getString(), MhapMain.this.kmerSize, 0);
 							
 							//store the values
 							for (long val : kmerHashes)

@@ -29,7 +29,6 @@
  */
 package edu.umd.marbl.mhap.sketch;
 
-import edu.umd.marbl.mhap.utils.Utils;
 
 public final class SimHash extends AbstractBitSketch<SimHash>
 {
@@ -90,7 +89,7 @@ public final class SimHash extends AbstractBitSketch<SimHash>
 
 	public SimHash(String string, int kmerSize, int numberWords)
 	{
-		super(recordHashes(Utils.computeKmerHashesExact(string, kmerSize, numberWords, 0), numberWords));
+		super(recordHashes(HashUtils.computeNGramHashesExact(string, kmerSize, numberWords, 0), numberWords));
 		this.seqLength = string.length();
 	}
 
