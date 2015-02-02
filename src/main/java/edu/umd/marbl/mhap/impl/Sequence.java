@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.general;
+package edu.umd.marbl.mhap.impl;
 
 import edu.umd.marbl.mhap.utils.Utils;
 

@@ -27,9 +27,35 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.simhash;
+package edu.umd.marbl.mhap.utils;
 
-public interface VectorHash<T>
+public class MhapRuntimeException extends RuntimeException
 {
-	double jaccord(T sh);
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 56387323839744808L;
+
+	public MhapRuntimeException()
+	{
+		super();
+	}
+
+	public MhapRuntimeException(String message, Throwable cause)
+	{
+		super(message, cause);
+	}
+
+	public MhapRuntimeException(String message)
+	{
+		super(message);
+	}
+
+	public MhapRuntimeException(Throwable cause)
+	{
+		super(cause);
+	}
+
+	
 }

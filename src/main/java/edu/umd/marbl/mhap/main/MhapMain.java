@@ -36,11 +36,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import edu.umd.marbl.mhap.general.SequenceId;
-import edu.umd.marbl.mhap.sketch.MinHashSearch;
-import edu.umd.marbl.mhap.sketch.SequenceSketchStreamer;
-import edu.umd.marbl.mhap.utils.FastAlignRuntimeException;
+import edu.umd.marbl.mhap.impl.FastaData;
+import edu.umd.marbl.mhap.impl.MinHashSearch;
+import edu.umd.marbl.mhap.impl.Sequence;
+import edu.umd.marbl.mhap.impl.SequenceId;
+import edu.umd.marbl.mhap.impl.SequenceSketchStreamer;
+import edu.umd.marbl.mhap.sketch.CountMin;
+import edu.umd.marbl.mhap.sketch.HashUtils;
+import edu.umd.marbl.mhap.sketch.NGramCounts;
+import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
@@ -48,30 +57,21 @@ import edu.umd.marbl.mhap.utils.Utils;
 public final class MhapMain
 {
 	private final double acceptScore;
-
-	private final HashSet<Integer> filter;
-
+	private final HashSet<Long> filter;
 	private final String inFile;
-
 	private final int kmerSize;
-
 	private final double maxShift;
-
 	private final int minStoreLength;
-
 	private final boolean noSelf;
-
 	private final int numHashes;
-
 	private final int numMinMatches;
-
 	protected final int numThreads;
-
 	private final String processFile;
-
-	private final int subSequenceSize;
-
+	private final int subSequenceSize;	
 	private final String toFile;
+	private final boolean weighted;
+	
+	private final NGramCounts kmerCounter;
 
 	private static final double DEFAULT_ACCEPT_SCORE = 0.04;
 
@@ -111,22 +111,33 @@ public final class MhapMain
 		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to 2 x #cores.", DEFAULT_NUM_THREADS);
+		options.addOption("--weighted", "Perform weighted MinHashing.", false);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
 		options.addOption("--pacbio_fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
 		options.addOption("--pacbio_sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--pacbio_experimental", "Set all the parameters for the PacBio experimental settings. This is the current best guidance, and could change at any time without warning.", false);
 		
 		if (!options.process(args))
 			System.exit(0);
 		
 		//set the defaults for different type of data
-		if (options.get("--pacbio_fast").getBoolean() || options.get("--pacbio_sensitive").getBoolean())
+		if (options.get("--pacbio_fast").getBoolean() || options.get("--pacbio_sensitive").getBoolean() || options.get("--pacbio_experimental").getBoolean())
 		{
 			if (!options.get("-k").isSet())
+			{
 				options.setOptions("-k", 16);
+				if (options.get("--pacbio_experimental").getBoolean())
+					options.setOptions("-k", 14);
+			}
+			
 			if (!options.get("--num-min-matches").isSet())
+			{
 				options.setOptions("--num-min-matches", 3);
+				if (options.get("--pacbio_experimental").getBoolean())
+					options.setOptions("--num-min-matches", 1);
+			}
 			
 			if (options.get("--pacbio_fast").getBoolean() && options.get("--pacbio_sensitive").getBoolean())
 			{
@@ -141,6 +152,9 @@ public final class MhapMain
 					options.setOptions("--num-hashes", 512);
 				else
 				if (options.get("--pacbio_sensitive").getBoolean())
+					options.setOptions("--num-hashes", 1256);
+				else
+				if (options.get("--pacbio_experimental").getBoolean())
 					options.setOptions("--num-hashes", 1256);
 			}
 		}		
@@ -251,7 +265,7 @@ public final class MhapMain
 	}
 	
 
-	public MhapMain(ParseOptions options)
+	public MhapMain(ParseOptions options) throws IOException 
 	{
 		this.processFile = options.get("-p").getString();
 		this.inFile = options.get("-s").getString();
@@ -266,7 +280,8 @@ public final class MhapMain
 		this.minStoreLength = options.get("--min-store-length").getInteger();
 		this.maxShift = options.get("--max-shift").getDouble();
 		this.acceptScore = options.get("--threshold").getDouble();
-		
+		this.weighted = options.get("--weighted").getBoolean();
+	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
 		
@@ -276,17 +291,97 @@ public final class MhapMain
 			System.err.println("Reading in filter file " + filterFile + ".");
 			try
 			{
-				this.filter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize);
+				this.filter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize, 0);
 			}
 			catch (Exception e)
 			{
-				throw new FastAlignRuntimeException("Could not parse k-mer filter file.", e);
+				throw new MhapRuntimeException("Could not parse k-mer filter file.", e);
 			}
 			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
+			
+			this.kmerCounter = null;
 		}
 		else
+		{
 			this.filter = null;
+			//this.kmerCounter = recordFastaKmerCounts(inFile, options.get("--filter-threshold").getDouble());
+			this.kmerCounter = null;
+		}
 
+	}
+	
+	public NGramCounts recordFastaKmerCounts(String file, double filterCutoff) throws IOException
+	{
+		System.err.println("Computing k-mer counts...");
+		
+		final FastaData data = new FastaData(this.inFile, 0);
+		
+		final CountMin<Long> countMin = new CountMin<>(1.0e-5, 1.0-1.0e-5, 0);
+		//System.err.println(countMin.getDepth()+" "+countMin.getWidth());
+		
+		// figure out number of cores
+		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
+
+		final AtomicInteger counter = new AtomicInteger();
+		for (int iter = 0; iter < this.numThreads; iter++)
+		{
+			Runnable task = new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					try
+					{
+						Sequence seq = data.dequeue();
+						while (seq != null)
+						{
+							//get the kmers integers
+							long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq.getString(), MhapMain.this.kmerSize, 0);
+							
+							//store the values
+							for (long val : kmerHashes)
+								countMin.add(val);
+
+							//get the kmers integers for reverse compliment
+							kmerHashes = HashUtils.computeSequenceHashesLong(seq.getReverseCompliment().getString(), MhapMain.this.kmerSize, 0);
+							
+							//store the values
+							for (long val : kmerHashes)
+								countMin.add(val);
+
+							int currCount = counter.addAndGet(2);
+							if (currCount % 5000 == 0)
+								System.err.println("Kmers counted for " + currCount + " sequences (including reverse compliment)...");
+
+							seq = data.dequeue();
+						}
+					}
+					catch (IOException e)
+					{
+						throw new MhapRuntimeException(e);
+					}
+				}
+			};
+
+			// enqueue the task
+			execSvc.execute(task);
+		}
+
+		// shutdown the service
+		execSvc.shutdown();
+		try
+		{
+			execSvc.awaitTermination(365L, TimeUnit.DAYS);
+		}
+		catch (InterruptedException e)
+		{
+			execSvc.shutdownNow();
+			throw new MhapRuntimeException("Unable to finish all tasks.");
+		}
+		
+		System.err.println("Computed k-mer counts for "+counter.get()+" sequences.");
+		
+		return new NGramCounts(countMin, counter.get(), filterCutoff);
 	}
 
 	public void computeMain() throws IOException
@@ -298,16 +393,18 @@ public final class MhapMain
 		//if processing a directory
 		if (this.processFile!=null && !this.processFile.isEmpty())
 		{
+			System.err.println("Processing FASTA files for binary compression...");
+			
 			File file = new File(this.processFile);			
 			if (!file.exists())
-				throw new FastAlignRuntimeException("Process file does not exist.");
+				throw new MhapRuntimeException("Process file does not exist.");
 
 			if (this.toFile==null || this.toFile.isEmpty())
-				throw new FastAlignRuntimeException("Target directory must be defined.");
+				throw new MhapRuntimeException("Target directory must be defined.");
 			
 			File toDirectory = new File(this.toFile);
 			if (!toDirectory.exists() || !toDirectory.isDirectory())
-				throw new FastAlignRuntimeException("Target directory doesn't exit.");
+				throw new MhapRuntimeException("Target directory doesn't exit.");
 			
 			//allocate directory files
 			ArrayList<File> processFiles = new ArrayList<>();
@@ -363,103 +460,105 @@ public final class MhapMain
 			return;
 		}
 		
+		System.err.println("Processing files for storage in reverse index...");
+
 		// read and index the kmers
 		int seqNumberProcessed = 0;
 				
 		//create search object
-				SequenceSketchStreamer seqStreamer = getSequenceHashStreamer(this.inFile, seqNumberProcessed);
-				MinHashSearch hashSearch = getMatchSearch(seqStreamer);
+		SequenceSketchStreamer seqStreamer = getSequenceHashStreamer(this.inFile, seqNumberProcessed);
+		MinHashSearch hashSearch = getMatchSearch(seqStreamer);
 
-				seqNumberProcessed += seqStreamer.getNumberProcessed()/2;
-				System.err.println("Processed "+seqStreamer.getNumberProcessed()+" unique sequences (fwd and rev).");
-				System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
+		seqNumberProcessed += seqStreamer.getNumberProcessed()/2;
+		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" unique sequences (fwd and rev).");
+		System.err.println("Time (s) to read and hash from file: " + (System.nanoTime() - processTime)*1.0e-9);
 
-				long startTotalScoringTime = System.nanoTime();
+		long startTotalScoringTime = System.nanoTime();
 
-				//System.err.println("Press Enter...");
-				//System.in.read();
-				
-				// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
-				if (this.toFile==null || this.toFile.isEmpty())
-				{
-					startTime = System.nanoTime();
-					hashSearch.findMatches();
-					System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
-				}
-				else
-				{
-					File file = new File(this.toFile);
-					
-					if (!file.exists())
-						throw new FastAlignRuntimeException("To-file does not exist.");
-					
-					ArrayList<File> toFiles = new ArrayList<>();
-					
-					//if not dictory just add the file
-					if (!file.isDirectory())
-					{
-						toFiles.add(file);
-					}
-					else
-					{			
-						//read the directory content
-						File[] fileList = file.listFiles(new FilenameFilter()
-						{				
-							@Override
-							public boolean accept(File dir, String name)
-							{
-								if (!name.startsWith("."))
-									return true;
-								
-								return false;
-							}
-						});
-						
-						for (File cf : fileList)
-							toFiles.add(cf);
-					}
-
-					//sort the files in alphabetical order
-					Collections.sort(toFiles);
-
-					//first perform to self
-					startTime = System.nanoTime();
-					if (!this.noSelf)
-					{
-						hashSearch.findMatches();
-						System.out.flush();
-						System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
-					}
-
-					//no do to all files
-					for (File cf : toFiles)
-					{			
-						// read and index the kmers
-						seqStreamer = getSequenceHashStreamer(cf.getAbsolutePath(), seqNumberProcessed);
-						System.err.println("Opened fasta file "+cf.getCanonicalPath()+".");
+		//System.err.println("Press Enter...");
+		//System.in.read();
+		
+		// now that we have the hash constructed, go through all sequences to recompute their min and score their matches
+		if (this.toFile==null || this.toFile.isEmpty())
+		{
+			startTime = System.nanoTime();
+			hashSearch.findMatches();
+			System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
+		}
+		else
+		{
+			File file = new File(this.toFile);
 			
-						//match the file
-						startTime = System.nanoTime();
-						hashSearch.findMatches(seqStreamer);
+			if (!file.exists())
+				throw new MhapRuntimeException("To-file does not exist.");
+			
+			ArrayList<File> toFiles = new ArrayList<>();
+			
+			//if not dictory just add the file
+			if (!file.isDirectory())
+			{
+				toFiles.add(file);
+			}
+			else
+			{			
+				//read the directory content
+				File[] fileList = file.listFiles(new FilenameFilter()
+				{				
+					@Override
+					public boolean accept(File dir, String name)
+					{
+						if (!name.startsWith("."))
+							return true;
 						
-						//flush to get the output
-						System.out.flush();
-						
-						seqNumberProcessed += seqStreamer.getNumberProcessed();
-						System.err.println("Processed "+seqStreamer.getNumberProcessed()+" to sequences.");
-						System.err.println("Time (s) to score, hash to-file, and output: " + (System.nanoTime() - startTime)*1.0e-9);
+						return false;
 					}
-				}
+				});
 				
-				//flush output
+				for (File cf : fileList)
+					toFiles.add(cf);
+			}
+
+			//sort the files in alphabetical order
+			Collections.sort(toFiles);
+
+			//first perform to self
+			startTime = System.nanoTime();
+			if (!this.noSelf)
+			{
+				hashSearch.findMatches();
+				System.out.flush();
+				System.err.println("Time (s) to score and output to self: " + (System.nanoTime() - startTime)*1.0e-9);
+			}
+
+			//no do to all files
+			for (File cf : toFiles)
+			{			
+				// read and index the kmers
+				seqStreamer = getSequenceHashStreamer(cf.getAbsolutePath(), seqNumberProcessed);
+				System.err.println("Opened fasta file "+cf.getCanonicalPath()+".");
+	
+				//match the file
+				startTime = System.nanoTime();
+				hashSearch.findMatches(seqStreamer);
+				
+				//flush to get the output
 				System.out.flush();
 				
-				//output time
-				System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
-				System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
-				
-				//output final stats
-				outputFinalStat(hashSearch);
+				seqNumberProcessed += seqStreamer.getNumberProcessed();
+				System.err.println("Processed "+seqStreamer.getNumberProcessed()+" to sequences.");
+				System.err.println("Time (s) to score, hash to-file, and output: " + (System.nanoTime() - startTime)*1.0e-9);
+			}
+		}
+		
+		//flush output
+		System.out.flush();
+		
+		//output time
+		System.err.println("Total scoring time (s): " + (System.nanoTime() - startTotalScoringTime)*1.0e-9);
+		System.err.println("Total time (s): " + (System.nanoTime() - startTotalTime)*1.0e-9);
+		
+		//output final stats
+		outputFinalStat(hashSearch);
 	}
 
 	public MinHashSearch getMatchSearch(SequenceSketchStreamer hashStreamer) throws IOException
@@ -475,14 +574,14 @@ public final class MhapMain
 			seqStreamer = new SequenceSketchStreamer(file, offset);
 		else
 			seqStreamer = new SequenceSketchStreamer(file, this.kmerSize, this.numHashes, this.subSequenceSize,
-					DEFAULT_ORDERED_KMER_SIZE, this.filter, offset);
+					DEFAULT_ORDERED_KMER_SIZE, this.filter, this.kmerCounter, this.weighted, offset);
 
 		return seqStreamer;
 	}
 
 	protected void outputFinalStat(MinHashSearch matchSearch)
 	{
-		//System.err.println("MinHash search time (s): " + matchSearch.getMinHashSearchTime());
+		System.err.println("MinHash search time (s): " + matchSearch.getMinHashSearchTime());
 		//System.err.println("Sort-merge search time (s): " + matchSearch.getSortMergeTime());
 		System.err.println("Total matches found: " + matchSearch.getMatchesProcessed());
 		System.err.println("Average number of matches per lookup: " + (double) matchSearch.getMatchesProcessed()

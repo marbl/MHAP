@@ -32,7 +32,6 @@ package edu.umd.marbl.mhap.utils;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
@@ -42,11 +41,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.FileReader;
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
-
-import edu.umd.marbl.mhap.general.Sequence;
+import edu.umd.marbl.mhap.sketch.HashUtils;
 
 public final class Utils
 {
@@ -61,13 +56,13 @@ public final class Utils
 				"S"), TGA("X"), TGC("C"), TGG("W"), TGT("C"), TTA("L"), TTC("F"), TTG("L"), TTT("F");
 
 		/*
-		 * Ala/A GCU, GCC, GCA, GCG Leu/L UUA, UUG, CUU, CUC, CUA, CUG Arg/R CGU,
-		 * CGC, CGA, CGG, AGA, AGG Lys/K AAA, AAG Asn/N AAU, AAC Met/M AUG Asp/D
-		 * GAU, GAC Phe/F UUU, UUC Cys/C UGU, UGC Pro/P CCU, CCC, CCA, CCG Gln/Q
-		 * CAA, CAG Ser/S UCU, UCC, UCA, UCG, AGU, AGC Glu/E GAA, GAG Thr/T ACU,
-		 * ACC, ACA, ACG Gly/G GGU, GGC, GGA, GGG Trp/W UGG His/H CAU, CAC Tyr/Y
-		 * UAU, UAC Ile/I AUU, AUC, AUA Val/V GUU, GUC, GUA, GUG START AUG STOP UAG,
-		 * UGA, UAA
+		 * Ala/A GCU, GCC, GCA, GCG Leu/L UUA, UUG, CUU, CUC, CUA, CUG Arg/R
+		 * CGU, CGC, CGA, CGG, AGA, AGG Lys/K AAA, AAG Asn/N AAU, AAC Met/M AUG
+		 * Asp/D GAU, GAC Phe/F UUU, UUC Cys/C UGU, UGC Pro/P CCU, CCC, CCA, CCG
+		 * Gln/Q CAA, CAG Ser/S UCU, UCC, UCA, UCG, AGU, AGC Glu/E GAA, GAG
+		 * Thr/T ACU, ACC, ACA, ACG Gly/G GGU, GGC, GGA, GGG Trp/W UGG His/H
+		 * CAU, CAC Tyr/Y UAU, UAC Ile/I AUU, AUC, AUA Val/V GUU, GUC, GUA, GUG
+		 * START AUG STOP UAG, UGA, UAA
 		 */
 		private String other;
 
@@ -84,7 +79,8 @@ public final class Utils
 
 	public enum Translate
 	{
-		A("T"), B("V"), C("G"), D("H"), G("C"), H("D"), K("M"), M("K"), N("N"), R("Y"), S("S"), T("A"), V("B"), W("W"), Y("R");
+		A("T"), B("V"), C("G"), D("H"), G("C"), H("D"), K("M"), M("K"), N("N"), R("Y"), S("S"), T("A"), V("B"), W("W"), Y(
+				"R");
 
 		private String other;
 
@@ -99,7 +95,7 @@ public final class Utils
 		}
 	}
 
-	public static final int BUFFER_BYTE_SIZE = 8388608; //8MB
+	public static final int BUFFER_BYTE_SIZE = 8388608; // 8MB
 	public static final NumberFormat DECIMAL_FORMAT = new DecimalFormat("############.########");
 	public static final int FASTA_LINE_LENGTH = 60;
 
@@ -123,199 +119,6 @@ public final class Utils
 		return brackets;
 	}
 
-	public final static long[][] computeKmerHashes(final Sequence seq, final int kmerSize, final int numWords)
-	{
-		final int numberKmers = seq.numKmers(kmerSize);
-
-		if (numberKmers < 1)
-			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
-
-		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
-
-		final long[][] hashes = new long[rabinHashes.length][numWords];
-
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < rabinHashes.length; iter++)
-		{
-			// rand.setSeed(rabinHashes[iter]);
-			long x = rabinHashes[iter];
-
-			for (int word = 0; word < numWords; word++)
-			{
-				// hashes[iter][word] = rand.nextLong();
-
-				// XORShift Random Number Generators
-				x ^= (x << 21);
-				x ^= (x >>> 35);
-				x ^= (x << 4);
-				hashes[iter][word] = x;
-			}
-		}
-
-		return hashes;
-	}
-	
-	public final static int[][] computeKmerHashesInt(final Sequence seq, final int kmerSize, final int numWords, HashSet<Integer> filter)
-	{
-		final int numberKmers = seq.numKmers(kmerSize);
-
-		if (numberKmers < 1)
-			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
-
-		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
-
-		final int[][] hashes = new int[rabinHashes.length][numWords];
-
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < rabinHashes.length; iter++)
-		{
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(rabinHashes[iter]))
-			{
-				Arrays.fill(hashes[iter], Integer.MAX_VALUE);
-				continue;
-			}
-
-			// rand.setSeed(rabinHashes[iter]);
-			long x = rabinHashes[iter];
-
-			for (int word = 0; word < numWords; word++)
-			{
-				// hashes[iter][word] = rand.nextInt();
-
-				// XORShift Random Number Generators
-				x ^= (x << 21);
-				x ^= (x >>> 35);
-				x ^= (x << 4);
-				hashes[iter][word] = (int) x;
-			}
-		}
-
-		return hashes;
-	}
-
-	public final static int[] computeKmerHashesIntBasic(final Sequence seq, final int kmerSize, final int numWords, HashSet<Integer> filter)
-	{
-		final int numberKmers = seq.numKmers(kmerSize);
-
-		if (numberKmers < 1)
-			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
-
-		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq.getString(), kmerSize);
-
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < rabinHashes.length; iter++)
-		{
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(rabinHashes[iter]))
-			{
-				rabinHashes[iter] = Integer.MAX_VALUE;
-			}
-		}
-
-		return rabinHashes;
-	}
-	
-	public final static int[] computeKmerMinHashes(String seq, final int kmerSize, final int numHashes,
-			HashSet<Integer> filter)
-	{
-		if (numHashes % 2 != 0)
-			throw new FastAlignRuntimeException("Number of words must be multiple of 2.");
-
-		final int numberKmers = seq.length() - kmerSize + 1;
-
-		if (numberKmers < 1)
-			throw new FastAlignRuntimeException("Kmer size bigger than string length.");
-
-		// get the rabin hashes
-		final int[] rabinHashes = computeSequenceHashes(seq, kmerSize);
-
-		int[] hashes = new int[Math.max(1,numHashes)];
-		
-		Arrays.fill(hashes, Integer.MAX_VALUE);
-
-		int numWordsBy2 = numHashes / 2;
-
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < rabinHashes.length; iter++)
-		{
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(rabinHashes[iter]))
-				continue;
-
-			// set it in case requesting 0
-			if (numHashes==0)
-			{
-				hashes[0] = rabinHashes[iter];
-				continue;
-			}
-
-			// rand.setSeed(rabinHashes[iter]);
-			long x = rabinHashes[iter];
-			for (int word = 0; word < numWordsBy2; word++)
-			{
-				// hashes[iter][word] = rand.nextLong();
-
-				// XORShift Random Number Generators
-				x ^= (x << 21);
-				x ^= (x >>> 35);
-				x ^= (x << 4);
-
-				int val1 = (int) x;
-				int val2 = (int) (x >> 32);
-
-				if (val1 < hashes[2 * word])
-					hashes[2 * word] = val1;
-
-				if (val2 < hashes[2 * word + 1])
-					hashes[2 * word + 1] = val2;
-			}
-		}
-		
-		//now combine into super shingles
-		/*
-		HashFunction hf = Hashing.murmur3_32(0);
-		
-		int[] superShingles = new int[hashes.length];
-		for (int iter=0; iter<hashes.length; iter++)
-		{
-			int i1 = iter;
-			int i2 = (iter+1)%hashes.length;
-			
-			HashCode hc = hf.newHasher().
-					putInt(hashes[i1]).
-					putInt(hashes[i2]).
-					hash();
-			superShingles[iter] = hc.asInt();
-		}
-		hashes = superShingles;
-		*/
-
-		return hashes;
-	}
-
-	public final static int[] computeSequenceHashes(final String seq, final int kmerSize)
-	{
-		//RollingSequenceHash rabinHash = new RollingSequenceHash(kmerSize);
-		//final int[] rabinHashes = rabinHash.hashInt(seq);
-
-		HashFunction hf = Hashing.murmur3_32(0);
-		
-		int[] hashes = new int[seq.length()-kmerSize+1];
-		for (int iter=0; iter<hashes.length; iter++)
-		{
-			HashCode hc = hf.newHasher()
-					.putUnencodedChars(seq.substring(iter, iter+kmerSize))
-		       .hash();
-			hashes[iter] = hc.asInt();
-		}
-
-		return hashes;
-	}
-	
 	// add new line breaks every FASTA_LINE_LENGTH characters
 	public final static String convertToFasta(String supplied)
 	{
@@ -354,7 +157,7 @@ public final class Utils
 		}
 		return converted.toString();
 	}
-
+	
 	public final static int countLetterInRead(String fasta, String letter)
 	{
 		return countLetterInRead(fasta, letter, false);
@@ -386,45 +189,47 @@ public final class Utils
 		return count;
 	}
 
-	public final static HashSet<Integer> createKmerFilter(String fileName, double maxPercent, int kmerSize) throws IOException
+	public final static HashSet<Long> createKmerFilter(String fileName, double maxPercent, int kmerSize, int seed)
+			throws IOException
 	{
 		File file = new File(fileName);
-		
-		//make sure don't leak resources
-		try(BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);)
+
+		// make sure don't leak resources
+		try (BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);)
 		{
-			//generate hashset
-			ArrayList<Integer> filterArray = new ArrayList<Integer>();
-			
+			// generate hashset
+			ArrayList<Long> filterArray = new ArrayList<Long>();
+
 			String line = bf.readLine();
-			while (line!=null)
+			while (line != null)
 			{
 				String[] str = line.split("\\s+", 3);
-				
-				if (str.length<2)
-					throw new FastAlignRuntimeException("Kmer filter file must have at least two column [kmer kmer_percent].");
-	
+
+				if (str.length < 2)
+					throw new MhapRuntimeException(
+							"Kmer filter file must have at least two column [kmer kmer_percent].");
+
 				double percent = Double.parseDouble(str[1]);
-				
-				//if greater, add to hashset
-				if (percent>maxPercent)
+
+				// if greater, add to hashset
+				if (percent > maxPercent)
 				{
-					int[] minHash = Utils.computeKmerMinHashes(str[0], kmerSize, 0, null);
-					
-					if (minHash.length>1)
+					long[] minHash = HashUtils.computeSequenceHashesLong(str[0], kmerSize, seed);
+
+					if (minHash.length > 1)
 						System.err.println("Warning filter file kmer size larger than setting!");
-					
-					for (int val : minHash)
+
+					for (long val : minHash)
 						filterArray.add(val);
 				}
 				else
 					break;
-				
-				//read the next line
+
+				// read the next line
 				line = bf.readLine();
 			}
-			return new HashSet<Integer>(filterArray);
-		}		
+			return new HashSet<Long>(filterArray);
+		}
 	}
 
 	public final static int[] errorString(int[] s, double readError)
@@ -561,21 +366,21 @@ public final class Utils
 
 		return null;
 	}
-	
-	public final static <H> double hashEfficiency(HashMap<Integer,ArrayList<H>> c)
+
+	public final static <H> double hashEfficiency(HashMap<Integer, ArrayList<H>> c)
 	{
 		double e = hashEnthropy(c);
-		double log2inv = 1.0/Math.log(2);
-		double scaling = Math.log(c.size())*log2inv;
-		
-		return e/scaling;
+		double log2inv = 1.0 / Math.log(2);
+		double scaling = Math.log(c.size()) * log2inv;
+
+		return e / scaling;
 	}
-	
-	public final static <H> double hashEnthropy(HashMap<Integer,ArrayList<H>> c)
+
+	public final static <H> double hashEnthropy(HashMap<Integer, ArrayList<H>> c)
 	{
 		double sum = 0.0;
-		double log2inv = 1.0/Math.log(2);
-		
+		double log2inv = 1.0 / Math.log(2);
+
 		double[] p = new double[c.size()];
 		int size = 0;
 		int count = 0;
@@ -584,16 +389,16 @@ public final class Utils
 			size += elem.size();
 			p[count++] = elem.size();
 		}
-		
-		for (int iter=0; iter<p.length; iter++)
+
+		for (int iter = 0; iter < p.length; iter++)
 		{
-			double val = p[iter]/(double)size;
-			sum -= val*Math.log(val)*log2inv;
+			double val = p[iter] / (double) size;
+			sum -= val * Math.log(val) * log2inv;
 		}
-		
+
 		return sum;
 	}
-	
+
 	public final static boolean isAContainedInB(int startA, int endA, int startB, int endB)
 	{
 		int minA = Math.min(startA, endA);
@@ -604,69 +409,69 @@ public final class Utils
 		return (minB < minA && maxB > maxA);
 	}
 
-	public final static Pair<Double,Double> linearRegression(int[] a, int[] b, int size)
+	public final static Pair<Double, Double> linearRegression(int[] a, int[] b, int size)
 	{
-		//take one pass and compute means
+		// take one pass and compute means
 		int xy = 0;
 		int x = 0;
 		int y = 0;
 		int x2 = 0;
-		
-		for (int iter=0; iter<size; iter++)
+
+		for (int iter = 0; iter < size; iter++)
 		{
-			xy += a[iter]*b[iter];
+			xy += a[iter] * b[iter];
 			x += a[iter];
 			y += b[iter];
-			x2 += a[iter]*a[iter];
+			x2 += a[iter] * a[iter];
 		}
-		
-		double Ninv = 1.0/(double)size;
-		
-		double beta = ((double)xy-Ninv*(double)(x*y))/((double)x2-Ninv*(double)(x*x));
-		double alpha = Ninv*((double)y-beta*(double)x);
-		
-		return new Pair<Double,Double>(alpha, beta);
+
+		double Ninv = 1.0 / (double) size;
+
+		double beta = ((double) xy - Ninv * (double) (x * y)) / ((double) x2 - Ninv * (double) (x * x));
+		double alpha = Ninv * ((double) y - beta * (double) x);
+
+		return new Pair<Double, Double>(alpha, beta);
 	}
-	
+
 	public final static double mean(double[] a, int size)
 	{
 		double x = 0.0;
-		for (int iter=0; iter<size; iter++)
+		for (int iter = 0; iter < size; iter++)
 			x += a[iter];
 
-		return x/(double)size;
+		return x / (double) size;
 	}
-	
+
 	public final static double mean(int[] a, int size)
 	{
 		int x = 0;
-		for (int iter=0; iter<size; iter++)
+		for (int iter = 0; iter < size; iter++)
 			x += a[iter];
 
-		return x/(double)size;
+		return x / (double) size;
 	}
 
 	public final static double pearsonCorr(int[] a, int[] b, int size)
 	{
-		if (size<2)
+		if (size < 2)
 			return 0.0;
-		
+
 		double meana = mean(a, size);
 		double meanb = mean(b, size);
 		double stda = std(a, size, meana);
 		double stdb = std(b, size, meanb);
-		
+
 		double r = 0.0;
-		for (int iter=0; iter<size; iter++)
+		for (int iter = 0; iter < size; iter++)
 		{
-			r += ((double)a[iter]-meana)*((double)b[iter]-meanb)/(stda*stdb);
+			r += ((double) a[iter] - meana) * ((double) b[iter] - meanb) / (stda * stdb);
 		}
 
-		
-		return r/(double)(size-1);
+		return r / (double) (size - 1);
 	}
 
-	//adapted form http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
+	// adapted form
+	// http://blog.teamleadnet.com/2012/07/quick-select-algorithm-find-kth-element.html
 	public final static int quickSelect(int[] array, int k, int length)
 	{
 		if (array == null || length <= k)
@@ -686,7 +491,7 @@ public final class Utils
 			while (r < w)
 			{
 				if (array[r] >= mid)
-				{ 
+				{
 					// put the large values at the end
 					int tmp = array[w];
 					array[w] = array[r];
@@ -694,7 +499,7 @@ public final class Utils
 					w--;
 				}
 				else
-				{ 
+				{
 					// the value is smaller than the pivot, skip
 					r++;
 				}
@@ -741,25 +546,25 @@ public final class Utils
 	public final static double std(double[] a, int size, double mean)
 	{
 		double x = 0.0;
-		for (int iter=0; iter<size; iter++)
+		for (int iter = 0; iter < size; iter++)
 		{
-			double val = a[iter]-mean;
-			x += val*val;
+			double val = a[iter] - mean;
+			x += val * val;
 		}
 
-		return Math.sqrt(x/(double)(size-1));
+		return Math.sqrt(x / (double) (size - 1));
 	}
 
 	public final static double std(int[] a, int size, double mean)
 	{
 		double x = 0.0;
-		for (int iter=0; iter<size; iter++)
+		for (int iter = 0; iter < size; iter++)
 		{
-			double val = (double)a[iter]-mean;
-			x += val*val;
+			double val = (double) a[iter] - mean;
+			x += val * val;
 		}
 
-		return Math.sqrt(x/(double)(size-1));
+		return Math.sqrt(x / (double) (size - 1));
 	}
 
 	public final static String toProtein(String genome, boolean isReversed, int frame)
@@ -780,5 +585,74 @@ public final class Utils
 		}
 
 		return result.toString();
+	}
+
+	public static String toString(double[][] A)
+	{
+		StringBuilder s = new StringBuilder();
+
+		s.append("[");
+
+		for (double[] a : A)
+		{
+			if (a != null)
+			{
+				for (int iter = 0; iter < a.length - 1; iter++)
+					s.append("" + a[iter] + ",");
+
+				if (a.length > 0)
+					s.append("" + a[a.length - 1]);
+			}
+			s.append("\n");
+		}
+		s.append("]");
+
+		return new String(s);
+	}
+	
+	public static String toString(float[][] A)
+	{
+		StringBuilder s = new StringBuilder();
+
+		s.append("[");
+
+		for (float[] a : A)
+		{
+			if (a != null)
+			{
+				for (int iter = 0; iter < a.length - 1; iter++)
+					s.append("" + a[iter] + ",");
+
+				if (a.length > 0)
+					s.append("" + a[a.length - 1]);
+			}
+			s.append("\n");
+		}
+		s.append("]");
+
+		return new String(s);
+	}
+
+	public static String toString(long[][] A)
+	{
+		StringBuilder s = new StringBuilder();
+
+		s.append("[");
+
+		for (long[] a : A)
+		{
+			if (a != null)
+			{
+				for (int iter = 0; iter < a.length - 1; iter++)
+					s.append("" + a[iter] + ",");
+
+				if (a.length > 0)
+					s.append("" + a[a.length - 1]);
+			}
+			s.append("\n");
+		}
+		s.append("]");
+
+		return new String(s);
 	}
 }

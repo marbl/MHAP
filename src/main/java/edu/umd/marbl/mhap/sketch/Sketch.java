@@ -27,35 +27,11 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.utils;
+package edu.umd.marbl.mhap.sketch;
 
-public class FastAlignRuntimeException extends RuntimeException
+import java.io.Serializable;
+
+public interface Sketch<T extends Sketch<T>> extends Serializable
 {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 56387323839744808L;
-
-	public FastAlignRuntimeException()
-	{
-		super();
-	}
-
-	public FastAlignRuntimeException(String message, Throwable cause)
-	{
-		super(message, cause);
-	}
-
-	public FastAlignRuntimeException(String message)
-	{
-		super(message);
-	}
-
-	public FastAlignRuntimeException(Throwable cause)
-	{
-		super(cause);
-	}
-
-	
+	double similarity(T sh);
 }

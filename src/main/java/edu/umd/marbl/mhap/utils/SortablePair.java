@@ -28,7 +28,9 @@
  * 
  */
 package edu.umd.marbl.mhap.utils;
-public class SortablePair<ComparableType extends Comparable<ComparableType>,AnyType> extends Pair<ComparableType,AnyType> implements Comparable<SortablePair<ComparableType,AnyType>>
+
+public class SortablePair<ComparableType extends Comparable<ComparableType>, AnyType> extends
+		Pair<ComparableType, AnyType> implements Comparable<SortablePair<ComparableType, AnyType>>
 {
 	/**
 	 * 
@@ -39,16 +41,18 @@ public class SortablePair<ComparableType extends Comparable<ComparableType>,AnyT
 	 * Instantiates a new sortable pair.
 	 * 
 	 * @param x
-	 *          the x
+	 *            the x
 	 * @param y
-	 *          the y
+	 *            the y
 	 */
 	public SortablePair(ComparableType x, AnyType y)
 	{
-		super(x,y);
+		super(x, y);
 	}
-		
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override

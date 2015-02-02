@@ -29,27 +29,67 @@
  */
 package edu.umd.marbl.mhap.sketch;
 
-import edu.umd.marbl.mhap.general.SequenceId;
 
-public final class KmerInfo
+public final class SimHash extends AbstractBitSketch<SimHash>
 {
-	private final SequenceId id;
-	private final int pos;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2655482279264410602L;
 	
-	public KmerInfo(SequenceId id, int pos)
+	private static final long[] recordHashes(final long[][] hashes, final int numWords)
 	{
-		this.id = id;
-		this.pos = pos;
+		final int[] counts = new int[numWords * 64];
+		
+		// perform count for each ngram
+		for (long[] objectHashes : hashes)
+		{
+			for (int wordIndex = 0; wordIndex < numWords; wordIndex++)
+			{
+				final long val = objectHashes[wordIndex];
+				final int offset = wordIndex * 64;
+
+				long mask = 0b1;
+
+				for (int bit = 0; bit < 64; bit++)
+				{
+					// if not different then increase counts
+					if ((val & mask) == 0b0)
+						counts[offset + bit]--;
+					else
+						counts[offset + bit]++;
+
+					mask = mask << 1;
+				}
+			}
+		}
+
+		long[] bits = new long[numWords];
+		for (int wordIndex = 0; wordIndex < numWords; wordIndex++)
+		{
+			final int offset = wordIndex * 64;
+			long val = 0b0;
+			long mask = 0b1;
+
+			for (int bit = 0; bit < 64; bit++)
+			{
+				if (counts[offset + bit] > 0)
+					val = val | mask;
+
+				// adjust the mask
+				mask = mask << 1;
+			}
+
+			bits[wordIndex] = val;
+		}
+
+		return bits;
 	}
-	
-	public SequenceId getId()
+
+	public SimHash(String string, int nGramSize, int numberWords)
 	{
-		return this.id;		
+		super(recordHashes(HashUtils.computeNGramHashesExact(string, nGramSize, numberWords, 0), numberWords));
 	}
-	
-	public int getPosition()
-	{
-		return this.pos;		
-	}
+
 
 }
