@@ -27,4 +27,10 @@ public final class OverlapInfo
 	{
 		return "[score="+this.score+", a1="+this.a1+" a2="+this.a2+", b1="+this.b1+" b2="+this.b2+"]";
 	}
+	
+	public String toLineString()
+	{
+		return ""+this.score+", "+this.a1+", "+this.a2+", "+this.b1+", "+this.b2;
+	}
+
 }

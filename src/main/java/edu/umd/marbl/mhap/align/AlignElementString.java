@@ -4,7 +4,7 @@ public class AlignElementString implements AlignElement<AlignElementString>
 {
 	private final double EXACT_MATCH_SCORE = 1.0;
 	
-	private final double MISMATCH_SCORE = -0.5;
+	private final double MISMATCH_SCORE = -1.0;
 	private final char[] s;
 	
 	public AlignElementString(String s)
@@ -16,12 +16,6 @@ public class AlignElementString implements AlignElement<AlignElementString>
 	public int length()
 	{
 		return s.length;
-	}
-
-	@Override
-	public int length(int i)
-	{
-		return 1;
 	}
 
 	@Override

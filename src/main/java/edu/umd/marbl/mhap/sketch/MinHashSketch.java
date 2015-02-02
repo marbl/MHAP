@@ -39,13 +39,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
-import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.HitCounter;
 import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public final class MinHash implements Sketch<MinHash>
+public final class MinHashSketch implements Sketch<MinHashSketch>
 {
 	private final int[] minHashes;
 	/**
@@ -376,7 +375,7 @@ public final class MinHash implements Sketch<MinHash>
 		return hashes;
 	}
 
-	public static MinHash fromByteStream(DataInputStream input) throws IOException
+	public static MinHashSketch fromByteStream(DataInputStream input) throws IOException
 	{
 		try
 		{
@@ -395,7 +394,7 @@ public final class MinHash implements Sketch<MinHash>
 				minHashes[hash] = input.readInt();
 			}
 			
-			return new MinHash(minHashes);
+			return new MinHashSketch(minHashes);
 		}
 		catch (EOFException e)
 		{
@@ -403,22 +402,22 @@ public final class MinHash implements Sketch<MinHash>
 		}
 	}
 	
-	private MinHash(int[] minHashes)
+	private MinHashSketch(int[] minHashes)
 	{
 		this.minHashes = minHashes;
 	}
 	
-	public MinHash(Sequence seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
+	public MinHashSketch(String seq, int kmerSize, int numHashes, HashSet<Long> filter, KmerCounts kmerCount, boolean weighted)
 	{
 		//this.minHashes = MinHash.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
 		//this.minHashes = MinHash.computeKmerMinHashesWeighted(seq.getString(), kmerSize, numHashes, filter);
 		//this.minHashes = MinHash.computeKmerMinHashesWeightedInt(seq.getString(), kmerSize, numHashes, filter, kmerCount);
-		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(seq.getString(), kmerSize, numHashes, filter, kmerCount, weighted);
+		this.minHashes = MinHashSketch.computeKmerMinHashesWeightedIntSuper(seq, kmerSize, numHashes, filter, kmerCount, weighted);
 	}
 	
-	public MinHash(String str, int kmerSize, int numHashes)
+	public MinHashSketch(String str, int kmerSize, int numHashes)
 	{
-		this.minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(str, kmerSize, numHashes, null, null, true);
+		this.minHashes = MinHashSketch.computeKmerMinHashesWeightedIntSuper(str, kmerSize, numHashes, null, null, true);
 	}
 
 	public byte[] getAsByteArray()
@@ -444,7 +443,7 @@ public final class MinHash implements Sketch<MinHash>
 		return this.minHashes;
 	}
 
-	public final double jaccard(MinHash h)
+	public final double jaccard(MinHashSketch h)
 	{
 		int count = 0;
 		int size = this.minHashes.length;
@@ -467,7 +466,7 @@ public final class MinHash implements Sketch<MinHash>
 	}
 	
 	@Override
-	public double similarity(MinHash sh)
+	public double similarity(MinHashSketch sh)
 	{
 		return jaccard(sh);
 	}

@@ -38,7 +38,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import edu.umd.marbl.mhap.general.OverlapInfo;
-import edu.umd.marbl.mhap.general.Sequence;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.Utils;
 
@@ -142,7 +141,7 @@ public class OrderKmerHashes
 		this.orderedHashes = orderedHashes;
 	}
 	
-	public OrderKmerHashes(Sequence seq, int kmerSize)
+	public OrderKmerHashes(String seq, int kmerSize)
 	{
 		this.seqLength = seq.length()-kmerSize+1;
 		this.orderedHashes = getFullHashes(seq, kmerSize);
@@ -206,12 +205,12 @@ public class OrderKmerHashes
 		return completeHash;
 	}
 	
-	private int[][][] getFullHashes(Sequence seq, int subKmerSize)
+	private int[][][] getFullHashes(String seq, int subKmerSize)
 	{
 		int cutoff = (int)((long)Integer.MIN_VALUE+((long)Integer.MAX_VALUE-(long)Integer.MIN_VALUE)/(long)REDUCTION);
 		
 		// compute just direct hash of sequence
-		int[] hashes = Utils.computeSequenceHashes(seq.getString(), subKmerSize);
+		int[] hashes = Utils.computeSequenceHashes(seq, subKmerSize);
 		
 		int count = 0;
 		for (int val : hashes)
@@ -233,7 +232,7 @@ public class OrderKmerHashes
 		return storeAsArray(completeHashAsPair);
 	}
 	
-	public OverlapInfo getFullScore(OrderKmerHashes s, double maxShiftPercent)
+	public OverlapInfo getOverlapInfo(OrderKmerHashes s, double maxShiftPercent)
 	{
 		int[][][] allKmerHashes = this.orderedHashes;
 

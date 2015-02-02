@@ -9,7 +9,7 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 
 	private final static long[] getAsBits(String seq, int kmerSize, int numWords)
 	{
-		int[] minHashes = MinHash.computeKmerMinHashesWeightedIntSuper(seq, kmerSize, numWords*64, null, null, true);
+		int[] minHashes = MinHashSketch.computeKmerMinHashesWeightedIntSuper(seq, kmerSize, numWords*64, null, null, true);
 		
 		//now convert them to bits
 		long[] bits = new long[numWords];

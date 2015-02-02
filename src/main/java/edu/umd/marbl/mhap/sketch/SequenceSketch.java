@@ -49,11 +49,13 @@ public final class SequenceSketch implements Serializable
 	private static final long serialVersionUID = -3155689614837922443L;
 
 	private final SequenceId id;
-	private final MinHash mainHashes;
+	private final MinHashSketch mainHashes;
 	private final OrderKmerHashes orderedHashes;
+	private final MinHashSketchSequence bitSequence;
 	private final int sequenceLength;
 
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
+	public final static int BIT_SKETCH_SIZE = 50;
 
 	public static SequenceSketch fromByteStream(DataInputStream input, int offset) throws IOException
 	{
@@ -71,7 +73,7 @@ public final class SequenceSketch implements Serializable
 			int sequenceLength = input.readInt();
 
 			// dos.write(this.mainHashes.getAsByteArray());
-			MinHash mainHashes = MinHash.fromByteStream(input);
+			MinHashSketch mainHashes = MinHashSketch.fromByteStream(input);
 
 			if (mainHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error.");
@@ -90,12 +92,13 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 
-	public SequenceSketch(SequenceId id, int sequenceLength, MinHash mainHashes, OrderKmerHashes orderedHashes)
+	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderKmerHashes orderedHashes)
 	{
 		this.sequenceLength = sequenceLength;
 		this.id = id;
 		this.mainHashes = mainHashes;
 		this.orderedHashes = orderedHashes;
+		this.bitSequence = null;
 	}
 
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, boolean storeHashes,
@@ -103,8 +106,11 @@ public final class SequenceSketch implements Serializable
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
-		this.mainHashes = new MinHash(seq, kmerSize, numHashes, filter, kmerCount, weighted);
-		this.orderedHashes = new OrderKmerHashes(seq, orderedKmerSize);
+		this.mainHashes = new MinHashSketch(seq.toString(), kmerSize, numHashes, filter, kmerCount, weighted);
+		this.orderedHashes = new OrderKmerHashes(seq.toString(), orderedKmerSize);
+		
+		//bit sequence
+		this.bitSequence = new MinHashSketchSequence(seq.toString(), 6, 200, BIT_SKETCH_SIZE);
 	}
 
 	public SequenceSketch createOffset(int offset)
@@ -135,7 +141,7 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 
-	public MinHash getMinHashes()
+	public MinHashSketch getMinHashes()
 	{
 		return this.mainHashes;
 	}
@@ -143,6 +149,11 @@ public final class SequenceSketch implements Serializable
 	public OrderKmerHashes getOrderedHashes()
 	{
 		return this.orderedHashes;
+	}
+	
+	public MinHashSketchSequence getBitSequence()
+	{
+		return this.bitSequence;
 	}
 
 	public SequenceId getSequenceId()

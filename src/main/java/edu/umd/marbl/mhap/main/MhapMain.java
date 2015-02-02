@@ -303,7 +303,8 @@ public final class MhapMain
 		else
 		{
 			this.filter = null;
-			this.kmerCounter = recordFastaKmerCounts(inFile, options.get("--filter-threshold").getDouble());
+			//this.kmerCounter = recordFastaKmerCounts(inFile, options.get("--filter-threshold").getDouble());
+			this.kmerCounter = null;
 		}
 
 	}

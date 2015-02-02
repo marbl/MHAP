@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.umd.marbl.mhap.align.AlignElementSketch;
+import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.general.AbstractMatchSearch;
 import edu.umd.marbl.mhap.general.MatchResult;
 import edu.umd.marbl.mhap.general.OverlapInfo;
@@ -54,6 +56,8 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final AtomicLong sortMergeSearchTime;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
+	
+	private final Aligner<AlignElementSketch<MinHashBitSketch>> aligner;
 
 	private final AtomicLong numberSequencesFullyCompared;
 	private final AtomicLong numberSequencesHit;
@@ -97,6 +101,9 @@ public final class MinHashSearch extends AbstractMatchSearch
 		}
 		
 		addData(data);
+		
+		//store the bit aligner
+		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, -2.0);
 		
 		System.err.println("Stored "+this.sequenceVectorsHash.size()+" sequences in the index.");
 	}
@@ -165,7 +172,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		//for performance reasons might need to change
 		long startTime = System.nanoTime();
 
-		MinHash minHash = seqHashes.getMinHashes();
+		MinHashSketch minHash = seqHashes.getMinHashes();
 
 		if (this.hashes.size() != minHash.numHashes())
 			throw new MhapRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
@@ -248,7 +255,11 @@ public final class MinHashSearch extends AbstractMatchSearch
 					continue;
 				
 				//compute the direct hash score
-				OverlapInfo result = seqHashes.getOrderedHashes().getFullScore(matchedHashes.getOrderedHashes(), this.maxShift);
+				OverlapInfo result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
+				
+				OverlapInfo resultExp = seqHashes.getBitSequence().getOverlapInfo(aligner, matchedHashes.getBitSequence());
+				
+				System.err.println(result.toLineString()+" "+resultExp.toLineString());
 				
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
@@ -256,9 +267,6 @@ public final class MinHashSearch extends AbstractMatchSearch
 				//if score is good add
 				if (result.score >= this.acceptScore)
 				{
-					//OverlapInfo result2 = seqHashes.getOrderedHashes().getFullScoreExperimental(matchedHashes.getOrderedHashes(), this.maxShift);				
-					//System.err.println(result.score+"  "+result2.score);
-
 					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result, seqHashes.getSequenceLength(), matchedHashes.getSequenceLength());
 
 					// add to list

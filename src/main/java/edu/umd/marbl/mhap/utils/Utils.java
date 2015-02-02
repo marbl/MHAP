@@ -851,6 +851,29 @@ public final class Utils
 
 		return new String(s);
 	}
+	
+	public static String toString(float[][] A)
+	{
+		StringBuilder s = new StringBuilder();
+
+		s.append("[");
+
+		for (float[] a : A)
+		{
+			if (a != null)
+			{
+				for (int iter = 0; iter < a.length - 1; iter++)
+					s.append("" + a[iter] + ",");
+
+				if (a.length > 0)
+					s.append("" + a[a.length - 1]);
+			}
+			s.append("\n");
+		}
+		s.append("]");
+
+		return new String(s);
+	}
 
 	public static String toString(long[][] A)
 	{

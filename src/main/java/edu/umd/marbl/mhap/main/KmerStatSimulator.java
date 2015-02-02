@@ -41,9 +41,7 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 
 import edu.umd.marbl.mhap.general.FastaData;
-import edu.umd.marbl.mhap.general.Sequence;
-import edu.umd.marbl.mhap.general.SequenceId;
-import edu.umd.marbl.mhap.sketch.MinHash;
+import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class KmerStatSimulator {
@@ -186,8 +184,8 @@ public class KmerStatSimulator {
 	}
 	
 	public double compareMinHash(String first, String second) {
-		MinHash h1 = new MinHash(new Sequence(first, new SequenceId(1)), this.kmer, 1256, null, null, true);
-		MinHash h2 = new MinHash(new Sequence(second, new SequenceId(2)), this.kmer, 1256, null, null, true);
+		MinHashSketch h1 = new MinHashSketch(first, this.kmer, 1256, null, null, true);
+		MinHashSketch h2 = new MinHashSketch(second, this.kmer, 1256, null, null, true);
 		
 		return h1.jaccard(h2);
 	}
