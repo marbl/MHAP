@@ -2,8 +2,9 @@ package edu.umd.marbl.mhap.align;
 
 public interface AlignElement<S extends AlignElement<S>>
 {
-	public int length();
+	public double getSimOffset();
 	
+	public int length();
 	public double similarityScore(S e, int i, int j);
 	
 	@Override

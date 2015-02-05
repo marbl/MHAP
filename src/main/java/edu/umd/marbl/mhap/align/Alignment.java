@@ -1,6 +1,7 @@
 package edu.umd.marbl.mhap.align;
 
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public final class Alignment<S extends AlignElement<S>>
 {
@@ -12,73 +13,90 @@ public final class Alignment<S extends AlignElement<S>>
 	}
 	
 	private final double score;
-	private final double gapOpen;
-	private final ArrayList<Operation> operations;
+	//private final double gapOpen;
+	private final List<Operation> operations;
 	private final S a;
 	private final S b;
 	
-	protected Alignment(S a, S b, double score, double gapOpen, ArrayList<Operation> operations)
+	protected Alignment(S a, S b, double score, double gapOpen, List<Operation> operations)
 	{
 		this.score = score;
 		this.operations = operations;
 		this.a = a;
 		this.b = b;
-		this.gapOpen = gapOpen;
-		
-		System.err.println(operations);
+		//this.gapOpen = gapOpen;
 	}
 	
-	public double getOverlapScore()
+	public double getOverlapScore(int minMatches)
 	{
-		int start = 0;
-		int end = operations.size()-1;
-		
-		if (this.operations.get(start) == Operation.INSERT)
-			while (start<=end && this.operations.get(start) == Operation.INSERT)
-				start++;
-		else
-		if (this.operations.get(end) == Operation.DELETE)
-			while (start<=end && this.operations.get(start) == Operation.DELETE)
-				start++;
-		
-		if (this.operations.get(end) == Operation.INSERT)
-			while (start<=end &&  this.operations.get(end) == Operation.INSERT)
-				end--;
-		else
-		if (this.operations.get(end) == Operation.DELETE)
-			while (start<=end &&  this.operations.get(end) == Operation.DELETE)
-				end--;
-		
 		int i = 0;
 		int j = 0;
-
-		double score = 0.0;
-		for (int iter=end; iter>=start; iter--)
+		
+		Iterator<Operation> iter = this.operations.iterator();
+		
+		if (!iter.hasNext())
+			return 0.0;
+		
+		//remove the start
+		Operation o = iter.next();			
+		while (o==Operation.DELETE)
 		{
-			Operation o = this.operations.get(iter);
-			if (o == Operation.INSERT)
-			{	
-				score = score+gapOpen;
-				i++;
-			}
+			i++;
+			
+			if (iter.hasNext())
+				o = iter.next();
 			else
-			if (o == Operation.DELETE)
+				return 0.0;
+		}
+		if (i==0)
+		{
+			while (o==Operation.INSERT)
 			{
-				score = score+gapOpen;
-				j++;
-			}
-			else
-			{
-				score = score + a.similarityScore(b, i, j);
-				i++;
-				j++;
+				if (iter.hasNext())
+					o = iter.next();
+				else
+					return 0.0;
 			}
 		}
+		
+		double score = 0.0;
+		int count = 0;
+		while (true)
+		{
+			if (o == Operation.DELETE)
+			{	
+				i++;
+			}
+			else
+			if (o == Operation.INSERT)
+			{
+				//count++;
+				j++;
+			}
+			else
+			{
+				score = score + a.similarityScore(b, i, j)-a.getSimOffset();
+				count++;
+				i++;
+				j++;
+			}
+			
+			if (iter.hasNext())
+				o = iter.next();
+			else
+				break;
+		}
+		
+		System.err.println(this.operations);
+		System.err.println("HI="+count+" "+minMatches);
+		
+		if (count<minMatches)
+			return 0.0;
 		
 		if (score<=0.0)
 			return 0.0;
 		
-		return score/(double)(end-start+1);
+		return score/(double)(count);
 	}
 	
 	public double getScore()
@@ -88,69 +106,29 @@ public final class Alignment<S extends AlignElement<S>>
 	
 	public int getA1()
 	{
-		int index = operations.size()-1;
 		int start = 0;
-		
-		if (this.operations.get(index) == Operation.INSERT)
-		{
-			while (index>=0 && this.operations.get(index) == Operation.INSERT)
-			{
-				start++;
-				index--;
-			}
-		}
-		
+				
 		return start;
 	}
 	
 	public int getA2()
 	{
-		int index = operations.size()-1;
 		int start = 0;
-		
-		if (this.operations.get(index) == Operation.DELETE)
-		{
-			while (index>=0 && this.operations.get(index) == Operation.DELETE)
-			{
-				start++;
-				index--;
-			}
-		}
-		
+				
 		return start;
 	}
 	
 	public int getB1()
 	{
-		int index = 0;
 		int end = 0;
-		
-		if (this.operations.get(index) == Operation.INSERT)
-		{
-			while (index<this.operations.size() && this.operations.get(index) == Operation.INSERT)
-			{
-				end++;
-				index++;
-			}
-		}
-		
+				
 		return this.a.length()-end;
 	}
 	
 	public int getB2()
 	{
-		int index = 0;
 		int end = 0;
-		
-		if (this.operations.get(index) == Operation.DELETE)
-		{
-			while (index<this.operations.size() && this.operations.get(index) == Operation.DELETE)
-			{
-				end++;
-				index++;
-			}
-		}
-		
+				
 		return this.b.length()-end;
 	}
 	
@@ -161,10 +139,19 @@ public final class Alignment<S extends AlignElement<S>>
 		int i = 0;
 		int j = 0;
 		
-		for (int iter=operations.size()-1; iter>=0; iter--)
+		int count = 0;
+		while(i<a.length() || j<b.length())
 		{
-			Operation o = this.operations.get(iter);
-			if (o == Operation.INSERT)
+			Operation o;
+			if (count<this.operations.size())
+				o = this.operations.get(count);
+			else
+			if (i<a.length())
+				o = Operation.DELETE;
+			else
+				o = Operation.INSERT;
+						
+			if (o == Operation.DELETE)
 			{	
 				String aStr;
 				if (j>=b.length())
@@ -176,7 +163,7 @@ public final class Alignment<S extends AlignElement<S>>
 				i++;
 			}
 			else
-			if (o == Operation.DELETE)
+			if (o == Operation.INSERT)
 			{
 				String bStr;
 				if (i>=a.length())
@@ -193,6 +180,8 @@ public final class Alignment<S extends AlignElement<S>>
 				i++;
 				j++;
 			}
+			
+			count++;
 		}
 		
 		return str.toString();		
@@ -204,10 +193,19 @@ public final class Alignment<S extends AlignElement<S>>
 
 		int i = 0;
 		int j = 0;
-		for (int iter=operations.size()-1; iter>=0; iter--)
+		int count = 0;
+		while(i<a.length() || j<b.length())
 		{
-			Operation o = this.operations.get(iter);
-			if (o == Operation.DELETE)
+			Operation o;
+			if (count<this.operations.size())
+				o = this.operations.get(count);
+			else
+			if (i<a.length())
+				o = Operation.DELETE;
+			else
+				o = Operation.INSERT;
+			
+			if (o == Operation.INSERT)
 			{
 				String bStr;
 				if (i>=a.length())
@@ -219,7 +217,7 @@ public final class Alignment<S extends AlignElement<S>>
 				j++;
 			}
 			else
-			if (o == Operation.INSERT)
+			if (o == Operation.DELETE)
 			{
 				String aStr;
 				if (j>=b.length())
@@ -237,6 +235,8 @@ public final class Alignment<S extends AlignElement<S>>
 				i++;
 				j++;
 			}
+			
+			count++;
 		}
 		
 		return str.toString();

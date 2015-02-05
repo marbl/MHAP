@@ -631,6 +631,7 @@ public class EstimateROC {
 		int length = Math.max(sequence1.length, sequence2.length);
 		int ovlLen = Math.min(sequence1.length, sequence2.length);
 		char GAP = '-';
+		@SuppressWarnings("unused")
 		int errors = 0;
 		int matches = 0;
 		for (int i = 0; i <= length; i++)

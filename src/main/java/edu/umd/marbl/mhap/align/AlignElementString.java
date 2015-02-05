@@ -47,4 +47,10 @@ public class AlignElementString implements AlignElement<AlignElementString>
 	{
 		return ""+s[i];
 	}
+
+	@Override
+	public double getSimOffset()
+	{
+		return 0.0;
+	}
 }

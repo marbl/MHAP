@@ -32,28 +32,17 @@ package edu.umd.marbl.mhap.sketch;
 public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implements Sketch<T>,
 		Comparable<T>
 {
+	protected final long[] bits;
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -3392030412388403092L;
-	protected final long[] bits;
 
 	protected AbstractBitSketch(long[] bits)
 	{
 		this.bits = bits;
 	}
 	
-	@Override
-	public double similarity(T v)
-	{
-		return jaccard(v);
-	}
-
-	public long[] getBits()
-	{
-		return this.bits;
-	}
-
 	@Override
 	public int compareTo(final T sim)
 	{
@@ -66,6 +55,11 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		}
 
 		return 0;
+	}
+
+	public long[] getBits()
+	{
+		return this.bits;
 	}
 
 	public final int getIntersectionCount(final T sh)
@@ -91,6 +85,12 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		double jaccard = ((double) count / (double) (this.bits.length * 64) - 0.5) * 2.0;
 
 		return Math.max(0.0, jaccard);
+	}
+
+	@Override
+	public double similarity(T v)
+	{
+		return jaccard(v);
 	}
 
 	@Override

@@ -5,11 +5,9 @@ import edu.umd.marbl.mhap.align.AlignElementString;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.align.Alignment;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
-import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketchSequence;
 import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
-import edu.umd.marbl.mhap.sketch.SimHash;
 import edu.umd.marbl.mhap.utils.RandomSequenceGenerator;
 
 public class AlignmentTry
@@ -20,23 +18,18 @@ public class AlignmentTry
 		String a = "bcdefghij1234567890";
 		String b = "abcdefghij1234567890";
 		
-		int kmerSize = 16;
-		
-		RandomSequenceGenerator generator = new RandomSequenceGenerator(0);
-		a = "Z"+generator.generateRandomSequence(2000)+"Z";
-		b = a.substring(600, 1400);
+		RandomSequenceGenerator generator = new RandomSequenceGenerator();
+		a = generator.generateRandomSequence(2000);
+		b = a.substring(400, 1600);
 		a = generator.addPacBioError(a);
 		b = generator.addPacBioError(b);
-		
-		//String c= a;
-		//a = b;
-		//b = c;
-		System.out.println("First string: " + a);
-		System.out.println("Second string: " + b);
+		b = generator.generateRandomSequence(1400);
 		
 		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1);
 		
 		Alignment<AlignElementString> alignment = aligner.localAlignSmithWaterGotoh(new AlignElementString(a), new AlignElementString(b));
+		
+		System.err.println(alignment.getOverlapScore(5));
 		
 		System.out.println(alignment.outputAlignment());
 		
@@ -45,14 +38,15 @@ public class AlignmentTry
 		System.err.println("A2="+alignment.getA2());
 		System.err.println("B2="+alignment.getB2());
 		
-		MinHashSketchSequence m1 = new MinHashSketchSequence(a, 8, 200, 20);
-		MinHashSketchSequence m2 = new MinHashSketchSequence(b, 8, 200, 20);
+		MinHashSketchSequence m1 = new MinHashSketchSequence(a, 6, 200, 800, -0.04, 10);
+		MinHashSketchSequence m2 = new MinHashSketchSequence(b, 6, 200, 800, -0.04, 10);
 		
 		System.err.println("Size1="+m1.length());
 		System.err.println("Size2="+m2.length());
 		
-		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0001, -10000.0), m2);
+		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, -200.0), m2);
 		System.err.println("Compressed=");
+		System.err.println(info.score);
 		System.err.println(info.a1);
 		System.err.println(info.b1);
 		System.err.println(info.a2);

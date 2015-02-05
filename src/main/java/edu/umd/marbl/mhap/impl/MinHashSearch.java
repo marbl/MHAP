@@ -101,7 +101,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		addData(data);
 		
 		//store the bit aligner
-		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, -2.0);
+		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, -20.0);
 		
 		System.err.println("Stored "+this.sequenceVectorsHash.size()+" sequences in the index.");
 	}

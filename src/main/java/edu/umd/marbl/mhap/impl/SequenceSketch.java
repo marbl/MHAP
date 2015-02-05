@@ -57,7 +57,11 @@ public final class SequenceSketch implements Serializable
 	private final int sequenceLength;
 
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
-	public final static int BIT_SKETCH_SIZE = 50;
+	public final static int BIT_SKETCH_SIZE = 6;
+	public final static int SUBSEQUENCE_SIZE = 200;
+	public final static int BIT_KMER_SIZE = 7;
+	public final static int MIN_OVERLAP_SIZE = 1000;
+
 
 	public static SequenceSketch fromByteStream(DataInputStream input, int offset) throws IOException
 	{
@@ -112,7 +116,7 @@ public final class SequenceSketch implements Serializable
 		this.orderedHashes = new OrderedNGramHashes(seq.toString(), orderedKmerSize);
 		
 		//bit sequence
-		this.bitSequence = new MinHashSketchSequence(seq.toString(), 6, 200, BIT_SKETCH_SIZE);
+		this.bitSequence = new MinHashSketchSequence(seq.toString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, MIN_OVERLAP_SIZE, -0.15, BIT_SKETCH_SIZE);
 	}
 
 	public SequenceSketch createOffset(int offset)

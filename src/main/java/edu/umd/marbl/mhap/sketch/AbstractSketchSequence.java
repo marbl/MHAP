@@ -10,23 +10,27 @@ public abstract class AbstractSketchSequence<T extends AbstractSketchSequence<T,
 {
 	protected final S[] sequence;
 	private final int stepSize;
+	private final double simOffset;
+	private final int minOverlap;
 	
-	protected AbstractSketchSequence(S[] sequence, int stepSize)
+	protected AbstractSketchSequence(S[] sequence, double simOffset, int stepSize, int minOverlap)
 	{
 		this.sequence = sequence;
 		this.stepSize = stepSize;
+		this.simOffset = simOffset;
+		this.minOverlap = minOverlap;
 	}
 	
-	public Alignment<AlignElementSketch<S>> customAlignSmithWaterGotoh(Aligner<AlignElementSketch<S>> aligner, T b)
+	public Alignment<AlignElementSketch<S>> localAlignSmithWaterGotoh(Aligner<AlignElementSketch<S>> aligner, T b)
 	{
-		return aligner.customAlignSmithWaterGotoh(new AlignElementSketch<S>(this.sequence), new AlignElementSketch<S>(b.sequence));
+		return aligner.localAlignSmithWaterGotoh(new AlignElementSketch<S>(this.sequence, this.simOffset), new AlignElementSketch<S>(b.sequence, this.simOffset));
 	}
 	
 	public OverlapInfo getOverlapInfo(Aligner<AlignElementSketch<S>> aligner, T b)
 	{
-		Alignment<AlignElementSketch<S>> aligment = customAlignSmithWaterGotoh(aligner, b);
+		Alignment<AlignElementSketch<S>> aligment = localAlignSmithWaterGotoh(aligner, b);
 		
-		return new OverlapInfo(aligment.getOverlapScore(), -1, aligment.getA1()*stepSize, aligment.getA2()*stepSize, aligment.getB1()*stepSize, aligment.getB2()*stepSize);
+		return new OverlapInfo(aligment.getOverlapScore(Math.max(1, this.minOverlap/stepSize)), -1, aligment.getA1()*stepSize, aligment.getA2()*stepSize, aligment.getB1()*stepSize, aligment.getB2()*stepSize);
 	}
 	
 	public int length()

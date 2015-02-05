@@ -26,8 +26,8 @@ public final class MinHashSketchSequence extends AbstractSketchSequence<MinHashS
 		return sequence;
 	}
 	
-	public MinHashSketchSequence(String seq, int kmerSize, int stepSize, int numWords)
+	public MinHashSketchSequence(String seq, int kmerSize, int stepSize, int minOverlap, double simOffset, int numWords)
 	{
-		super(computeSequences(seq, kmerSize, stepSize, numWords), stepSize);
+		super(computeSequences(seq, kmerSize, stepSize, numWords), simOffset, stepSize, minOverlap);
 	}
 }
