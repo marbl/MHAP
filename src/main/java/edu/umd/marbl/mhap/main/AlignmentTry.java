@@ -23,9 +23,9 @@ public class AlignmentTry
 		b = a.substring(400, 1600);
 		a = generator.addPacBioError(a);
 		b = generator.addPacBioError(b);
-		b = generator.generateRandomSequence(1400);
+		//b = generator.generateRandomSequence(1400);
 		
-		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1);
+		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1*Float.MAX_VALUE);
 		
 		Alignment<AlignElementString> alignment = aligner.localAlignSmithWaterGotoh(new AlignElementString(a), new AlignElementString(b));
 		
@@ -37,6 +37,8 @@ public class AlignmentTry
 		System.err.println("B1="+alignment.getB1());
 		System.err.println("A2="+alignment.getA2());
 		System.err.println("B2="+alignment.getB2());
+		
+		System.exit(1);
 		
 		MinHashSketchSequence m1 = new MinHashSketchSequence(a, 6, 200, 800, -0.04, 10);
 		MinHashSketchSequence m2 = new MinHashSketchSequence(b, 6, 200, 800, -0.04, 10);
