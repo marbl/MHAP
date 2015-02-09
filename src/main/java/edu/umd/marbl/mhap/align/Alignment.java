@@ -17,13 +17,21 @@ public final class Alignment<S extends AlignElement<S>>
 	private final List<Operation> operations;
 	private final S a;
 	private final S b;
+	private int a1;
+	private int a2;
+	private int b1;
+	private int b2;
 	
-	protected Alignment(S a, S b, double score, double gapOpen, List<Operation> operations)
+	protected Alignment(S a, S b, int a1, int a2, int b1, int b2, double score, double gapOpen, List<Operation> operations)
 	{
 		this.score = score;
 		this.operations = operations;
 		this.a = a;
 		this.b = b;
+		this.a1 = a1;
+		this.a2 = a2;
+		this.b1 = b1;
+		this.b2 = b2;
 		//this.gapOpen = gapOpen;
 	}
 	
@@ -105,31 +113,23 @@ public final class Alignment<S extends AlignElement<S>>
 	}
 	
 	public int getA1()
-	{
-		int start = 0;
-				
-		return start;
+	{				
+		return this.a1;
 	}
 	
 	public int getA2()
-	{
-		int start = 0;
-				
-		return start;
+	{				
+		return this.a2;
 	}
 	
 	public int getB1()
 	{
-		int end = 0;
-				
-		return this.a.length()-end;
+		return this.b1;
 	}
 	
 	public int getB2()
 	{
-		int end = 0;
-				
-		return this.b.length()-end;
+		return this.b2;
 	}
 	
 	public String outputAlignmentSelf()

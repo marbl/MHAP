@@ -107,6 +107,10 @@ public final class Aligner<S extends AlignElement<S>>
 		float[][] D = new float[a.length()+1][b.length()+1];
 		float[][] P = new float[a.length()+1][b.length()+1];
 		float[][] Q = new float[a.length()+1][b.length()+1];
+		int a1 = 0;
+		int a2 = a.length();
+		int b1 = 0;
+		int b2 = a.length();
 		
 		for (int i=1; i<=a.length(); i++)
 		{
@@ -147,7 +151,9 @@ public final class Aligner<S extends AlignElement<S>>
 				
 		if (storePath)
 		{
-			System.err.println("End positions are " + maxI + " and " + maxJ);
+			b2 = maxI;
+			a2 = maxJ;
+			
 			//figure out the path
 			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());
 			int i = a.length();
@@ -178,7 +184,8 @@ public final class Aligner<S extends AlignElement<S>>
 					j--;
 				}
 			}
-			System.err.println("Start positions " + i + ", " + j);
+			a1 = i+1;
+			b1 = j+1;
 			while (i > 0) {
 				backOperations.add(Operation.DELETE);
 				i--;
@@ -187,9 +194,9 @@ public final class Aligner<S extends AlignElement<S>>
 			//reverse the direction
 			Collections.reverse(backOperations);
 		
-			return new Alignment<S>(a, b, score, this.gapOpen, backOperations);
+			return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, backOperations);
 		}
 		
-		return new Alignment<S>(a, b, score, this.gapOpen, null);
+		return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, null);
 	}
 }
