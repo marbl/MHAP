@@ -88,9 +88,19 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		return this.bits.length * 64 - count;
 	}
 
+	public long getWord(int index)
+	{
+		return this.bits[index];
+	}
+	
 	public long numberOfBits()
 	{
 		return this.bits.length*64;
+	}
+	
+	public int numberOfWords()
+	{
+		return this.bits.length;
 	}
 
 	@Override
@@ -98,7 +108,7 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 	{
 		int count = getIntersectionCount(v);
 		
-		return (double)count/(double) (this.bits.length * 64);
+		return (double)count/(double) this.numberOfBits();
 	}
 
 	@Override

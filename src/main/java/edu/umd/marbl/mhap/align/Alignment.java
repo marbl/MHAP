@@ -83,7 +83,7 @@ public final class Alignment<S extends AlignElement<S>>
 			}
 			else
 			{
-				score = score + a.similarityScore(b, i, j)-a.getSimOffset();
+				score = score + a.similarityScore(b, i, j);
 				count++;
 				i++;
 				j++;
@@ -95,8 +95,8 @@ public final class Alignment<S extends AlignElement<S>>
 				break;
 		}
 		
-		System.err.println(this.operations);
-		System.err.println("HI="+count+" "+minMatches);
+		//System.err.println(this.operations);
+		//System.err.println("HI="+count+" "+minMatches);
 		
 		if (count<minMatches)
 			return 0.0;

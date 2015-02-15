@@ -6,7 +6,7 @@ import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.align.Alignment;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
-import edu.umd.marbl.mhap.sketch.MinHashSketchSequence;
+import edu.umd.marbl.mhap.sketch.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 import edu.umd.marbl.mhap.utils.RandomSequenceGenerator;
 
@@ -20,12 +20,12 @@ public class AlignmentTry
 		
 		RandomSequenceGenerator generator = new RandomSequenceGenerator();
 		a = generator.generateRandomSequence(2000);
-		b = a.substring(400, 1600);
+		b = a.substring(500, 1600);
 		a = generator.addPacBioError(a);
 		b = generator.addPacBioError(b);
 		//b = generator.generateRandomSequence(1400);
 		
-		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1*Float.MAX_VALUE);
+		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1*Float.MAX_VALUE, 0.0);
 		
 		Alignment<AlignElementString> alignment = aligner.localAlignSmithWaterGotoh(new AlignElementString(a), new AlignElementString(b));
 		
@@ -38,21 +38,21 @@ public class AlignmentTry
 		System.err.println("A2="+alignment.getA2());
 		System.err.println("B2="+alignment.getB2());
 		
-		System.exit(1);
-		
-		MinHashSketchSequence m1 = new MinHashSketchSequence(a, 6, 200, 800, -0.04, 10);
-		MinHashSketchSequence m2 = new MinHashSketchSequence(b, 6, 200, 800, -0.04, 10);
+		MinHashBitSequenceSubSketches m1 = new MinHashBitSequenceSubSketches(a, 6, 200, 20);
+		MinHashBitSequenceSubSketches m2 = new MinHashBitSequenceSubSketches(b, 6, 200, 20);
 		
 		System.err.println("Size1="+m1.length());
 		System.err.println("Size2="+m2.length());
 		
-		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, -200.0), m2);
+		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.51), m2);
 		System.err.println("Compressed=");
 		System.err.println(info.score);
 		System.err.println(info.a1);
 		System.err.println(info.b1);
 		System.err.println(info.a2);
 		System.err.println(info.b2);		
+		
+		System.exit(1);
 		
 		OrderedNGramHashes hashes1 = new OrderedNGramHashes(a, 10);
 		OrderedNGramHashes hashes2 = new OrderedNGramHashes(b, 10);

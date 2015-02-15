@@ -93,9 +93,11 @@ public final class SimHash extends AbstractBitSketch<SimHash>
 
 	public final double jaccard(final SimHash sh)
 	{
-		double jaccard = (similarity(sh) - 0.5) * 2.0;
+		int count = getIntersectionCount(sh);
+		
+		double sim = (double)count/(double) this.numberOfBits();
+		double jaccard = (sim- 0.5) * 2.0;
 
 		return Math.max(0.0, jaccard);
 	}
-
 }

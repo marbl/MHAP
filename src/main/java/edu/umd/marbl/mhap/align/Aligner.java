@@ -10,12 +10,14 @@ public final class Aligner<S extends AlignElement<S>>
 	private final float gapOpen;
 	private final float gapExtend;
 	private final boolean storePath;
+	private final float scoreOffset;
 	
-	public Aligner(boolean storePath, double gapOpen, double gapExtend)
+	public Aligner(boolean storePath, double gapOpen, double gapExtend, double scoreOffset)
 	{
 		this.gapOpen = (float)gapOpen;
 		this.gapExtend = (float)gapExtend;
 		this.storePath = storePath;
+		this.scoreOffset = (float)scoreOffset;
 	}
 	
 	/*
@@ -107,10 +109,6 @@ public final class Aligner<S extends AlignElement<S>>
 		float[][] D = new float[a.length()+1][b.length()+1];
 		float[][] P = new float[a.length()+1][b.length()+1];
 		float[][] Q = new float[a.length()+1][b.length()+1];
-		int a1 = 0;
-		int a2 = a.length();
-		int b1 = 0;
-		int b2 = a.length();
 		
 		for (int i=1; i<=a.length(); i++)
 		{
@@ -125,7 +123,7 @@ public final class Aligner<S extends AlignElement<S>>
 			Q[0][j] = Float.NEGATIVE_INFINITY;
 		}
 		
-		float maxValue = 0;
+		float maxValue = 0.0f;
 		int maxI = 0;
 		int maxJ = 0;
 		for (int i=1; i<=a.length(); i++) {
@@ -134,7 +132,7 @@ public final class Aligner<S extends AlignElement<S>>
 				P[i][j] = Math.max(D[i-1][j]+this.gapOpen, P[i-1][j]+this.gapExtend);
 				Q[i][j] = Math.max(D[i][j-1]+this.gapOpen, Q[i][j-1]+this.gapExtend);
 								
-				float score = D[i-1][j-1]+(float)a.similarityScore(b, i-1, j-1);
+				float score = D[i-1][j-1]+(float)a.similarityScore(b, i-1, j-1)+this.scoreOffset;
 				
 				//compute the actual score
 				D[i][j] = Math.max(score, Math.max(P[i][j], Q[i][j]));
@@ -147,13 +145,15 @@ public final class Aligner<S extends AlignElement<S>>
 			}
 		}
 		
-		float score = maxValue/(float)Math.max(a.length(), b.length());
+		float score = maxValue;
 				
+		int a1 = 0;
+		int a2 = maxI;
+		int b1 = 0;
+		int b2 = maxJ;
+
 		if (storePath)
 		{
-			b2 = maxI;
-			a2 = maxJ;
-			
 			//figure out the path
 			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());
 			int i = a.length();
@@ -189,6 +189,96 @@ public final class Aligner<S extends AlignElement<S>>
 			while (i > 0) {
 				backOperations.add(Operation.DELETE);
 				i--;
+			}
+			
+			//reverse the direction
+			Collections.reverse(backOperations);
+		
+			return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, backOperations);
+		}
+		
+		return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, null);
+	}
+	
+	public Alignment<S> localAlignOneSkip(S a, S b)
+	{		
+		float[][] D = new float[a.length()+1][b.length()+1];
+		float[][] P = new float[a.length()+1][b.length()+1];
+		float[][] S = new float[a.length()+1][b.length()+1];
+		
+		float maxValue = 0.0f;
+		int maxI = 0;
+		int maxJ = 0;
+		for (int i=1; i<=a.length(); i++) {
+			for (int j=1; j<=b.length(); j++)
+			{	
+				float sim = (float)a.similarityScore(b, i-1, j-1)+this.scoreOffset;
+				
+				P[i][j] = Math.max(D[i-1][j]+this.gapOpen, D[i][j-1]+this.gapOpen);
+				D[i][j] = D[i-1][j-1]+sim;
+				
+				S[i][j] = Math.max(P[i][j], D[i][j]);
+				if (i==a.length())
+					S[i][j] = Math.max(S[i][j], P[i][j-1]+this.gapOpen);
+				if (j==b.length())
+					S[i][j] = Math.max(S[i][j], P[i-1][j]+this.gapOpen);
+				
+				
+				if (S[i][j] > maxValue && (i==a.length() || j==a.length())) 
+				{
+					maxValue = S[i][j];
+					maxI = i;
+					maxJ = j;
+				}
+			}
+		}
+		
+		float score = maxValue;
+				
+		int a1 = 0;
+		int a2 = maxI;
+		int b1 = 0;
+		int b2 = maxJ;
+
+		if (storePath)
+		{
+			//figure out the path
+			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());
+
+			int i = maxI;
+			int j = maxJ;
+			while (i>0 && j>0)
+			{
+				if (S[i][j]==D[i-1][j]+this.gapOpen)
+				{
+					backOperations.add(Operation.DELETE);
+					i--;
+				}
+				else
+				if (S[i][j]==D[i][j-1]+this.gapOpen)
+				{
+					backOperations.add(Operation.INSERT);
+					j--;
+				}
+				else
+				{
+					backOperations.add(Operation.MATCH);
+					i--;
+					j--;
+				}
+			}
+			
+			a1 = i;
+			b1 = j;
+			while (i > 0) 
+			{
+				backOperations.add(Operation.DELETE);
+				i--;
+			}
+			while (j > 0) 
+			{
+				backOperations.add(Operation.INSERT);
+				j--;
 			}
 			
 			//reverse the direction

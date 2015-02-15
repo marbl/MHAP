@@ -38,7 +38,7 @@ import java.io.Serializable;
 import java.util.HashSet;
 
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
-import edu.umd.marbl.mhap.sketch.MinHashSketchSequence;
+import edu.umd.marbl.mhap.sketch.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.sketch.NGramCounts;
 import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 import edu.umd.marbl.mhap.utils.MhapRuntimeException;
@@ -53,17 +53,15 @@ public final class SequenceSketch implements Serializable
 	private final SequenceId id;
 	private final MinHashSketch mainHashes;
 	private final OrderedNGramHashes orderedHashes;
-	private final MinHashSketchSequence bitSequence;
+	private final MinHashBitSequenceSubSketches alignmentSketches;
 	private final int sequenceLength;
 
 	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
-	public final static int BIT_SKETCH_SIZE = 6;
+	public final static int BIT_SKETCH_SIZE = 16;
 	public final static int SUBSEQUENCE_SIZE = 200;
 	public final static int BIT_KMER_SIZE = 7;
-	public final static int MIN_OVERLAP_SIZE = 1000;
 
-
-	public static SequenceSketch fromByteStream(DataInputStream input, int offset) throws IOException
+	public static SequenceSketch fromByteStream(DataInputStream input, int offset, boolean useAlignment) throws IOException
 	{
 		try
 		{
@@ -84,12 +82,22 @@ public final class SequenceSketch implements Serializable
 			if (mainHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error.");
 
-			// dos.write(this.orderedHashes.getAsByteArray());
-			OrderedNGramHashes orderedHashes = OrderedNGramHashes.fromByteStream(input);
-			if (orderedHashes == null)
-				throw new MhapRuntimeException("Unexpected data read error.");
+			OrderedNGramHashes orderedHashes = null;
+			MinHashBitSequenceSubSketches alignmentSketch = null;
+			if (useAlignment)
+			{
+				alignmentSketch = MinHashBitSequenceSubSketches.fromByteStream(input);
+				if (alignmentSketch == null)
+					throw new MhapRuntimeException("Unexpected data read when reading alignment sketches.");
+			}
+			else
+			{
+				orderedHashes = OrderedNGramHashes.fromByteStream(input);
+				if (orderedHashes == null)
+					throw new MhapRuntimeException("Unexpected data read error when reading ordered k-mers.");
+			}
 
-			return new SequenceSketch(id, sequenceLength, mainHashes, orderedHashes);
+			return new SequenceSketch(id, sequenceLength, mainHashes, orderedHashes, alignmentSketch);
 
 		}
 		catch (EOFException e)
@@ -98,36 +106,55 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 
-	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderedNGramHashes orderedHashes)
+	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderedNGramHashes orderedHashes, MinHashBitSequenceSubSketches alignmentSketch)
 	{
 		this.sequenceLength = sequenceLength;
 		this.id = id;
 		this.mainHashes = mainHashes;
 		this.orderedHashes = orderedHashes;
-		this.bitSequence = null;
+		this.alignmentSketches = alignmentSketch;
 	}
 
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, boolean storeHashes,
-			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
+			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted, boolean useAlignment)
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
 		this.mainHashes = new MinHashSketch(seq.toString(), kmerSize, numHashes, filter, kmerCount, weighted);
-		this.orderedHashes = new OrderedNGramHashes(seq.toString(), orderedKmerSize);
 		
-		//bit sequence
-		this.bitSequence = new MinHashSketchSequence(seq.toString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, MIN_OVERLAP_SIZE, -0.15, BIT_SKETCH_SIZE);
+		if (useAlignment)
+		{
+			this.orderedHashes = null;
+			this.alignmentSketches = new MinHashBitSequenceSubSketches(seq.toString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, BIT_SKETCH_SIZE);
+		}
+		else
+		{
+			this.orderedHashes = new OrderedNGramHashes(seq.toString(), orderedKmerSize);
+			this.alignmentSketches = null;
+		}		
 	}
 
 	public SequenceSketch createOffset(int offset)
 	{
-		return new SequenceSketch(this.id.createOffset(offset), this.sequenceLength, this.mainHashes, this.orderedHashes);
+		return new SequenceSketch(this.id.createOffset(offset), this.sequenceLength, this.mainHashes, this.orderedHashes, this.alignmentSketches);
 	}
 
 	public byte[] getAsByteArray()
 	{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream(this.mainHashes.numHashes() * 4
-				+ this.orderedHashes.size() * 2);
+		byte[] mainHashesBytes = this.mainHashes.getAsByteArray();
+		
+		byte[] orderedHashesBytes = null;
+		byte[] alignmentSketchesBytes = null;
+		if (this.orderedHashes!=null)
+			orderedHashesBytes = this.orderedHashes.getAsByteArray();
+		if (this.alignmentSketches!=null)
+			alignmentSketchesBytes = alignmentSketches.getAsByteArray();
+		
+		//get size
+		
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(mainHashesBytes.length
+				+(orderedHashesBytes==null ? 0 : orderedHashesBytes.length)
+				+(alignmentSketchesBytes==null ? 0 : alignmentSketchesBytes.length));
 		DataOutputStream dos = new DataOutputStream(bos);
 
 		try
@@ -135,8 +162,11 @@ public final class SequenceSketch implements Serializable
 			dos.writeBoolean(this.id.isForward());
 			dos.writeInt(this.id.getHeaderId());
 			dos.writeInt(this.sequenceLength);
-			dos.write(this.mainHashes.getAsByteArray());
-			dos.write(this.orderedHashes.getAsByteArray());
+			dos.write(mainHashesBytes);
+			if (orderedHashesBytes!=null)
+				dos.write(orderedHashesBytes);
+			if (alignmentSketchesBytes!=null)
+				dos.write(alignmentSketchesBytes);
 
 			dos.flush();
 			return bos.toByteArray();
@@ -145,6 +175,11 @@ public final class SequenceSketch implements Serializable
 		{
 			throw new MhapRuntimeException("Unexpected IO error.");
 		}
+	}
+	
+	public boolean useAlignment()
+	{
+		return this.alignmentSketches!=null;
 	}
 
 	public MinHashSketch getMinHashes()
@@ -157,9 +192,9 @@ public final class SequenceSketch implements Serializable
 		return this.orderedHashes;
 	}
 	
-	public MinHashSketchSequence getBitSequence()
+	public MinHashBitSequenceSubSketches getAlignmentSequence()
 	{
-		return this.bitSequence;
+		return this.alignmentSketches;
 	}
 
 	public SequenceId getSequenceId()

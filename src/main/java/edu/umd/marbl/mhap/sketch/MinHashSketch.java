@@ -40,7 +40,6 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import edu.umd.marbl.mhap.utils.HitCounter;
-import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
 
 public final class MinHashSketch implements Sketch<MinHashSketch>
 {
@@ -49,224 +48,6 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	 * 
 	 */
 	private static final long serialVersionUID = 8846482698636860862L;
-		
-	public final static int[] computeKmerMinHashes(String seq, final int ngramSize, final int numHashes,
-			HashSet<Integer> filter)
-	{
-		if (numHashes % 2 != 0)
-			throw new SketchRuntimeException("Number of words must be multiple of 2.");
-	
-		final int numberNGrams = seq.length() - ngramSize + 1;
-	
-		if (numberNGrams < 1)
-			throw new SketchRuntimeException("N-gram size bigger than string length.");
-	
-		// get the rabin hashes
-		final int[] ngramHashes = HashUtils.computeSequenceHashes(seq, ngramSize);
-	
-		int[] hashes = new int[Math.max(1,numHashes)];
-		
-		Arrays.fill(hashes, Integer.MAX_VALUE);
-	
-		int numWordsBy2 = numHashes / 2;
-	
-		// Random rand = new Random(0);
-		for (int iter = 0; iter < ngramHashes.length; iter++)
-		{
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(ngramHashes[iter]))
-				continue;
-	
-			// set it in case requesting 0
-			if (numHashes==0)
-			{
-				hashes[0] = ngramHashes[iter];
-				continue;
-			}
-	
-			long x = ngramHashes[iter];
-			for (int word = 0; word < numWordsBy2; word++)
-			{
-				// hashes[iter][word] = rand.nextLong();
-	
-				// XORShift Random Number Generators
-				x ^= (x << 21);
-				x ^= (x >>> 35);
-				x ^= (x << 4);
-	
-				int val1 = (int) x;
-				int val2 = (int) (x >> 32);
-	
-				if (val1 < hashes[2 * word])
-					hashes[2 * word] = val1;
-	
-				if (val2 < hashes[2 * word + 1])
-					hashes[2 * word + 1] = val2;
-			}
-		}
-	
-		return hashes;
-	}
-	
-	public final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
-			HashSet<Integer> filter, NGramCounts kmerCount)
-	{
-		final int numberNGrams = seq.length() - nGramSize + 1;
-	
-		if (numberNGrams < 1)
-			throw new SketchRuntimeException("N-gram size bigger than string length.");
-	
-		// get the rabin hashes
-		final int[] kmerHashes = HashUtils.computeSequenceHashes(seq, nGramSize);
-		
-		//now compute the counts of occurance
-		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
-		int maxCount = 0;
-		for (int kmer : kmerHashes)
-		{
-			HitCounter counter = hitMap.get(kmer);
-			if (counter==null)
-			{
-				counter = new HitCounter(1);
-				hitMap.put(kmer, counter);
-			}
-			else
-				counter.addHit();
-			
-			if (maxCount<counter.count)
-				maxCount = counter.count;
-		}
-	
-		MersenneTwisterFast rand = new MersenneTwisterFast();
-
-		//init the data
-		int[] hashes = new int[Math.max(1,numHashes)];		
-		Arrays.fill(hashes, Integer.MAX_VALUE);
-		
-		double[] best = new double[numHashes];
-		Arrays.fill(best, Double.MAX_VALUE);
-
-		for (Entry<Integer, HitCounter> kmer : hitMap.entrySet())
-		{
-			int key = kmer.getKey();
-			int weight = kmer.getValue().count;
-			
-			//set the seed
-			rand.setSeed(key);
-			
-			for (int word = 0; word < numHashes; word++)
-			{
-				double val = rand.nextDouble();
-				
-				//transform value based on 2008 Near Duplicate Image Detection: min-Hash and tf-idf Weighting paper, eq 8
-				val = -Math.log(val)/weight;
-				
-				if (val < best[word])
-				{
-					hashes[word] = key;
-					best[word] = val;
-				}
-			}
-		}
-	
-		return hashes;
-	}
-	
-	public final static int[] computeNGramMinHashesWeightedInt(String seq, final int nGramSize, final int numHashes,
-			HashSet<Integer> filter, NGramCounts kmerCount)
-	{
-		if (numHashes % 2 != 0)
-			throw new SketchRuntimeException("Number of words must be multiple of 2.");
-	
-		final int numberNGrams = seq.length() - nGramSize + 1;
-	
-		if (numberNGrams < 1)
-			throw new SketchRuntimeException("N-gram size bigger than string length.");
-	
-		// get the rabin hashes
-		final int[] ngramHashes = HashUtils.computeSequenceHashes(seq, nGramSize);
-		
-		//now compute the counts of occurance
-		HashMap<Integer, HitCounter> hitMap = new LinkedHashMap<>(ngramHashes.length);
-		int maxCount = 0;
-		for (int kmer : ngramHashes)
-		{
-			HitCounter counter = hitMap.get(kmer);
-			if (counter==null)
-			{
-				counter = new HitCounter(1);
-				hitMap.put(kmer, counter);
-			}
-			else
-				counter.addHit();
-
-			if (maxCount<counter.count)
-				maxCount = counter.count;
-		}
-	
-		int[] hashes = new int[Math.max(1,numHashes)];		
-		int numWordsBy2 = numHashes / 2;
-	
-		int[] best1 = new int[numWordsBy2];
-		int[] best2 = new int[numWordsBy2];		
-		Arrays.fill(best1, Integer.MAX_VALUE);
-		Arrays.fill(best2, Integer.MAX_VALUE);
-
-		for (Entry<Integer, HitCounter> kmer : hitMap.entrySet())
-		{
-			int key = kmer.getKey();
-			int weight = kmer.getValue().count;
-			
-			if (kmerCount.documentFrequencyRatio(key)>1.0e-5)
-			{
-				continue;
-			}
-
-			/*
-			if (kmerCount.documentFrequencyRatio(key)>1.0e-5)
-			{
-				System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));								
-				continue;
-			}
-			System.err.println("Good = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
-			*/
-			//int weight = Math.min(1, (int)Math.round(kmerCount.weight(key, kmer.getValue().count, maxCount)));
-
-			// do not compute minhash for filtered data, keep Integer.MAX_VALUE
-			if (filter != null && filter.contains(key))
-				continue;
-		
-			long x = key;
-			
-			for (int word = 0; word < numWordsBy2; word++)
-			{
-				for (int count = 0; count<weight; count++)
-				{				
-					// XORShift Random Number Generators
-					x ^= (x << 21);
-					x ^= (x >>> 35);
-					x ^= (x << 4);
-		
-					int val1 = (int) x;
-					int val2 = (int) (x >> 32);
-		
-					if (val1 < best1[word])
-					{
-						best1[word] = val1;
-						hashes[2 * word] = key;
-					}
-		
-					if (val2 < best2[word])
-					{
-						best2[word] = val2;
-						hashes[2 * word + 1] = key;
-					}
-				}
-			}
-		}
-		
-		return hashes;
-	}
 	
 	public final static int[] computeNgramMinHashesWeightedIntSuper(String seq, final int nGramSize, final int numHashes,
 			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
@@ -329,8 +110,8 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			if (weight<=0)
 				continue;
 		
+			//set the initial shift value
 			long x = key;
-			
 			for (int word = 0; word < numHashes; word++)
 			{
 				for (int count = 0; count<weight; count++)
@@ -343,7 +124,10 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 					if (x < best[word])
 					{
 						best[word] = x;
-						hashes[word] = (int)key;
+						if (word%2==0)
+							hashes[word] = (int)key;
+						else
+							hashes[word] = (int)key>>32;
 					}
 				}
 			}
@@ -376,17 +160,12 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		try
 		{
 			//store the size
-			//bb.putInt(this.seqLength);
-			//int seqLength = input.readInt();
-			
-			//bb.putInt(this.minHashes.length);
 			int hashNum = input.readInt();
 			
 			//store the array
 			int[] minHashes = new int[hashNum];
 			for (int hash=0; hash<hashNum; hash++)
 			{
-				//bb.putInt(this.minHashes[seq][hash]);
 				minHashes[hash] = input.readInt();
 			}
 			
@@ -405,9 +184,6 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	
 	public MinHashSketch(String seq, int nGramSize, int numHashes, HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
 	{
-		//this.minHashes = MinHash.computeKmerMinHashes(seq.getString(), kmerSize, numHashes, filter);
-		//this.minHashes = MinHash.computeKmerMinHashesWeighted(seq.getString(), kmerSize, numHashes, filter);
-		//this.minHashes = MinHash.computeKmerMinHashesWeightedInt(seq.getString(), kmerSize, numHashes, filter, kmerCount);
 		this.minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(seq, nGramSize, numHashes, filter, kmerCount, weighted);
 	}
 	
@@ -418,17 +194,16 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 
 	public byte[] getAsByteArray()
 	{
-		ByteBuffer bb = ByteBuffer.allocate(4*(2+this.minHashes.length));
+		ByteBuffer bb = ByteBuffer.allocate(4*(1+this.minHashes.length));
 		
 		//store the size
-		//bb.putInt(this.seqLength);
 		bb.putInt(this.minHashes.length);
 		
 		//store the array
 		for (int hash=0; hash<this.minHashes.length; hash++)
 			bb.putInt(this.minHashes[hash]); 
     
-    return bb.array();
+		return bb.array();
 	}
 	
 	/**

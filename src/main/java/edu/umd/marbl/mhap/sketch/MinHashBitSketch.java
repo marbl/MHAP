@@ -37,6 +37,11 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 		return bits;
 	}
 	
+	protected MinHashBitSketch(long[] bits)
+	{
+		super(bits);
+	}
+	
 	public MinHashBitSketch(String seq, int kmerSize, int numWords)
 	{
 		super(getAsBits(seq, kmerSize, numWords));
@@ -44,7 +49,10 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 	
 	public final double jaccard(final MinHashBitSketch sh)
 	{
-		double jaccard = (similarity(sh) - 0.5) * 2.0;
+		int count = getIntersectionCount(sh);
+		
+		double sim = (double)count/(double) this.numberOfBits();
+		double jaccard = (sim- 0.5) * 2.0;
 
 		return Math.max(0.0, jaccard);
 	}

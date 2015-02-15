@@ -50,8 +50,6 @@ public class AlignmentHashRun
 	
 	protected static final int DEFAULT_NUM_MIN_MATCHES = 1;
 
-	protected static final int DEFAULT_SUB_SEQUENCE_SIZE = 5000;
-
 	private static final double DEFAULT_THRESHOLD = 0.00;
 
 	public static void main(String[] args) throws Exception {
@@ -87,7 +85,7 @@ public class AlignmentHashRun
 		data.enqueueFullFile();
 			
 		//SimHashSearch hashSearch = new SimHashSearch(kmerSize, numWords);
-		SequenceSketchStreamer seqStreamer = new SequenceSketchStreamer(inFile, kmerSize, numWords, DEFAULT_SUB_SEQUENCE_SIZE, 12, null, null, true, 0);
+		SequenceSketchStreamer seqStreamer = new SequenceSketchStreamer(inFile, kmerSize, numWords, 12, null, null, true, 0, true);
 
 		MinHashSearch hashSearch = new MinHashSearch(seqStreamer, numWords, DEFAULT_NUM_MIN_MATCHES, numThreads, true, 0, 800, DEFAULT_THRESHOLD);
 		System.err.println("Processed "+seqStreamer.getNumberProcessed()+" sequences.");

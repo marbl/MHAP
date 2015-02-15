@@ -39,7 +39,7 @@ public final class MatchResult implements Comparable<MatchResult>
 	private final int b1;
 	private final int b2;
 	private final double score;
-	private final int kmerCount;
+	private final double rawScore;
 	private final int fromLength;
 	private final int toLength;
 	
@@ -56,7 +56,7 @@ public final class MatchResult implements Comparable<MatchResult>
 		this.a2 = getToId().isForward() ? overlap.a2 : toLength-overlap.b2;
 		this.b2 = getToId().isForward() ? overlap.b2 : toLength-overlap.a2;
 		
-		this.kmerCount = overlap.kmerCount;
+		this.rawScore = overlap.rawScore;
 		
 		if (overlap.score>1.0)
 			this.score = 	1.0;
@@ -97,11 +97,11 @@ public final class MatchResult implements Comparable<MatchResult>
 	@Override
 	public String toString()
 	{
-		return String.format("%s %s %.5f %d %d %d %d %d %d %d %d %d",
+		return String.format("%s %s %.6f %.6f %d %d %d %d %d %d %d %d",
 				getFromId().getHeader(), 
 				getToId().getHeader(),
 				(1.0-getScore())*100.0,
-				this.kmerCount,
+				this.rawScore,
 				getFromId().isForward() ? 0 : 1,
 				this.a1,
 				this.b1,

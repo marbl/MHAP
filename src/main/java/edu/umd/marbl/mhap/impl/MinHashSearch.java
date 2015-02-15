@@ -88,6 +88,9 @@ public final class MinHashSearch extends AbstractMatchSearch
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
 
+		//store the bit aligner
+		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, 0.0, -0.52);
+
 		this.sequenceVectorsHash = new HashMap<SequenceId, SequenceSketch>(data.getNumberProcessed() + 100, (float) 0.75);
 
 		this.hashes = new ArrayList<Map<Integer, ArrayList<SequenceId>>>(numHashes);
@@ -100,8 +103,6 @@ public final class MinHashSearch extends AbstractMatchSearch
 		
 		addData(data);
 		
-		//store the bit aligner
-		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, -20.0);
 		
 		System.err.println("Stored "+this.sequenceVectorsHash.size()+" sequences in the index.");
 	}
@@ -253,17 +254,24 @@ public final class MinHashSearch extends AbstractMatchSearch
 					continue;
 				
 				//compute the direct hash score
-				OverlapInfo result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
-				
-				OverlapInfo resultExp = seqHashes.getBitSequence().getOverlapInfo(aligner, matchedHashes.getBitSequence());
-				
-				System.err.println(result.toLineString()+" "+resultExp.toLineString());
-				
+				OverlapInfo result;
+				boolean accept;
+				if (seqHashes.useAlignment())
+				{
+					result = seqHashes.getAlignmentSequence().getOverlapInfo(this.aligner, matchedHashes.getAlignmentSequence());
+					accept = result.rawScore>0.01;
+				}
+				else
+				{
+					result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
+					accept = result.score >= this.acceptScore;
+				}
+								
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
 
 				//if score is good add
-				if (result.score >= this.acceptScore)
+				if (accept)
 				{
 					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result, seqHashes.getSequenceLength(), matchedHashes.getSequenceLength());
 

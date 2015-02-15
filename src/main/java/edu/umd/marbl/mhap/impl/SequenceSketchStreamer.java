@@ -65,13 +65,14 @@ public class SequenceSketchStreamer
 	private final int numHashes;
 	private final int offset;
 	private final boolean weighted;
+	private final boolean useAlignment;
 
 	private final int orderedKmerSize;
 	private boolean readClosed;
 	private final boolean readingFasta;
 	private final ConcurrentLinkedQueue<SequenceSketch> sequenceHashList;
 
-	public SequenceSketchStreamer(String file, int offset) throws FileNotFoundException
+	public SequenceSketchStreamer(String file, int offset, boolean useAlignment) throws FileNotFoundException
 	{
 		this.fastaData = null;
 		this.readingFasta = false;
@@ -87,12 +88,13 @@ public class SequenceSketchStreamer
 		this.numberSubSequencesProcessed = new AtomicLong();
 		this.readClosed = false;
 		this.offset = offset;
+		this.useAlignment = useAlignment;
 
 		this.buffInput = new DataInputStream(new BufferedInputStream(new FileInputStream(file), Utils.BUFFER_BYTE_SIZE));
 	}
 
-	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int subSequenceSize, int orderedKmerSize,
-			HashSet<Long> filter, NGramCounts kmerCounter, boolean weighted, int offset) throws IOException
+	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int orderedKmerSize,
+			HashSet<Long> filter, NGramCounts kmerCounter, boolean weighted, int offset, boolean useAlignment) throws IOException
 	{
 		this.fastaData = new FastaData(file, offset);
 		this.readingFasta = true;
@@ -109,6 +111,7 @@ public class SequenceSketchStreamer
 		this.buffInput = null;
 		this.readClosed = false;
 		this.offset = offset;
+		this.useAlignment = useAlignment;
 	}
 
 	public SequenceSketch dequeue(boolean fwdOnly, ReadBuffer buf) throws IOException
@@ -230,7 +233,7 @@ public class SequenceSketchStreamer
 	public SequenceSketch getSketch(Sequence seq)
 	{
 		// compute the hashes
-		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.filter, this.kmerCounter, this.weighted);
+		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.filter, this.kmerCounter, this.weighted, this.useAlignment);
 	}
 
 	public int getNumberProcessed()
@@ -296,7 +299,7 @@ public class SequenceSketchStreamer
 
 		// get as byte array stream
 		SequenceSketch seqHashes = SequenceSketch.fromByteStream(new DataInputStream(
-				new ByteArrayInputStream(byteArray)), this.offset);
+				new ByteArrayInputStream(byteArray)), this.offset, this.useAlignment);
 
 		return seqHashes;
 	}
