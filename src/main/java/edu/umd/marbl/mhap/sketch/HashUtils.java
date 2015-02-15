@@ -7,12 +7,11 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
+import edu.umd.marbl.mhap.math.BasicMath;
+import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
+
 public class HashUtils
 {
-	private HashUtils()
-	{
-	}
-
 	public static long[] computeHashes(String item, int numWords, int seed)
 	{
 		long[] hashes = new long[numWords];
@@ -49,7 +48,7 @@ public class HashUtils
 	
 		throw new SketchRuntimeException("Cannot hash class type " + obj.getClass().getCanonicalName());
 	}
-
+	
 	public final static int[] computeHashesIntDouble(double obj, int numWords, int seed)
 	{
 		int[] hashes = new int[numWords];
@@ -208,6 +207,57 @@ public class HashUtils
 		}
 	
 		return hashes;
+	}
+	
+	public static double[] randomGuassianVector(int n, int seed)
+	{
+		//now generate the guassian
+		MersenneTwisterFast rand = new MersenneTwisterFast(seed);
+		
+		double[] vec = new double[n];
+		for (int iter=0; iter<n; iter++)
+		{
+			vec[iter] = rand.nextGaussian();
+		}
+		
+		//normalize
+		double norm = BasicMath.norm(vec);		
+		if (norm<1.0e-10)
+			return vec;
+		
+		return BasicMath.mult(vec, 1.0/norm);		
+	}
+
+	public static double[] randomStringGuassianVector(String str, int n, int seed)
+	{
+		int[] seeds = new int[4];
+		for (int iter=0; iter<4; iter++)
+		{
+			HashFunction hf = Hashing.murmur3_32(seed*4+iter);
+			HashCode hc = hf.newHasher().putUnencodedChars(str).hash();
+			
+			seeds[iter] = hc.asInt();
+		}
+		
+		//now generate the guassian
+		MersenneTwisterFast rand = new MersenneTwisterFast(seeds);
+		
+		double[] vec = new double[n];
+		for (int iter=0; iter<n; iter++)
+		{
+			vec[iter] = rand.nextGaussian();
+		}
+		
+		//normalize
+		double norm = BasicMath.norm(vec);		
+		if (norm<1.0e-10)
+			return vec;
+		
+		return BasicMath.mult(vec, 1.0/norm);
+	}
+
+	private HashUtils()
+	{
 	}
 
 }

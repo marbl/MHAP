@@ -41,4 +41,11 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 	{
 		super(getAsBits(seq, kmerSize, numWords));
 	}
+	
+	public final double jaccard(final MinHashBitSketch sh)
+	{
+		double jaccard = (similarity(sh) - 0.5) * 2.0;
+
+		return Math.max(0.0, jaccard);
+	}
 }

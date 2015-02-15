@@ -57,11 +57,21 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		return 0;
 	}
 
-	public long[] getBits()
+	public final boolean getBit(long index)
+	{
+		int arrayIndex = (int)(index/64L);
+		int bitPos = (int)(index%64L);
+		
+		long mask = 0b1<<bitPos;
+		
+		return (bits[arrayIndex] & mask) != 0L;		
+	}
+	
+	public final long[] getBits()
 	{
 		return this.bits;
 	}
-
+	
 	public final int getIntersectionCount(final T sh)
 	{
 		if (this.bits.length != sh.bits.length)
@@ -78,19 +88,17 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		return this.bits.length * 64 - count;
 	}
 
-	public final double jaccard(final T sh)
+	public long numberOfBits()
 	{
-		int count = getIntersectionCount(sh);
-		
-		double jaccard = ((double) count / (double) (this.bits.length * 64) - 0.5) * 2.0;
-
-		return Math.max(0.0, jaccard);
+		return this.bits.length*64;
 	}
 
 	@Override
-	public double similarity(T v)
+	public final double similarity(T v)
 	{
-		return jaccard(v);
+		int count = getIntersectionCount(v);
+		
+		return (double)count/(double) (this.bits.length * 64);
 	}
 
 	@Override
@@ -111,6 +119,7 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 				mask = mask >>> 1;
 			}
 		}
+		
 		return s.toString();
 	}
 }

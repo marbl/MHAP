@@ -91,5 +91,11 @@ public final class SimHash extends AbstractBitSketch<SimHash>
 		super(recordHashes(HashUtils.computeNGramHashesExact(string, nGramSize, numberWords, 0), numberWords));
 	}
 
+	public final double jaccard(final SimHash sh)
+	{
+		double jaccard = (similarity(sh) - 0.5) * 2.0;
+
+		return Math.max(0.0, jaccard);
+	}
 
 }
