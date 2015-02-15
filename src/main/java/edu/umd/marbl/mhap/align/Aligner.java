@@ -107,6 +107,10 @@ public final class Aligner<S extends AlignElement<S>>
 		float[][] D = new float[a.length()+1][b.length()+1];
 		float[][] P = new float[a.length()+1][b.length()+1];
 		float[][] Q = new float[a.length()+1][b.length()+1];
+		int a1 = 0;
+		int a2 = a.length();
+		int b1 = 0;
+		int b2 = a.length();
 		
 		for (int i=1; i<=a.length(); i++)
 		{
@@ -124,34 +128,43 @@ public final class Aligner<S extends AlignElement<S>>
 		float maxValue = 0;
 		int maxI = 0;
 		int maxJ = 0;
-		for (int i=1; i<=a.length(); i++)
+		for (int i=1; i<=a.length(); i++) {
 			for (int j=1; j<=b.length(); j++)
-			{				
+			{			
 				P[i][j] = Math.max(D[i-1][j]+this.gapOpen, P[i-1][j]+this.gapExtend);
 				Q[i][j] = Math.max(D[i][j-1]+this.gapOpen, Q[i][j-1]+this.gapExtend);
-				
-				float score = Math.max(0.0f, D[i-1][j-1]+(float)a.similarityScore(b, i-1, j-1));
+								
+				float score = D[i-1][j-1]+(float)a.similarityScore(b, i-1, j-1);
 				
 				//compute the actual score
 				D[i][j] = Math.max(score, Math.max(P[i][j], Q[i][j]));
+				
 				if (D[i][j] > maxValue) {
 					maxValue = D[i][j];
 					maxI = i;
 					maxJ = j;
 				}
 			}
+		}
 		
-		//float bestValue = D[maxI][maxJ];
 		float score = maxValue/(float)Math.max(a.length(), b.length());
 				
 		if (storePath)
 		{
+			b2 = maxI;
+			a2 = maxJ;
+			
 			//figure out the path
 			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());
-		
-			int i = maxI;
+			int i = a.length();
+			while (i > maxI) {
+				backOperations.add(Operation.DELETE);
+				i--;
+			}
+			
+			i = maxI;
 			int j = maxJ;
-			while (i>0 || j>0)
+			while (i>0 && j>0)
 			{
 				if ((P[i][j]>=Q[i][j] && P[i][j]==D[i][j]) || j==0)
 				{
@@ -171,13 +184,19 @@ public final class Aligner<S extends AlignElement<S>>
 					j--;
 				}
 			}
+			a1 = i+1;
+			b1 = j+1;
+			while (i > 0) {
+				backOperations.add(Operation.DELETE);
+				i--;
+			}
 			
 			//reverse the direction
 			Collections.reverse(backOperations);
 		
-			return new Alignment<S>(a, b, score, this.gapOpen, backOperations);
+			return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, backOperations);
 		}
 		
-		return new Alignment<S>(a, b, score, this.gapOpen, null);
+		return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, null);
 	}
 }
