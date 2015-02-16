@@ -29,7 +29,7 @@ public abstract class AbstractSequenceSubSketches<T extends AbstractSequenceSubS
 		Alignment<AlignElementSketch<S>> aligment = localAlignOneSkip(aligner, b);
 		
 		int a1 = Math.min(getSequenceLength(), aligment.getA1()*this.stepSize);
-		int a2 = Math.min(this.getSequenceLength(), aligment.getA2()*this.stepSize);
+		int a2 = Math.min(getSequenceLength(), aligment.getA2()*this.stepSize);
 		int b1 = Math.min(b.getSequenceLength(), aligment.getB1()*this.stepSize);
 		int b2 = Math.min(b.getSequenceLength(), aligment.getB2()*this.stepSize);
 		
