@@ -453,8 +453,8 @@ public class OrderedNGramHashes
 		// a = (n*a-b)/(n-1)
 		// b = (n*b-a)/(n-1)
 		int a1 = Math.max(0, (int) Math.round((validCount * leftEdge1 - rightEdge1) / (double) (validCount - 1)));
-		int a2 = Math.max(0, (int) Math.round((validCount * leftEdge2 - rightEdge2) / (double) (validCount - 1)));
-		int b1 = Math.min(this.seqLength,
+		int b1 = Math.max(0, (int) Math.round((validCount * leftEdge2 - rightEdge2) / (double) (validCount - 1)));
+		int a2 = Math.min(this.seqLength,
 				(int) Math.round((validCount * rightEdge1 - leftEdge1) / (double) (validCount - 1)));
 		int b2 = Math.min(s.seqLength,
 				(int) Math.round((validCount * rightEdge2 - leftEdge2) / (double) (validCount - 1)));
