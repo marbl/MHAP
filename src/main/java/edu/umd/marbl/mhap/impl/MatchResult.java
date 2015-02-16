@@ -51,10 +51,10 @@ public final class MatchResult implements Comparable<MatchResult>
 		this.fromLength = fromLength;
 		this.toLength = toLength;
 		
-		this.a1 = getFromId().isForward() ? overlap.a1 : fromLength-overlap.b1;
-		this.b1 = getFromId().isForward() ? overlap.b1 : fromLength-overlap.a1;
-		this.a2 = getToId().isForward() ? overlap.a2 : toLength-overlap.b2;
-		this.b2 = getToId().isForward() ? overlap.b2 : toLength-overlap.a2;
+		this.a1 = getFromId().isForward() ? overlap.a1 : fromLength-overlap.a2;
+		this.a2 = getFromId().isForward() ? overlap.a2 : fromLength-overlap.a1;
+		this.b1 = getToId().isForward() ? overlap.b1 : toLength-overlap.b2;
+		this.b2 = getToId().isForward() ? overlap.b2 : toLength-overlap.b1;
 		
 		this.rawScore = overlap.rawScore;
 		
@@ -104,10 +104,10 @@ public final class MatchResult implements Comparable<MatchResult>
 				this.rawScore,
 				getFromId().isForward() ? 0 : 1,
 				this.a1,
-				this.b1,
+				this.a2,
 				this.fromLength,
 				getToId().isForward() ? 0 : 1,
-				this.a2,
+				this.b1,
 				this.b2,
 				this.toLength);
 	}
