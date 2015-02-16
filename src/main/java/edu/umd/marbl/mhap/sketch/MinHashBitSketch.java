@@ -9,7 +9,7 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 
 	private final static long[] getAsBits(String seq, int nGramSize, int numWords)
 	{
-		int[] minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(seq, nGramSize, numWords*64, null, null, true);
+		int[] minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numWords*64, null, null, true);
 		
 		//now convert them to bits
 		long[] bits = new long[numWords];

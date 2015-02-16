@@ -70,6 +70,7 @@ public final class MhapMain
 	private final String toFile;
 	private final boolean weighted;
 	private final boolean useAlignment;
+	private final double alignmentOffset;
 	
 	private final NGramCounts kmerCounter;
 
@@ -288,6 +289,7 @@ public final class MhapMain
 		this.acceptScore = options.get("--threshold").getDouble();
 		this.weighted = options.get("--weighted").getBoolean();
 		this.useAlignment = options.get("--alignment").getBoolean();
+		this.alignmentOffset = options.get("--alignment_offset").getDouble();
 	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
@@ -571,7 +573,7 @@ public final class MhapMain
 	public MinHashSearch getMatchSearch(SequenceSketchStreamer hashStreamer) throws IOException
 	{
 		return new MinHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
-				this.minStoreLength, this.maxShift, this.acceptScore);
+				this.minStoreLength, this.maxShift, this.acceptScore, this.alignmentOffset);
 	}
 	
 	public SequenceSketchStreamer getSequenceHashStreamer(String file, int offset) throws IOException

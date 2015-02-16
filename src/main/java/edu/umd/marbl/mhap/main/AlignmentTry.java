@@ -46,11 +46,20 @@ public class AlignmentTry
 		
 		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.51), m2);
 		System.err.println("Compressed=");
-		System.err.println(info.score);
+		System.err.println(info.rawScore);
 		System.err.println(info.a1);
 		System.err.println(info.b1);
 		System.err.println(info.a2);
 		System.err.println(info.b2);		
+		
+		OverlapInfo info2 = m2.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.51), m1);
+		System.err.println("Swap=");
+		System.err.println(info2.rawScore);
+		System.err.println(info2.a1);
+		System.err.println(info2.b1);
+		System.err.println(info2.a2);
+		System.err.println(info2.b2);		
+
 		
 		System.exit(1);
 		

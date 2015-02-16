@@ -49,7 +49,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	 */
 	private static final long serialVersionUID = 8846482698636860862L;
 	
-	public final static int[] computeNgramMinHashesWeightedIntSuper(String seq, final int nGramSize, final int numHashes,
+	public final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
 			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
 	{
 		final int numberNGrams = seq.length() - nGramSize + 1;
@@ -184,12 +184,12 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	
 	public MinHashSketch(String seq, int nGramSize, int numHashes, HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
 	{
-		this.minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(seq, nGramSize, numHashes, filter, kmerCount, weighted);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numHashes, filter, kmerCount, weighted);
 	}
 	
 	public MinHashSketch(String str, int nGramSize, int numHashes)
 	{
-		this.minHashes = MinHashSketch.computeNgramMinHashesWeightedIntSuper(str, nGramSize, numHashes, null, null, true);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(str, nGramSize, numHashes, null, null, true);
 	}
 
 	public byte[] getAsByteArray()

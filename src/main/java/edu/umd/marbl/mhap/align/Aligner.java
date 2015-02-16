@@ -224,7 +224,7 @@ public final class Aligner<S extends AlignElement<S>>
 					S[i][j] = Math.max(S[i][j], P[i-1][j]+this.gapOpen);
 				
 				
-				if (S[i][j] > maxValue && (i==a.length() || j==a.length())) 
+				if (S[i][j] > maxValue && (i==a.length() || j==b.length())) 
 				{
 					maxValue = S[i][j];
 					maxI = i;
@@ -240,7 +240,7 @@ public final class Aligner<S extends AlignElement<S>>
 		int b1 = 0;
 		int b2 = maxJ;
 
-		if (storePath)
+		if (this.storePath)
 		{
 			//figure out the path
 			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());

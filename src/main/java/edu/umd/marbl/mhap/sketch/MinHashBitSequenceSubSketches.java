@@ -37,7 +37,8 @@ public final class MinHashBitSequenceSubSketches extends AbstractSequenceSubSket
 		{
 			int numSubSequences = input.readInt();
 			int numWords = input.readInt();
-			int stepSize = input.readInt();			
+			int stepSize = input.readInt();		
+			int seqLength = input.readInt();
 						
 			MinHashBitSketch[] sequence = new MinHashBitSketch[numSubSequences];
 			
@@ -50,7 +51,7 @@ public final class MinHashBitSequenceSubSketches extends AbstractSequenceSubSket
 				sequence[iter] = new MinHashBitSketch(bits);
 			}
 			
-			return new MinHashBitSequenceSubSketches(sequence, stepSize);
+			return new MinHashBitSequenceSubSketches(sequence, stepSize, seqLength);
 			
 		}
 		catch (EOFException e)
@@ -59,26 +60,27 @@ public final class MinHashBitSequenceSubSketches extends AbstractSequenceSubSket
 		}
 	}
 	
-	protected MinHashBitSequenceSubSketches(MinHashBitSketch[] sketches, int stepSize)
+	protected MinHashBitSequenceSubSketches(MinHashBitSketch[] sketches, int stepSize, int seqLength)
 	{
-		super(sketches, stepSize);
+		super(sketches, stepSize, seqLength);
 	}
 	
 	public MinHashBitSequenceSubSketches(String seq, int kmerSize, int stepSize, int numWords)
 	{
-		super(computeSequences(seq, kmerSize, stepSize, numWords), stepSize);
+		super(computeSequences(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
 	}
 	
 	public byte[] getAsByteArray()
 	{
 		int numWords = this.sequence[0].numberOfWords();
 		
-		ByteBuffer bb = ByteBuffer.allocate(8*numWords*this.sequence.length+4+4+4);
+		ByteBuffer bb = ByteBuffer.allocate(8*numWords*this.sequence.length+4+4+4+4);
 		
 		//store the size
 		bb.putInt(this.sequence.length);
 		bb.putInt(numWords);
 		bb.putInt(getStepSize());
+		bb.putInt(getSequenceLength());
 		
 		//store the array
 		for (int hash=0; hash<this.sequence.length; hash++)
