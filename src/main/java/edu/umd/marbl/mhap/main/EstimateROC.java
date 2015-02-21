@@ -46,8 +46,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import edu.umd.marbl.mhap.impl.FastaData;
 import edu.umd.marbl.mhap.impl.Sequence;
@@ -617,9 +619,9 @@ public class EstimateROC {
 				if (DEBUG) { 
 					System.err.println("Overlap between sequences: " + id + ", " + m + " is missing.");
 					System.err.println(">" + id + " reference location " + this.seqToChr.get(id) + " " + this.seqToPosition.get(id).first + ", " + this.seqToPosition.get(id).second);
-					System.err.println(this.dataSeq[Integer.parseInt(id)-1].getString());
+					System.err.println(this.dataSeq[Integer.parseInt(id)-1].getSquenceString());
 					System.err.println(">" + m + " reference location " + this.seqToChr.get(m) + " " + this.seqToPosition.get(m).first + ", " + this.seqToPosition.get(m).second);
-					System.err.println(this.dataSeq[Integer.parseInt(m)-1].getString());
+					System.err.println(this.dataSeq[Integer.parseInt(m)-1].getSquenceString());
 				}
 			}
 		}
@@ -669,12 +671,12 @@ public class EstimateROC {
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, id2));
 		System.err.println("Aligning sequence " + ovl.id1 + " to " + ovl.id2 + " " + ovl.bfirst + " to " + ovl.bsecond + " and " + ovl.isFwd + " and " + ovl.afirst + " " + ovl.asecond);
 
-		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id1)].getString().substring(ovl.afirst, ovl.asecond));
+		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id1)].getSquenceString().substring(ovl.afirst, ovl.asecond));
 		jaligner.Sequence s2 = null;
 		if (ovl.isFwd) {
-			s2 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id2)].getString().substring(ovl.bfirst, ovl.bsecond));
+			s2 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id2)].getSquenceString().substring(ovl.bfirst, ovl.bsecond));
 		} else {
-			s2 = new jaligner.Sequence(Utils.rc(this.dataSeq[getSequenceId(ovl.id2)].getString().substring(ovl.bfirst, ovl.bsecond)));
+			s2 = new jaligner.Sequence(Utils.rc(this.dataSeq[getSequenceId(ovl.id2)].getSquenceString().substring(ovl.bfirst, ovl.bsecond)));
 		}
 		Alignment alignment;
 		try {
@@ -736,8 +738,9 @@ public class EstimateROC {
 	}
 	
 	private void estimatePPV() {
-		int numTP = 0;
-		for (int i = 0; i < this.numTrials; i++) {
+		AtomicInteger numTP = new AtomicInteger();
+		
+		Stream.iterate(0, i->i+1).limit(this.numTrials).parallel().forEach(i-> {
 			int ovlLen = 0;
 			String[] ovl = null;
 			String ovlName = null;
@@ -757,19 +760,19 @@ public class EstimateROC {
 				
 				HashSet<String> matches = getSequenceMatches(id, 0);
 				if (matches.contains(id2)) {
-					numTP++;
+					numTP.getAndIncrement();
 				} else {
 					if (computeDP(id, id2)) {
-						numTP++;
+						numTP.getAndIncrement();
 					} else {
 						if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + id2 + " is not correct."); }
 					}
 				}
 			}
-		}
+		});
 		
 		// now our formula for PPV. Estimate percent of our matches which are true
-		this.ppv = (double)numTP / (double)this.numTrials;
+		this.ppv = numTP.doubleValue() / (double)this.numTrials;
 	}
 	
 	@SuppressWarnings("cast")
