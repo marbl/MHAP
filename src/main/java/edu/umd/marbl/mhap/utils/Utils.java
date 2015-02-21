@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.FileReader;
 
+import edu.umd.marbl.mhap.impl.MhapRuntimeException;
 import edu.umd.marbl.mhap.sketch.HashUtils;
 
 public final class Utils

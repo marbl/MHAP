@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.umd.marbl.mhap.impl.FastaData;
+import edu.umd.marbl.mhap.impl.MhapRuntimeException;
 import edu.umd.marbl.mhap.impl.MinHashSearch;
 import edu.umd.marbl.mhap.impl.Sequence;
 import edu.umd.marbl.mhap.impl.SequenceId;
@@ -49,7 +50,6 @@ import edu.umd.marbl.mhap.impl.SequenceSketchStreamer;
 import edu.umd.marbl.mhap.sketch.CountMin;
 import edu.umd.marbl.mhap.sketch.HashUtils;
 import edu.umd.marbl.mhap.sketch.NGramCounts;
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
@@ -86,6 +86,8 @@ public final class MhapMain
 
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 	
+	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.54;
+
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2;
 	private static final int DEFAULT_NUM_WORDS = 1024;
 	private static final int DEFAULT_ORDERED_KMER_SIZE = 12;
@@ -113,7 +115,7 @@ public final class MhapMain
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to 2 x #cores.", DEFAULT_NUM_THREADS);
 		options.addOption("--weighted", "Perform weighted MinHashing.", false);
 		options.addOption("--alignment", "Perform sudo-alignment instead of ordered k-mer merging.", false);
-		options.addOption("--alignment_offset", "The offset to account for the variance in the alignment match score.", -0.52);
+		options.addOption("--alignment_offset", "The offset to account for the variance in the alignment match score.", DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
@@ -345,14 +347,14 @@ public final class MhapMain
 						while (seq != null)
 						{
 							//get the kmers integers
-							long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq.getString(), MhapMain.this.kmerSize, 0);
+							long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq.getSquenceString(), MhapMain.this.kmerSize, 0);
 							
 							//store the values
 							for (long val : kmerHashes)
 								countMin.add(val);
 
 							//get the kmers integers for reverse compliment
-							kmerHashes = HashUtils.computeSequenceHashesLong(seq.getReverseCompliment().getString(), MhapMain.this.kmerSize, 0);
+							kmerHashes = HashUtils.computeSequenceHashesLong(seq.getReverseCompliment().getSquenceString(), MhapMain.this.kmerSize, 0);
 							
 							//store the values
 							for (long val : kmerHashes)

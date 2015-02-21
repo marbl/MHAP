@@ -4,9 +4,9 @@ import edu.umd.marbl.mhap.align.AlignElementSketch;
 import edu.umd.marbl.mhap.align.AlignElementString;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.align.Alignment;
+import edu.umd.marbl.mhap.impl.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
-import edu.umd.marbl.mhap.sketch.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 import edu.umd.marbl.mhap.utils.RandomSequenceGenerator;
 
@@ -20,10 +20,11 @@ public class AlignmentTry
 		
 		RandomSequenceGenerator generator = new RandomSequenceGenerator();
 		a = generator.generateRandomSequence(2000);
-		b = a.substring(500, 1600);
-		a = generator.addPacBioError(a);
-		b = generator.addPacBioError(b);
+		//b = a.substring(500, 1600);
+		//a = generator.addPacBioError(a);
+		//b = generator.addPacBioError(b);
 		//b = generator.generateRandomSequence(1400);
+		b = a;
 		
 		Aligner<AlignElementString> aligner = new Aligner<AlignElementString>(true, -2.0, -1*Float.MAX_VALUE, 0.0);
 		
@@ -41,10 +42,8 @@ public class AlignmentTry
 		MinHashBitSequenceSubSketches m1 = new MinHashBitSequenceSubSketches(a, 6, 200, 20);
 		MinHashBitSequenceSubSketches m2 = new MinHashBitSequenceSubSketches(b, 6, 200, 20);
 		
-		System.err.println("Size1="+m1.length());
-		System.err.println("Size2="+m2.length());
-		
 		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.51), m2);
+				
 		System.err.println("Compressed=");
 		System.err.println(info.rawScore);
 		System.err.println(info.a1);

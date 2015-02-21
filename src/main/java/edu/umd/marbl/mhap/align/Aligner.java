@@ -148,9 +148,9 @@ public final class Aligner<S extends AlignElement<S>>
 		float score = maxValue;
 				
 		int a1 = 0;
-		int a2 = maxI;
+		int a2 = maxI-1;
 		int b1 = 0;
-		int b2 = maxJ;
+		int b2 = maxJ-1;
 
 		if (storePath)
 		{
@@ -184,8 +184,8 @@ public final class Aligner<S extends AlignElement<S>>
 					j--;
 				}
 			}
-			a1 = i+1;
-			b1 = j+1;
+			a1 = i;
+			b1 = j;
 			while (i > 0) {
 				backOperations.add(Operation.DELETE);
 				i--;
@@ -236,9 +236,9 @@ public final class Aligner<S extends AlignElement<S>>
 		float score = maxValue;
 				
 		int a1 = 0;
-		int a2 = maxI;
+		int a2 = maxI-1;
 		int b1 = 0;
-		int b2 = maxJ;
+		int b2 = maxJ-1;
 
 		if (this.storePath)
 		{

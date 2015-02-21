@@ -37,7 +37,7 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 		return bits;
 	}
 	
-	protected MinHashBitSketch(long[] bits)
+	public MinHashBitSketch(long[] bits)
 	{
 		super(bits);
 	}

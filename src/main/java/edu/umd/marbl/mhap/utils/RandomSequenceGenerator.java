@@ -3,6 +3,8 @@ package edu.umd.marbl.mhap.utils;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import edu.umd.marbl.mhap.impl.MhapRuntimeException;
+
 public final class RandomSequenceGenerator
 {
 	private MersenneTwisterFast randGenerator;

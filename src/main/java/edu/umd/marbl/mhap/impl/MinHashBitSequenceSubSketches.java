@@ -1,12 +1,18 @@
-package edu.umd.marbl.mhap.sketch;
+package edu.umd.marbl.mhap.impl;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class MinHashBitSequenceSubSketches extends AbstractSequenceSubSketches<MinHashBitSequenceSubSketches, MinHashBitSketch>
+import edu.umd.marbl.mhap.align.AlignElementSketch;
+import edu.umd.marbl.mhap.align.Aligner;
+import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
+
+public final class MinHashBitSequenceSubSketches
 {
+	private final AlignElementSketch<MinHashBitSketch> alignmentSketch;
+	
 	private final static MinHashBitSketch[] computeSequences(String seq, int kmerSize, int stepSize, int numWords)
 	{
 		int remainder = seq.length()%stepSize;
@@ -31,21 +37,26 @@ public final class MinHashBitSequenceSubSketches extends AbstractSequenceSubSket
 		return sequence;
 	}
 	
+	public OverlapInfo getOverlapInfo(Aligner<AlignElementSketch<MinHashBitSketch>> aligner, MinHashBitSequenceSubSketches b)
+	{
+		return this.alignmentSketch.getOverlapInfo(aligner, b.alignmentSketch);
+	}
+	
 	public final static MinHashBitSequenceSubSketches fromByteStream(DataInputStream input) throws IOException
 	{
 		try
 		{
-			int numSubSequences = input.readInt();
-			int numWords = input.readInt();
+			int numSketches = input.readInt();
+			int numWordsPerSketch = input.readInt();
 			int stepSize = input.readInt();		
 			int seqLength = input.readInt();
 						
-			MinHashBitSketch[] sequence = new MinHashBitSketch[numSubSequences];
+			MinHashBitSketch[] sequence = new MinHashBitSketch[numSketches];
 			
-			for (int iter=0; iter<numSubSequences; iter++)
+			for (int iter=0; iter<numSketches; iter++)
 			{
-				long[] bits = new long[numWords];
-				for (int word=0; word<numWords; word++)
+				long[] bits = new long[numWordsPerSketch];
+				for (int word=0; word<numWordsPerSketch; word++)
 					bits[word] = input.readLong();
 				
 				sequence[iter] = new MinHashBitSketch(bits);
@@ -62,31 +73,32 @@ public final class MinHashBitSequenceSubSketches extends AbstractSequenceSubSket
 	
 	protected MinHashBitSequenceSubSketches(MinHashBitSketch[] sketches, int stepSize, int seqLength)
 	{
-		super(sketches, stepSize, seqLength);
+		this.alignmentSketch = new AlignElementSketch<>(sketches, stepSize, seqLength);
 	}
 	
 	public MinHashBitSequenceSubSketches(String seq, int kmerSize, int stepSize, int numWords)
 	{
-		super(computeSequences(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
+		this.alignmentSketch = new AlignElementSketch<>(computeSequences(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
 	}
 	
 	public byte[] getAsByteArray()
 	{
-		int numWords = this.sequence[0].numberOfWords();
+		int numSketches = this.alignmentSketch.length();
+		int numWordsPerSketch = this.alignmentSketch.getSketch(0).numberOfWords();
 		
-		ByteBuffer bb = ByteBuffer.allocate(8*numWords*this.sequence.length+4+4+4+4);
+		ByteBuffer bb = ByteBuffer.allocate(8*numWordsPerSketch*numSketches+4*4);
 		
 		//store the size
-		bb.putInt(this.sequence.length);
-		bb.putInt(numWords);
-		bb.putInt(getStepSize());
-		bb.putInt(getSequenceLength());
+		bb.putInt(numSketches);
+		bb.putInt(numWordsPerSketch);
+		bb.putInt(this.alignmentSketch.getStepSize());
+		bb.putInt(this.alignmentSketch.getSequenceLength());
 		
 		//store the array
-		for (int hash=0; hash<this.sequence.length; hash++)
+		for (int sketchIndex=0; sketchIndex<numSketches; sketchIndex++)
 		{
-			MinHashBitSketch sketch = this.sequence[hash];
-			for (int word=0; word<numWords; word++)
+			MinHashBitSketch sketch = this.alignmentSketch.getSketch(sketchIndex);
+			for (int word=0; word<numWordsPerSketch; word++)
 				bb.putLong(sketch.getWord(word)); 
 		}
     

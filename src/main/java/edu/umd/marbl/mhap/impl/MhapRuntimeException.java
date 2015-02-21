@@ -27,7 +27,7 @@
  * limitations under the License.
  * 
  */
-package edu.umd.marbl.mhap.utils;
+package edu.umd.marbl.mhap.impl;
 
 public class MhapRuntimeException extends RuntimeException
 {

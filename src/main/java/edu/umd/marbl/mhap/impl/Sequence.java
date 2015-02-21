@@ -62,7 +62,7 @@ public final class Sequence
 		this.id = id;
 	}
 	
-	public String getString()
+	public String getSquenceString()
 	{
 		return this.sequence;
 	}

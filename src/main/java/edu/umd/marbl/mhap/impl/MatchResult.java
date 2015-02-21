@@ -43,7 +43,7 @@ public final class MatchResult implements Comparable<MatchResult>
 	private final int fromLength;
 	private final int toLength;
 	
-	public MatchResult(SequenceId fromId, SequenceId toId, OverlapInfo overlap, int fromLength, int toLength)
+	protected MatchResult(SequenceId fromId, SequenceId toId, OverlapInfo overlap, int fromLength, int toLength)
 	{
 		this.fromId = fromId;
 		this.toId = toId;
@@ -51,15 +51,15 @@ public final class MatchResult implements Comparable<MatchResult>
 		this.fromLength = fromLength;
 		this.toLength = toLength;
 		
-		this.a1 = getFromId().isForward() ? overlap.a1 : fromLength-overlap.a2;
-		this.a2 = getFromId().isForward() ? overlap.a2 : fromLength-overlap.a1;
-		this.b1 = getToId().isForward() ? overlap.b1 : toLength-overlap.b2;
-		this.b2 = getToId().isForward() ? overlap.b2 : toLength-overlap.b1;
+		this.a1 = getFromId().isForward() ? overlap.a1 : fromLength-overlap.a2-1;
+		this.a2 = getFromId().isForward() ? overlap.a2 : fromLength-overlap.a1-1;
+		this.b1 = getToId().isForward() ? overlap.b1 : toLength-overlap.b2-1;
+		this.b2 = getToId().isForward() ? overlap.b2 : toLength-overlap.b1-1;
 		
 		this.rawScore = overlap.rawScore;
 		
 		if (overlap.score>1.0)
-			this.score = 	1.0;
+			this.score = 1.0;
 		else
 			this.score = overlap.score;
 	}

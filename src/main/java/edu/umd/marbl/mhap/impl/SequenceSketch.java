@@ -38,10 +38,8 @@ import java.io.Serializable;
 import java.util.HashSet;
 
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
-import edu.umd.marbl.mhap.sketch.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.sketch.NGramCounts;
 import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 
 public final class SequenceSketch implements Serializable
 {
@@ -120,16 +118,16 @@ public final class SequenceSketch implements Serializable
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
-		this.mainHashes = new MinHashSketch(seq.toString(), kmerSize, numHashes, filter, kmerCount, weighted);
+		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, filter, kmerCount, weighted);
 		
 		if (useAlignment)
 		{
 			this.orderedHashes = null;
-			this.alignmentSketches = new MinHashBitSequenceSubSketches(seq.toString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, BIT_SKETCH_SIZE);
+			this.alignmentSketches = new MinHashBitSequenceSubSketches(seq.getSquenceString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, BIT_SKETCH_SIZE);
 		}
 		else
 		{
-			this.orderedHashes = new OrderedNGramHashes(seq.toString(), orderedKmerSize);
+			this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize);
 			this.alignmentSketches = null;
 		}		
 	}

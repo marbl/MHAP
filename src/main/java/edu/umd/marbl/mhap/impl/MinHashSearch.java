@@ -41,7 +41,6 @@ import edu.umd.marbl.mhap.align.AlignElementSketch;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
-import edu.umd.marbl.mhap.utils.MhapRuntimeException;
 import edu.umd.marbl.mhap.utils.HitCounter;
 
 public final class MinHashSearch extends AbstractMatchSearch
@@ -259,7 +258,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 				if (seqHashes.useAlignment())
 				{
 					result = seqHashes.getAlignmentSequence().getOverlapInfo(this.aligner, matchedHashes.getAlignmentSequence());
-					accept = result.rawScore>0.01;
+					accept = result.rawScore>0.0;
 				}
 				else
 				{
