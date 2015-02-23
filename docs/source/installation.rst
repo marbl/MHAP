@@ -82,4 +82,4 @@ Once inside the MHAP directory, run:
 
     $ ant
 
-This will compile the program and create a target/mhap-1.5b1.jar file which you can use to run MHAP. The quick-start instructions assume you are in the target directory when running the program. You can also use the target/mhap-0.1.tar file to copy MHAP to a different system or directory. 
+This will compile the program and create a target/mhap-1.5b1.jar file which you can use to run MHAP. The quick-start instructions assume you are in the target directory when running the program. You can also use the target/mhap-1.5b1.tar file to copy MHAP to a different system or directory. 
