@@ -76,7 +76,7 @@ Change to MHAP directory:
 
     $ cd MHAP-1.5b1
 
-Once inside the MetAMOS directory, run:
+Once inside the MHAP directory, run:
 
 .. code-block:: bash
 
