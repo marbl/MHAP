@@ -70,13 +70,13 @@ Once downloaded, extract to unpack:
 
     $ unzip v1.0.zip
 
-Change to MetAMOS directory:
+Change to MHAP directory:
 
 .. code-block:: bash
 
     $ cd MHAP-1.0
 
-Once inside the MetAMOS directory, run:
+Once inside the MHAP directory, run:
 
 .. code-block:: bash
 
