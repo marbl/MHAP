@@ -110,7 +110,7 @@ public final class MhapMain
 		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to 2 x #cores.", DEFAULT_NUM_THREADS);
-		options.addOption("--weighted", "Perform weighted MinHashing.", false);
+		options.addOption("--weighted", "Perform weighted MinHashing.", true);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
