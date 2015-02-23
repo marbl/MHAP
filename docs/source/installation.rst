@@ -4,11 +4,11 @@ Installation
 
 Before your start
 =================
-MHAP requires a recent version of the `JVM <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_ (1.8u31+). JDK 1.7 or earlier will not work. If you would like to build the code from source, you need to have the `JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_ and the `ANT <http://ant.apache.org/>`_ build system available.
+MHAP requires a recent version of the `JVM <http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html>`_ (1.8+). JDK 1.7 or earlier will not work. If you would like to build the code from source, you need to have the `JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_ and the `ANT <http://ant.apache.org/>`_ build system available.
 
 Prerequisites
 ==============
-    * java (1.8u31+)
+    * java (1.8+)
     * ant (1.8.2+)
 
 Here is a list of currently supported Operating Systems:
