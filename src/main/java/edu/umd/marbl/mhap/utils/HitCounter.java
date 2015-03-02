@@ -14,9 +14,10 @@ public final class HitCounter
 		this.count = count;
 	}
 
-	public void addHit()
+	public HitCounter addHit()
 	{
 		this.count++;
+		return this;
 	}
 	
 	public void addHits(int counts)

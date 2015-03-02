@@ -18,26 +18,26 @@ public final class AlignElementSketch<T extends Sketch<T>> implements AlignEleme
 	
 	public OverlapInfo getOverlapInfo(Aligner<AlignElementSketch<T>> aligner, AlignElementSketch<T> b)
 	{
-		Alignment<AlignElementSketch<T>> aligment = localAlignOneSkip(aligner, b);
+		Alignment<AlignElementSketch<T>> alignment = localAlignOneSkip(aligner, b);
 		
-		int a1 = aligment.getA1();
-		int a2 = aligment.getA2();
-		int b1 = aligment.getB1();
-		int b2 = aligment.getB2();
+		int a1 = alignment.getA1();
+		int a2 = alignment.getA2();
+		int b1 = alignment.getB1();
+		int b2 = alignment.getB2();
 		
-		a1 = Math.min(getSequenceLength()-1, aligment.getA1()*getStepSize());		
-		if (a2>=length()-1)
-			a2 = getSequenceLength()-1;
-		else
-			a2 = aligment.getA2()*getStepSize()+getStepSize();
+		a1 = alignment.getA1()*this.stepSize;		
+		a2 = Math.min(getSequenceLength()-1, alignment.getA2()*this.stepSize+this.stepSize-1);
 			
-		b1 = Math.min(b.getSequenceLength()-1, aligment.getB1()*b.getStepSize());		
-		if (b2>=b.length()-1)
-			b2 = b.getSequenceLength()-1;
-		else
-			b2 = aligment.getB2()*b.getStepSize()+b.getStepSize();
+		b1 = alignment.getB1()*b.stepSize;		
+		b2 = Math.min(b.getSequenceLength()-1, alignment.getB2()*b.stepSize+b.stepSize-1);
 		
-		return new OverlapInfo(aligment.getScore()/100000.0, aligment.getScore(), a1, a2, b1, b2);
+		double score = alignment.getScore();
+
+		//int overlapSize = Math.max(a2-a1, b2-b1);
+		//double relOverlapSize = (double)overlapSize/(double)this.stepSize;
+		//score = score/relOverlapSize;
+		
+		return new OverlapInfo(score/100000.0, score, a1, a2, b1, b2);
 	}
 
 	public int getSequenceLength()

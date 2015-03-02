@@ -7,9 +7,9 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 	 */
 	private static final long serialVersionUID = -44448450811302477L;
 
-	private final static long[] getAsBits(String seq, int nGramSize, int numWords)
+	private final static long[] getAsBits(int[] minHashes)
 	{
-		int[] minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numWords*64, null, null, true);
+		int numWords = minHashes.length/64;
 		
 		//now convert them to bits
 		long[] bits = new long[numWords];
@@ -42,9 +42,14 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 		super(bits);
 	}
 	
-	public MinHashBitSketch(String seq, int kmerSize, int numWords)
+	public MinHashBitSketch(int[] minHashes)
 	{
-		super(getAsBits(seq, kmerSize, numWords));
+		super(getAsBits(minHashes));
+	}
+	
+	public MinHashBitSketch(String seq, int nGramSize, int numWords)
+	{
+		super(getAsBits(new MinHashSketch(seq, nGramSize, numWords*64).getMinHashArray()));
 	}
 	
 	public final double jaccard(final MinHashBitSketch sh)

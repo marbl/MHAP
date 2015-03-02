@@ -29,6 +29,8 @@
  */
 package edu.umd.marbl.mhap.impl;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,6 +50,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final double acceptScore;
 
 	private final ArrayList<Map<Integer, ArrayList<SequenceId>>> hashes;
+	//private final ArrayList<Int2ObjectOpenHashMap<ArrayList<SequenceId>>> hashes;
 	private final double maxShift;
 	private final AtomicLong minhashSearchTime;
 	private final AtomicLong sortMergeSearchTime;
@@ -59,15 +62,14 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final AtomicLong numberSequencesFullyCompared;
 	private final AtomicLong numberSequencesHit;
 	private final AtomicLong numberSequencesMinHashed;
-	private final AtomicLong numberSubSequences;
-	private final AtomicLong numberSubSequencesHit;
 
 	private final int numMinMatches;
+	private final double alignmentScore;
 	private final HashMap<SequenceId, SequenceSketch> sequenceVectorsHash;
 
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
-			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, double alignmentOffset) throws IOException
+			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, double alignmentOffset, double alignmentScore) throws IOException
 	{
 		super(numThreads, storeResults);
 
@@ -75,10 +77,8 @@ public final class MinHashSearch extends AbstractMatchSearch
 		this.numMinMatches = numMinMatches;
 		this.maxShift = maxShift;
 		this.acceptScore = acceptScore;
-		this.numberSubSequencesHit = new AtomicLong();
 		this.numberSequencesHit = new AtomicLong();
 		this.numberSequencesFullyCompared = new AtomicLong();
-		this.numberSubSequences = new AtomicLong();
 		this.numberSequencesMinHashed = new AtomicLong();
 		this.numberElementsProcessed = new AtomicLong();
 		this.minhashSearchTime = new AtomicLong();
@@ -89,13 +89,15 @@ public final class MinHashSearch extends AbstractMatchSearch
 
 		//store the bit aligner
 		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, 0.0, alignmentOffset);
+		this.alignmentScore = alignmentScore;
 
 		this.sequenceVectorsHash = new HashMap<SequenceId, SequenceSketch>(data.getNumberProcessed() + 100, (float) 0.75);
 
-		this.hashes = new ArrayList<Map<Integer, ArrayList<SequenceId>>>(numHashes);
+		this.hashes = new ArrayList<>(numHashes);
 		for (int iter = 0; iter < numHashes; iter++)
 		{
-			Map<Integer,ArrayList<SequenceId>> map = new HashMap<Integer, ArrayList<SequenceId>>(data.getNumberSubSequencesProcessed()+100);
+			//Map<Integer,ArrayList<SequenceId>> map = new HashMap<Integer, ArrayList<SequenceId>>(data.getNumberSubSequencesProcessed()+100);			
+			Int2ObjectOpenHashMap<ArrayList<SequenceId>> map = new Int2ObjectOpenHashMap<ArrayList<SequenceId>>(data.getNumberSubSequencesProcessed()+100);
 			
 			this.hashes.add(map);
 		}
@@ -137,13 +139,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 			// get the list
 			synchronized (hash)
 			{
-				currList = hash.get(hashVal);
-
-				if (currList == null)
-				{
-					currList = new ArrayList<SequenceId>(2);
-					hash.put(hashVal, currList);
-				}
+				currList = hash.computeIfAbsent(hashVal, k-> new ArrayList<SequenceId>(2));
 			}
 
 			// add the element
@@ -155,9 +151,6 @@ public final class MinHashSearch extends AbstractMatchSearch
 			count++;
 		}
 
-		//increment the subsequence counter 
-		this.numberSubSequences.getAndIncrement();
-		
 		//increment the counter
 		this.numberSequencesMinHashed.getAndIncrement();
 		
@@ -175,8 +168,13 @@ public final class MinHashSearch extends AbstractMatchSearch
 		if (this.hashes.size() != minHash.numHashes())
 			throw new MhapRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
 					+ ", input size " + minHash.numHashes() + ".");
+		
+		//estimate size
+		long numLookups = this.getNumberSequencesSearched();
+		long numProcessed = this.numberElementsProcessed.get();
+		int mapSize = Math.max(256, (int)(4.0*(double)numLookups/(double)numProcessed));
 
-		HashMap<SequenceId, HitCounter> bestSequenceHit = new HashMap<SequenceId, HitCounter>(this.numberSequencesMinHashed.intValue()/5+1);
+		HashMap<SequenceId, HitCounter> bestSequenceHit = new HashMap<SequenceId, HitCounter>(mapSize);
 		int[] minHashes = minHash.getMinHashArray();
 		
 		int hashIndex = 0;
@@ -191,17 +189,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 
 				for (SequenceId sequenceId : currentHashMatchList)
 				{
-					// get current count in the list
-					HitCounter currentHitInfo = bestSequenceHit.get(sequenceId);
-
-					// increment the count
-					if (currentHitInfo == null)
-					{
-						currentHitInfo = new HitCounter(1);
-						bestSequenceHit.put(sequenceId, currentHitInfo);
-					}
-					else
-						currentHitInfo.addHit();
+					bestSequenceHit.compute(sequenceId, (k,v)-> (v==null) ? new HitCounter(1) : v.addHit());
 				}
 			}
 			
@@ -214,7 +202,6 @@ public final class MinHashSearch extends AbstractMatchSearch
 		
 		//record number of hash matches processed
 		this.numberSequencesHit.getAndAdd(bestSequenceHit.size());
-		this.numberSubSequencesHit.getAndAdd(bestSequenceHit.size());
 		
 		// compute the proper counts for all sets and remove below threshold
 		ArrayList<MatchResult> matches = new ArrayList<MatchResult>(32);
@@ -257,8 +244,8 @@ public final class MinHashSearch extends AbstractMatchSearch
 				boolean accept;
 				if (seqHashes.useAlignment())
 				{
-					result = seqHashes.getAlignmentSequence().getOverlapInfo(this.aligner, matchedHashes.getAlignmentSequence());
-					accept = result.rawScore>0.0;
+					result = seqHashes.getAlignmentSequence().getOverlapInfo(this.aligner, matchedHashes.getAlignmentSequence());					
+					accept = result.rawScore>this.alignmentScore;
 				}
 				else
 				{
@@ -318,12 +305,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 	{
 		return this.numberSequencesHit.get();
 	}
-	
-	public long getNumberSubSequencesHit()
-	{
-		return this.numberSubSequencesHit.get();
-	}
-		
+			
 	@Override
 	public List<SequenceId> getStoredForwardSequenceIds()
 	{

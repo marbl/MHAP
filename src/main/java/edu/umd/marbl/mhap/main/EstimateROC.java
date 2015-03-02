@@ -46,6 +46,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -737,39 +739,44 @@ public class EstimateROC {
 		}
 	}
 	
-	private void estimatePPV() {
+	private void estimatePPV() throws InterruptedException, ExecutionException {
 		AtomicInteger numTP = new AtomicInteger();
 		
-		Stream.iterate(0, i->i+1).limit(this.numTrials).parallel().forEach(i-> {
-			int ovlLen = 0;
-			String[] ovl = null;
-			String ovlName = null;
-			while (ovlLen < this.minOvlLen) {
-				// pick an overlap
-				ovlName = pickRandomMatch();
-				Overlap o = this.ovlInfo.get(ovlName);
-				ovlLen = Utils.getRangeOverlap(o.afirst, o.asecond, o.bfirst, o.bsecond);
-			}
-			if (ovlName == null) {
-				System.err.println("Could not find any computed overlaps > " + this.minOvlLen);
-				System.exit(1);
-			} else {
-				ovl = ovlName.split("_");
-				String id = ovl[0];
-				String id2 = ovl[1];
-				
-				HashSet<String> matches = getSequenceMatches(id, 0);
-				if (matches.contains(id2)) {
-					numTP.getAndIncrement();
+		
+		ForkJoinPool forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()/2+1);  
+		
+		forkJoinPool.submit(() ->
+			Stream.iterate(0, i->i+1).limit(this.numTrials).parallel().forEach(i-> {
+				int ovlLen = 0;
+				String[] ovl = null;
+				String ovlName = null;
+				while (ovlLen < this.minOvlLen) {
+					// pick an overlap
+					ovlName = pickRandomMatch();
+					Overlap o = this.ovlInfo.get(ovlName);
+					ovlLen = Utils.getRangeOverlap(o.afirst, o.asecond, o.bfirst, o.bsecond);
+				}
+				if (ovlName == null) {
+					System.err.println("Could not find any computed overlaps > " + this.minOvlLen);
+					System.exit(1);
 				} else {
-					if (computeDP(id, id2)) {
+					ovl = ovlName.split("_");
+					String id = ovl[0];
+					String id2 = ovl[1];
+					
+					HashSet<String> matches = getSequenceMatches(id, 0);
+					if (matches.contains(id2)) {
 						numTP.getAndIncrement();
 					} else {
-						if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + id2 + " is not correct."); }
+						if (computeDP(id, id2)) {
+							numTP.getAndIncrement();
+						} else {
+							if (DEBUG) { System.err.println("Overlap between sequences: " + id + ", " + id2 + " is not correct."); }
+						}
 					}
 				}
-			}
-		});
+			})
+			).get();
 		
 		// now our formula for PPV. Estimate percent of our matches which are true
 		this.ppv = numTP.doubleValue() / (double)this.numTrials;

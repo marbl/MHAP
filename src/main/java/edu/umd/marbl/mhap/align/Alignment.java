@@ -107,6 +107,11 @@ public final class Alignment<S extends AlignElement<S>>
 		return score/(double)(count);
 	}
 	
+	protected List<Operation> getOperations()
+	{
+		return this.operations;
+	}
+	
 	public double getScore()
 	{
 		return this.score;

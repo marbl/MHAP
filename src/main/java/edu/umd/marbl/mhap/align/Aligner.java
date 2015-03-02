@@ -148,9 +148,9 @@ public final class Aligner<S extends AlignElement<S>>
 		float score = maxValue;
 				
 		int a1 = 0;
-		int a2 = maxI-1;
+		int a2 = Math.max(0, maxI-1);
 		int b1 = 0;
-		int b2 = maxJ-1;
+		int b2 = Math.max(0, maxJ-1);
 
 		if (storePath)
 		{
@@ -236,9 +236,9 @@ public final class Aligner<S extends AlignElement<S>>
 		float score = maxValue;
 				
 		int a1 = 0;
-		int a2 = maxI-1;
+		int a2 = Math.max(0, maxI-1);
 		int b1 = 0;
-		int b2 = maxJ-1;
+		int b2 = Math.max(0, maxJ-1);
 
 		if (this.storePath)
 		{

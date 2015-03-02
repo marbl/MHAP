@@ -71,6 +71,7 @@ public final class MhapMain
 	private final boolean weighted;
 	private final boolean useAlignment;
 	private final double alignmentOffset;
+	private final double alignmentScore;
 	
 	private final NGramCounts kmerCounter;
 
@@ -86,10 +87,14 @@ public final class MhapMain
 
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 	
-	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.54;
+	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.52;
 
-	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2;
-	private static final int DEFAULT_NUM_WORDS = 1024;
+	private static final double DEFAULT_BIT_ALIGNMENT_SCORE = 0.10;
+
+	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
+	
+	private static final int DEFAULT_NUM_WORDS = 512;
+	
 	private static final int DEFAULT_ORDERED_KMER_SIZE = 12;
 
 	public static void main(String[] args) throws Exception
@@ -116,6 +121,7 @@ public final class MhapMain
 		options.addOption("--weighted", "Perform weighted MinHashing.", false);
 		options.addOption("--alignment", "Perform sudo-alignment instead of ordered k-mer merging.", false);
 		options.addOption("--alignment_offset", "The offset to account for the variance in the alignment match score.", DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY);
+		options.addOption("--alignment_score", "The cutoff score for alignment matches.", DEFAULT_BIT_ALIGNMENT_SCORE);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
@@ -292,6 +298,7 @@ public final class MhapMain
 		this.weighted = options.get("--weighted").getBoolean();
 		this.useAlignment = options.get("--alignment").getBoolean();
 		this.alignmentOffset = options.get("--alignment_offset").getDouble();
+		this.alignmentScore = options.get("--alignment_score").getDouble();
 	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
@@ -575,7 +582,7 @@ public final class MhapMain
 	public MinHashSearch getMatchSearch(SequenceSketchStreamer hashStreamer) throws IOException
 	{
 		return new MinHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
-				this.minStoreLength, this.maxShift, this.acceptScore, this.alignmentOffset);
+				this.minStoreLength, this.maxShift, this.acceptScore, this.alignmentOffset, this.alignmentScore);
 	}
 	
 	public SequenceSketchStreamer getSequenceHashStreamer(String file, int offset) throws IOException
