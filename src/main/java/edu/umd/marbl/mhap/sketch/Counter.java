@@ -1,6 +1,6 @@
 package edu.umd.marbl.mhap.sketch;
 
-public interface Counter<T extends Object>
+public interface Counter<T extends Object> extends Filter
 {
 	public long getCount(T obj);
 

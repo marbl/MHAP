@@ -40,7 +40,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -48,7 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.umd.marbl.mhap.sketch.NGramCounts;
+import edu.umd.marbl.mhap.sketch.FrequencyCounts;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;
 
@@ -56,11 +55,9 @@ public class SequenceSketchStreamer
 {
 	private final DataInputStream buffInput;
 	private final FastaData fastaData;
-	private final HashSet<Long> filter;
-	private final NGramCounts kmerCounter;
+	private final FrequencyCounts kmerFilter;
 	private final int kmerSize;
 	private final AtomicLong numberProcessed;
-	private final AtomicLong numberSubSequencesProcessed;
 	private final int numHashes;
 	private final int offset;
 	private final boolean weighted;
@@ -77,14 +74,12 @@ public class SequenceSketchStreamer
 		this.readingFasta = false;
 		this.sequenceHashList = new ConcurrentLinkedQueue<SequenceSketch>();
 		this.numberProcessed = new AtomicLong();
-		this.kmerCounter = null;
+		this.kmerFilter = null;
 		this.weighted = true;
 
 		this.kmerSize = 0;
 		this.numHashes = 0;
 		this.orderedKmerSize = 0;
-		this.filter = null;
-		this.numberSubSequencesProcessed = new AtomicLong();
 		this.readClosed = false;
 		this.offset = offset;
 		this.useAlignment = useAlignment;
@@ -93,7 +88,7 @@ public class SequenceSketchStreamer
 	}
 
 	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int orderedKmerSize,
-			HashSet<Long> filter, NGramCounts kmerCounter, boolean weighted, int offset, boolean useAlignment) throws IOException
+			FrequencyCounts kmerFilter, boolean weighted, int offset, boolean useAlignment) throws IOException
 	{
 		this.fastaData = new FastaData(file, offset);
 		this.readingFasta = true;
@@ -101,12 +96,10 @@ public class SequenceSketchStreamer
 		this.numberProcessed = new AtomicLong();
 
 		this.weighted = weighted;
-		this.kmerCounter = kmerCounter;
+		this.kmerFilter = kmerFilter;
 		this.kmerSize = kmerSize;
 		this.numHashes = numHashes;
 		this.orderedKmerSize = orderedKmerSize;
-		this.filter = filter;
-		this.numberSubSequencesProcessed = new AtomicLong();
 		this.buffInput = null;
 		this.readClosed = false;
 		this.offset = offset;
@@ -232,17 +225,12 @@ public class SequenceSketchStreamer
 	public SequenceSketch getSketch(Sequence seq)
 	{
 		// compute the hashes
-		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.filter, this.kmerCounter, this.weighted, this.useAlignment);
+		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.kmerFilter, this.weighted, this.useAlignment);
 	}
 
 	public int getNumberProcessed()
 	{
 		return this.numberProcessed.intValue();
-	}
-
-	public int getNumberSubSequencesProcessed()
-	{
-		return this.numberSubSequencesProcessed.intValue();
 	}
 
 	protected void processAddition(SequenceSketch seqHashes)
@@ -253,9 +241,6 @@ public class SequenceSketchStreamer
 		int numProcessed = getNumberProcessed();
 		if (numProcessed % 5000 == 0)
 			System.err.println("Current # sequences loaded and processed from file: " + numProcessed + "...");
-
-		if (seqHashes != null)
-			this.numberSubSequencesProcessed.getAndAdd(1);
 	}
 
 	protected SequenceSketch readFromBinary(ReadBuffer buf, boolean fwdOnly) throws IOException

@@ -1,6 +1,6 @@
 package edu.umd.marbl.mhap.main;
 
-import edu.umd.marbl.mhap.align.AlignElementSketch;
+import edu.umd.marbl.mhap.align.AlignElementDoubleSketch;
 import edu.umd.marbl.mhap.align.AlignElementString;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.align.Alignment;
@@ -42,7 +42,7 @@ public class AlignmentTry
 		MinHashBitSequenceSubSketches m1 = new MinHashBitSequenceSubSketches(a, 7, 200, 20);
 		MinHashBitSequenceSubSketches m2 = new MinHashBitSequenceSubSketches(b, 7, 200, 20);
 		
-		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.52), m2);
+		OverlapInfo info = m1.getOverlapInfo(new Aligner<AlignElementDoubleSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.52), m2);
 				
 		System.err.println("Compressed=");
 		System.err.println(info.rawScore);
@@ -51,7 +51,7 @@ public class AlignmentTry
 		System.err.println(info.a2);
 		System.err.println(info.b2);		
 		
-		OverlapInfo info2 = m2.getOverlapInfo(new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.52), m1);
+		OverlapInfo info2 = m2.getOverlapInfo(new Aligner<AlignElementDoubleSketch<MinHashBitSketch>>(true, 0.00, 0.0, -0.52), m1);
 		System.err.println("Swap=");
 		System.err.println(info2.rawScore);
 		System.err.println(info2.a1);

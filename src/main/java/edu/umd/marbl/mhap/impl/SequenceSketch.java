@@ -35,10 +35,9 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashSet;
 
+import edu.umd.marbl.mhap.sketch.FrequencyCounts;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
-import edu.umd.marbl.mhap.sketch.NGramCounts;
 import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 
 public final class SequenceSketch implements Serializable
@@ -114,11 +113,11 @@ public final class SequenceSketch implements Serializable
 	}
 
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, boolean storeHashes,
-			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted, boolean useAlignment)
+			FrequencyCounts kmerFilter, boolean weighted, boolean useAlignment)
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
-		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, filter, kmerCount, weighted);
+		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, weighted);
 		
 		if (useAlignment)
 		{

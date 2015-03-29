@@ -33,7 +33,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Random;
 import java.io.File;
 import java.io.BufferedReader;
@@ -42,6 +41,7 @@ import java.io.InputStreamReader;
 import java.io.FileReader;
 
 import edu.umd.marbl.mhap.impl.MhapRuntimeException;
+import edu.umd.marbl.mhap.sketch.FrequencyCounts;
 import edu.umd.marbl.mhap.sketch.HashUtils;
 
 public final class Utils
@@ -190,7 +190,7 @@ public final class Utils
 		return count;
 	}
 
-	public final static HashSet<Long> createKmerFilter(String fileName, double maxPercent, int kmerSize, int seed)
+	public final static FrequencyCounts createKmerFilter(String fileName, double maxFraction, int kmerSize, int seed)
 			throws IOException
 	{
 		File file = new File(fileName);
@@ -199,7 +199,7 @@ public final class Utils
 		try (BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);)
 		{
 			// generate hashset
-			ArrayList<Long> filterArray = new ArrayList<Long>();
+			HashMap<Long, Double> values = new HashMap<>();
 
 			String line = bf.readLine();
 			while (line != null)
@@ -208,20 +208,20 @@ public final class Utils
 
 				if (str.length < 2)
 					throw new MhapRuntimeException(
-							"Kmer filter file must have at least two column [kmer kmer_percent].");
+							"K-mer filter file must have at least two column [k-mer k-mer_fraction].");
 
 				double percent = Double.parseDouble(str[1]);
 
 				// if greater, add to hashset
-				if (percent > maxPercent)
+				if (percent > maxFraction)
 				{
 					long[] minHash = HashUtils.computeSequenceHashesLong(str[0], kmerSize, seed);
 
 					if (minHash.length > 1)
-						System.err.println("Warning filter file kmer size larger than setting!");
+						throw new MhapRuntimeException("K-mer filter file size greater than the specified k-mer size.");
 
 					for (long val : minHash)
-						filterArray.add(val);
+						values.put(val, percent);
 				}
 				else
 					break;
@@ -229,7 +229,7 @@ public final class Utils
 				// read the next line
 				line = bf.readLine();
 			}
-			return new HashSet<Long>(filterArray);
+			return new FrequencyCounts(values, maxFraction);
 		}
 	}
 

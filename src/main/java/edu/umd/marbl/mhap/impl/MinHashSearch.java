@@ -30,16 +30,16 @@
 package edu.umd.marbl.mhap.impl;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.umd.marbl.mhap.align.AlignElementSketch;
+import edu.umd.marbl.mhap.align.AlignElementDoubleSketch;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
@@ -50,14 +50,13 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final double acceptScore;
 
 	private final ArrayList<Map<Integer, ArrayList<SequenceId>>> hashes;
-	//private final ArrayList<Int2ObjectOpenHashMap<ArrayList<SequenceId>>> hashes;
 	private final double maxShift;
 	private final AtomicLong minhashSearchTime;
 	private final AtomicLong sortMergeSearchTime;
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
 	
-	private final Aligner<AlignElementSketch<MinHashBitSketch>> aligner;
+	private final Aligner<AlignElementDoubleSketch<MinHashBitSketch>> aligner;
 
 	private final AtomicLong numberSequencesFullyCompared;
 	private final AtomicLong numberSequencesHit;
@@ -65,7 +64,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 
 	private final int numMinMatches;
 	private final double alignmentScore;
-	private final HashMap<SequenceId, SequenceSketch> sequenceVectorsHash;
+	private final Map<SequenceId, SequenceSketch> sequenceVectorsHash;
 
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
@@ -88,16 +87,17 @@ public final class MinHashSearch extends AbstractMatchSearch
 		data.enqueueFullFile(false, this.numThreads);
 
 		//store the bit aligner
-		this.aligner = new Aligner<AlignElementSketch<MinHashBitSketch>>(true, 0.0, 0.0, alignmentOffset);
+		this.aligner = new Aligner<AlignElementDoubleSketch<MinHashBitSketch>>(true, 0.0, 0.0, alignmentOffset);
 		this.alignmentScore = alignmentScore;
 
-		this.sequenceVectorsHash = new HashMap<SequenceId, SequenceSketch>(data.getNumberProcessed() + 100, (float) 0.75);
+		//this.sequenceVectorsHash = new HashMap<>(data.getNumberProcessed());
+		this.sequenceVectorsHash = new Object2ObjectOpenHashMap<>(data.getNumberProcessed());
 
 		this.hashes = new ArrayList<>(numHashes);
 		for (int iter = 0; iter < numHashes; iter++)
 		{
-			//Map<Integer,ArrayList<SequenceId>> map = new HashMap<Integer, ArrayList<SequenceId>>(data.getNumberSubSequencesProcessed()+100);			
-			Int2ObjectOpenHashMap<ArrayList<SequenceId>> map = new Int2ObjectOpenHashMap<ArrayList<SequenceId>>(data.getNumberSubSequencesProcessed()+100);
+			//Map<Integer,ArrayList<SequenceId>> map = new HashMap<Integer, ArrayList<SequenceId>>(data.getNumberProcessed());			
+			Map<Integer,ArrayList<SequenceId>> map = new Int2ObjectOpenHashMap<ArrayList<SequenceId>>(data.getNumberProcessed());
 			
 			this.hashes.add(map);
 		}
@@ -174,7 +174,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		long numProcessed = this.numberElementsProcessed.get();
 		int mapSize = Math.max(256, (int)(4.0*(double)numLookups/(double)numProcessed));
 
-		HashMap<SequenceId, HitCounter> bestSequenceHit = new HashMap<SequenceId, HitCounter>(mapSize);
+		Map<SequenceId, HitCounter> bestSequenceHit = new Object2ObjectOpenHashMap<>(mapSize);
 		int[] minHashes = minHash.getMinHashArray();
 		
 		int hashIndex = 0;

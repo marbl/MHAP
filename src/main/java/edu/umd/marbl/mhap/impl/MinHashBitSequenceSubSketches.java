@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
-import edu.umd.marbl.mhap.align.AlignElementSketch;
+import edu.umd.marbl.mhap.align.AlignElementDoubleSketch;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.sketch.HashUtils;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
@@ -18,7 +18,7 @@ import edu.umd.marbl.mhap.utils.HitCounter;
 
 public final class MinHashBitSequenceSubSketches
 {
-	private final AlignElementSketch<MinHashBitSketch> alignmentSketch;
+	private final AlignElementDoubleSketch<MinHashBitSketch> alignmentSketch;
 	
 	private final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes)
 	{
@@ -151,7 +151,7 @@ public final class MinHashBitSequenceSubSketches
 		return sequence;
 	}
 	
-	public OverlapInfo getOverlapInfo(Aligner<AlignElementSketch<MinHashBitSketch>> aligner, MinHashBitSequenceSubSketches b)
+	public OverlapInfo getOverlapInfo(Aligner<AlignElementDoubleSketch<MinHashBitSketch>> aligner, MinHashBitSequenceSubSketches b)
 	{
 		return this.alignmentSketch.getOverlapInfo(aligner, b.alignmentSketch);
 	}
@@ -187,12 +187,12 @@ public final class MinHashBitSequenceSubSketches
 	
 	protected MinHashBitSequenceSubSketches(MinHashBitSketch[] sketches, int stepSize, int seqLength)
 	{
-		this.alignmentSketch = new AlignElementSketch<>(sketches, stepSize, seqLength);
+		this.alignmentSketch = new AlignElementDoubleSketch<>(sketches, stepSize, seqLength);
 	}
 	
 	public MinHashBitSequenceSubSketches(String seq, int kmerSize, int stepSize, int numWords)
 	{
-		this.alignmentSketch = new AlignElementSketch<>(computeSequences(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
+		this.alignmentSketch = new AlignElementDoubleSketch<>(computeSequencesDouble(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
 	}
 	
 	private static int[] union(int[] minHashes1, int[] minHashes2)

@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
@@ -50,7 +49,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	private static final long serialVersionUID = 8846482698636860862L;
 	
 	private final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
-			HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
+			FrequencyCounts kmerFilter, boolean weighted)
 	{
 		final int numberNGrams = seq.length() - nGramSize + 1;
 	
@@ -78,11 +77,12 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 				maxCount = counter.count;
 		}
 	
+		//allocate the space
 		int[] hashes = new int[Math.max(1,numHashes)];		
-	
 		long[] best = new long[numHashes];
 		Arrays.fill(best, Long.MAX_VALUE);
 
+		//go through all the k-mers and find the min values
 		for (Entry<Long, HitCounter> kmer : hitMap.entrySet())
 		{
 			long key = kmer.getKey();
@@ -91,22 +91,19 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			if (!weighted)
 				weight = 1;
 			
-			if (kmerCount!=null || filter != null)
-			{				
-				if ((kmerCount!=null && kmerCount.documentFrequencyRatio(key)>kmerCount.getFilterCutoff()) || (filter != null && filter.contains(key)))
+			if (kmerFilter!=null)
+			{
+				if (weighted)
 				{
-					//System.err.println("Bad = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
-					if (!weighted)
-						weight = 0;
+					weight = (int)kmerFilter.idfDiscrete(key, 3);
 				}
 				else
-				if (weighted)
-					weight = weight*3;
+				{
+					if (kmerFilter.contains(key))
+						weight = 0;
+				}
 			}
-			
-			//System.err.println("Good = "+kmerCount.inverseDocumentFrequency(key)+", "+kmerCount.weight(key, weight, maxCount));
-			//int weight = Math.min(1, (int)Math.round(kmerCount.weight(key, kmer.getValue().count, maxCount)));
-			
+						
 			if (weight<=0)
 				continue;
 		
@@ -184,12 +181,12 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	
 	public MinHashSketch(String str, int nGramSize, int numHashes)
 	{
-		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(str, nGramSize, numHashes, null, null, true);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(str, nGramSize, numHashes, null, true);
 	}
 	
-	public MinHashSketch(String seq, int nGramSize, int numHashes, HashSet<Long> filter, NGramCounts kmerCount, boolean weighted)
+	public MinHashSketch(String seq, int nGramSize, int numHashes, FrequencyCounts freqFilter, boolean weighted)
 	{
-		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numHashes, filter, kmerCount, weighted);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numHashes, freqFilter, weighted);
 	}
 
 	public byte[] getAsByteArray()

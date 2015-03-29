@@ -34,22 +34,12 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import edu.umd.marbl.mhap.impl.FastaData;
 import edu.umd.marbl.mhap.impl.MhapRuntimeException;
 import edu.umd.marbl.mhap.impl.MinHashSearch;
-import edu.umd.marbl.mhap.impl.Sequence;
 import edu.umd.marbl.mhap.impl.SequenceId;
 import edu.umd.marbl.mhap.impl.SequenceSketchStreamer;
-import edu.umd.marbl.mhap.sketch.CountMin;
-import edu.umd.marbl.mhap.sketch.HashUtils;
-import edu.umd.marbl.mhap.sketch.NGramCounts;
+import edu.umd.marbl.mhap.sketch.FrequencyCounts;
 import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
@@ -57,7 +47,6 @@ import edu.umd.marbl.mhap.utils.Utils;
 public final class MhapMain
 {
 	private final double acceptScore;
-	private final HashSet<Long> filter;
 	private final String inFile;
 	private final int kmerSize;
 	private final double maxShift;
@@ -73,7 +62,7 @@ public final class MhapMain
 	private final double alignmentOffset;
 	private final double alignmentScore;
 	
-	private final NGramCounts kmerCounter;
+	private final FrequencyCounts kmerFilter;
 
 	private static final double DEFAULT_ACCEPT_SCORE = 0.04;
 
@@ -87,9 +76,9 @@ public final class MhapMain
 
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 	
-	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.52;
+	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.53;
 
-	private static final double DEFAULT_BIT_ALIGNMENT_SCORE = 0.10;
+	private static final double DEFAULT_BIT_ALIGNMENT_SCORE = 0.0001;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
 	
@@ -127,7 +116,7 @@ public final class MhapMain
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
 		options.addOption("--pacbio_fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
 		options.addOption("--pacbio_sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
-		options.addOption("--pacbio_experimental", "Set all the parameters for the PacBio experimental settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--nanopore_fast", "Set all the parameters for the Nanopore fast settings. This is the current best guidance, and could change at any time without warning.", false);
 		
 		if (!options.process(args))
 			System.exit(0);
@@ -163,7 +152,7 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 768);
 		}
 		else
-		if (options.get("--pacbio_experimental").getBoolean())
+		if (options.get("--nanopore_fast").getBoolean())
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
@@ -172,7 +161,7 @@ public final class MhapMain
 				options.setOptions("--num-min-matches", 3);
 
 			if (!options.get("--num-hashes").isSet())
-				options.setOptions("--num-hashes", 512);
+				options.setOptions("--num-hashes", 768);
 		}
 		
 		if (options.get("-s").getString().isEmpty() && options.get("-p").getString().isEmpty())
@@ -309,26 +298,23 @@ public final class MhapMain
 			System.err.println("Reading in filter file " + filterFile + ".");
 			try
 			{
-				this.filter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize, 0);
+				this.kmerFilter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize, 0);
 			}
 			catch (Exception e)
 			{
 				throw new MhapRuntimeException("Could not parse k-mer filter file.", e);
 			}
 			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
-			
-			this.kmerCounter = null;
 		}
 		else
 		{
-			this.filter = null;
-			//this.kmerCounter = recordFastaKmerCounts(inFile, options.get("--filter-threshold").getDouble());
-			this.kmerCounter = null;
+			this.kmerFilter = null;
 		}
 
 	}
 	
-	public NGramCounts recordFastaKmerCounts(String file, double filterCutoff) throws IOException
+	/*
+	public FrequencyCounts recordFastaKmerCounts(String file, double filterCutoff) throws IOException
 	{
 		System.err.println("Computing k-mer counts...");
 		
@@ -401,6 +387,7 @@ public final class MhapMain
 		
 		return new NGramCounts(countMin, counter.get(), filterCutoff);
 	}
+	*/
 
 	public void computeMain() throws IOException
 	{
@@ -592,7 +579,7 @@ public final class MhapMain
 			seqStreamer = new SequenceSketchStreamer(file, offset, this.useAlignment);
 		else
 			seqStreamer = new SequenceSketchStreamer(file, this.kmerSize, this.numHashes,
-					DEFAULT_ORDERED_KMER_SIZE, this.filter, this.kmerCounter, this.weighted, offset, this.useAlignment);
+					DEFAULT_ORDERED_KMER_SIZE, this.kmerFilter, this.weighted, offset, this.useAlignment);
 
 		return seqStreamer;
 	}
