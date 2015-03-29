@@ -1,5 +1,5 @@
 /* 
- * ARMOR package
+ * MHAP package
  * 
  * This  software is distributed "as is", without any warranty, including 
  * any implied warranty of merchantability or fitness for a particular
@@ -8,8 +8,7 @@
  * whatsoever, arising out of or in connection with the use of this
  * software.
  * 
- * Copyright (c) 2012 by Konstantin Berlin 
- * University Of Maryland
+ * Copyright (c) 2015 by Konstantin Berlin and Sergey Koren
  * 
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
