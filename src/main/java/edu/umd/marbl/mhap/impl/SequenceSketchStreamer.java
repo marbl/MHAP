@@ -119,7 +119,7 @@ public class SequenceSketchStreamer
 		if (this.readingFasta)
 		{
 			Sequence seq = this.fastaData.dequeue();
-
+			
 			// compute the hashes
 			seqHashes = null;
 			if (seq != null)

@@ -76,9 +76,9 @@ public final class MhapMain
 
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 	
-	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.53;
+	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.535;
 
-	private static final double DEFAULT_BIT_ALIGNMENT_SCORE = 0.0001;
+	private static final double DEFAULT_BIT_ALIGNMENT_SCORE = 1.0e-6;
 
 	private static final int DEFAULT_NUM_THREADS = Runtime.getRuntime().availableProcessors();
 	
@@ -92,7 +92,7 @@ public final class MhapMain
 		Locale.setDefault(Locale.US);
 		
 		ParseOptions options = new ParseOptions();
-		options.addStartTextLine("MHAP: MinHash Alignment Protocol. A tool for overlapping long-read sequences in bioinformatics.");
+		options.addStartTextLine("MHAP: MinHash Alignment Protocol. A tool for finding overlaps of long-read sequences (such as PacBio or Nanopore) in bioinformatics.");
 		options.addStartTextLine("\tVersion: "+PackageInfo.VERSION+", Build time: "+PackageInfo.BUILD_TIME);		
 		options.addStartTextLine("\tUsage 1 (direct execution): java -server -Xmx<memory> -jar <MHAP jar> -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
 		options.addStartTextLine("\tUsage 2 (generate precomputed binaries): java -server -Xmx<memory> -jar <MHAP jar> -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
@@ -100,7 +100,7 @@ public final class MhapMain
 		options.addOption("-q", "Usage 1: The FASTA file of reads, or a directory of files, that will be compared to the set of reads in the box (see -s). Usage 2: The output directory for the binary formatted dat files.", "");
 		options.addOption("-p", "Usage 2 only. The directory containing FASTA files that should be converted to binary format for storage.", "");
 		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency (second column).", "");
-		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is always set to "+DEFAULT_ORDERED_KMER_SIZE+", and currently cannot be modified.", DEFAULT_KMER_SIZE);
+		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is seperate, and cannot be modified.", DEFAULT_KMER_SIZE);
 		options.addOption("--num-hashes", "[int], number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
 		options.addOption("--threshold", "[double], the threshold similarity score cutoff for the second stage sort-merge filter. This is based on the average number of k-mers matching in the overlapping region.", DEFAULT_ACCEPT_SCORE);
 		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored.", DEFAULT_FILTER_CUTOFF);
@@ -108,27 +108,28 @@ public final class MhapMain
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to 2 x #cores.", DEFAULT_NUM_THREADS);
 		options.addOption("--weighted", "Perform weighted MinHashing.", false);
-		options.addOption("--alignment", "Perform sudo-alignment instead of ordered k-mer merging.", false);
-		options.addOption("--alignment_offset", "The offset to account for the variance in the alignment match score.", DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY);
-		options.addOption("--alignment_score", "The cutoff score for alignment matches.", DEFAULT_BIT_ALIGNMENT_SCORE);
+		//options.addOption("--alignment", "Perform sudo-alignment instead of ordered k-mer merging.", false);
+		options.addOption("--alignment", "Experimental option.", false);
+		options.addOption("--alignment-offset", "The offset to account for the variance in the alignment match score.", DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY);
+		options.addOption("--alignment-score", "The cutoff score for alignment matches.", DEFAULT_BIT_ALIGNMENT_SCORE);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
-		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. IDs not stored in compressed files.", false);
-		options.addOption("--pacbio_fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
-		options.addOption("--pacbio_sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
-		options.addOption("--nanopore_fast", "Set all the parameters for the Nanopore fast settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format.", false);
+		options.addOption("--pacbio-fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--pacbio-sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--nanopore-fast", "Set all the parameters for the Nanopore fast settings. This is the current best guidance, and could change at any time without warning.", false);
 		
 		if (!options.process(args))
 			System.exit(0);
 		
-		if (options.get("--pacbio_fast").getBoolean() && options.get("--pacbio_sensitive").getBoolean())
+		if (options.get("--pacbio-fast").getBoolean() && options.get("--pacbio-sensitive").getBoolean())
 		{
 			System.out.println("Two default sequence type parameters cannot be set at the same time.");
 			System.out.println(options.helpMenuString());
 			System.exit(1);
 		}
 
-		if (options.get("--pacbio_fast").getBoolean())
+		if (options.get("--pacbio-fast").getBoolean())
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
@@ -140,7 +141,7 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 512);
 		}
 		else
-		if (options.get("--pacbio_sensitive").getBoolean())
+		if (options.get("--pacbio-sensitive").getBoolean())
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
@@ -152,13 +153,13 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 768);
 		}
 		else
-		if (options.get("--nanopore_fast").getBoolean())
+		if (options.get("--nanopore-fast").getBoolean())
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
 
 			if (!options.get("--num-min-matches").isSet())
-				options.setOptions("--num-min-matches", 3);
+				options.setOptions("--num-min-matches", 2);
 
 			if (!options.get("--num-hashes").isSet())
 				options.setOptions("--num-hashes", 768);
@@ -286,8 +287,8 @@ public final class MhapMain
 		this.acceptScore = options.get("--threshold").getDouble();
 		this.weighted = options.get("--weighted").getBoolean();
 		this.useAlignment = options.get("--alignment").getBoolean();
-		this.alignmentOffset = options.get("--alignment_offset").getDouble();
-		this.alignmentScore = options.get("--alignment_score").getDouble();
+		this.alignmentOffset = options.get("--alignment-offset").getDouble();
+		this.alignmentScore = options.get("--alignment-score").getDouble();
 	
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();

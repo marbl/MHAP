@@ -40,7 +40,7 @@ import java.util.Arrays;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public class OrderedNGramHashes
+public final class OrderedNGramHashes
 {
 	private static final class SortableIntPair implements Comparable<SortableIntPair>, Serializable
 	{
@@ -61,38 +61,18 @@ public class OrderedNGramHashes
 		public int compareTo(SortableIntPair p)
 		{
 			return Integer.compare(this.x, p.x);
-
-			// int result = Integer.compare(this.x, p.x);
-
-			// if (result!=0)
-			// return result;
-
-			// return Integer.compare(this.y, p.y);
 		}
 	}
 
-	private final int[][][] orderedHashes;
+	private final int[][] orderedHashes;
 	private final int seqLength;
 
-	public final static int MAX_ARRAY_SIZE = 1000;
 	public final static int REDUCTION = 4;
 
-	private final static int[][][] allocateMemory(int size)
+	private final static int[][] allocateMemory(int size)
 	{
-		int subDivisions = size / MAX_ARRAY_SIZE + 1;
-		if (size % MAX_ARRAY_SIZE == 0)
-			subDivisions--;
-
 		// allocate the memory
-		int[][][] completeHash = new int[subDivisions][][];
-
-		int division = 0;
-		for (int iter = 0; iter < size; iter += MAX_ARRAY_SIZE)
-		{
-			completeHash[division] = new int[Math.min(MAX_ARRAY_SIZE, size - iter)][2];
-
-			division++;
-		}
+		int[][] completeHash = new int[size][2];
 
 		return completeHash;
 	}
@@ -106,23 +86,13 @@ public class OrderedNGramHashes
 			int seqLength = input.readInt();
 			int hashLength = input.readInt();
 
-			int[][][] orderedHashes = allocateMemory(hashLength);
+			int[][] orderedHashes = allocateMemory(hashLength);
 
-			int division = 0;
-			int i = 0;
 			for (int iter = 0; iter < hashLength; iter++)
 			{
-				if (orderedHashes[division].length <= i)
-				{
-					division++;
-					i = 0;
-				}
-
 				// dos.writeInt(this.completeHash[iter][iter2]);
-				orderedHashes[division][i][0] = input.readInt();
-				orderedHashes[division][i][1] = input.readInt();
-
-				i++;
+				orderedHashes[iter][0] = input.readInt();
+				orderedHashes[iter][1] = input.readInt();
 			}
 
 			return new OrderedNGramHashes(seqLength, orderedHashes);
@@ -134,7 +104,7 @@ public class OrderedNGramHashes
 		}
 	}
 
-	private OrderedNGramHashes(int seqLength, int[][][] orderedHashes)
+	private OrderedNGramHashes(int seqLength, int[][] orderedHashes)
 	{
 		this.seqLength = seqLength;
 		this.orderedHashes = orderedHashes;
@@ -143,6 +113,10 @@ public class OrderedNGramHashes
 	public OrderedNGramHashes(String seq, int kmerSize)
 	{
 		this.seqLength = seq.length() - kmerSize + 1;
+		
+		if (this.seqLength<=0)
+			throw new SketchRuntimeException("Sequence length must be greater or equal to kmerSize.");
+		
 		this.orderedHashes = getFullHashes(seq, kmerSize);
 	}
 
@@ -156,11 +130,10 @@ public class OrderedNGramHashes
 			dos.writeInt(this.seqLength);
 			dos.writeInt(size());
 			for (int iter = 0; iter < this.orderedHashes.length; iter++)
-				for (int iter2 = 0; iter2 < this.orderedHashes[iter].length; iter2++)
-				{
-					dos.writeInt(this.orderedHashes[iter][iter2][0]);
-					dos.writeInt(this.orderedHashes[iter][iter2][1]);
-				}
+			{
+				dos.writeInt(this.orderedHashes[iter][0]);
+				dos.writeInt(this.orderedHashes[iter][1]);
+			}
 
 			dos.flush();
 			return bos.toByteArray();
@@ -173,37 +146,24 @@ public class OrderedNGramHashes
 
 	public int getHash(int index)
 	{
-		int i1 = index / this.orderedHashes[0].length;
-		int i2 = index % this.orderedHashes[0].length;
-
-		return this.orderedHashes[i1][i2][0];
+		return this.orderedHashes[index][0];
 	}
 
-	private int[][][] storeAsArray(SortableIntPair[] completeHashAsPair)
+	private int[][] storeAsArray(SortableIntPair[] completeHashAsPair)
 	{
 		// allocate the memory
-		int[][][] completeHash = allocateMemory(completeHashAsPair.length);
+		int[][] completeHash = allocateMemory(completeHashAsPair.length);
 
-		int division = 0;
-		int i = 0;
 		for (int iter = 0; iter < completeHashAsPair.length; iter++)
 		{
-			if (completeHash[division].length <= i)
-			{
-				division++;
-				i = 0;
-			}
-
-			completeHash[division][i][0] = completeHashAsPair[iter].x;
-			completeHash[division][i][1] = completeHashAsPair[iter].y;
-
-			i++;
+			completeHash[iter][0] = completeHashAsPair[iter].x;
+			completeHash[iter][1] = completeHashAsPair[iter].y;
 		}
 
 		return completeHash;
 	}
 
-	private int[][][] getFullHashes(String seq, int subKmerSize)
+	private int[][] getFullHashes(String seq, int subKmerSize)
 	{
 		int cutoff = (int) ((long) Integer.MIN_VALUE + ((long) Integer.MAX_VALUE - (long) Integer.MIN_VALUE)
 				/ (long) REDUCTION);
@@ -233,10 +193,10 @@ public class OrderedNGramHashes
 
 	public OverlapInfo getOverlapInfo(OrderedNGramHashes s, double maxShiftPercent)
 	{
-		int[][][] allKmerHashes = this.orderedHashes;
+		int[][] allKmerHashes = this.orderedHashes;
 
 		// get the kmers of the second sequence
-		int[][][] sAllKmerHashes = s.orderedHashes;
+		int[][] sAllKmerHashes = s.orderedHashes;
 
 		// get sizes
 		int size1 = this.size();
@@ -273,8 +233,6 @@ public class OrderedNGramHashes
 		{
 			// init counters
 			count = 0;
-			int ii1 = 0;
-			int ii2 = 0;
 			int i1 = 0;
 			int i2 = 0;
 
@@ -287,31 +245,17 @@ public class OrderedNGramHashes
 			// perform merge operation to get the shift and the kmer count
 			while (true)
 			{
-				if (i1 >= allKmerHashes[ii1].length)
-				{
-					ii1++;
-					i1 = 0;
-
-					// break if reached end
-					if (ii1 >= allKmerHashes.length)
-						break;
-				}
-				if (i2 >= sAllKmerHashes[ii2].length)
-				{
-					ii2++;
-					i2 = 0;
-
-					// break if reached end
-					if (ii2 >= sAllKmerHashes.length)
-						break;
-				}
-
+				if (i1>=allKmerHashes.length)
+					break;
+				if (i2>=sAllKmerHashes.length)
+					break;
+				
 				// get the values in the array
-				hash1 = allKmerHashes[ii1][i1][0];
-				pos1 = allKmerHashes[ii1][i1][1];
+				hash1 = allKmerHashes[i1][0];
+				pos1 = allKmerHashes[i1][1];
 
-				hash2 = sAllKmerHashes[ii2][i2][0];
-				pos2 = sAllKmerHashes[ii2][i2][1];
+				hash2 = sAllKmerHashes[i2][0];
+				pos2 = sAllKmerHashes[i2][1];
 
 				if (hash1 < hash2 || pos1 < valid1Lower || pos1 >= valid1Upper)
 					i1++;
@@ -482,8 +426,6 @@ public class OrderedNGramHashes
 
 	public int size()
 	{
-		// make sure you get the last element even if its different size
-		return (this.orderedHashes.length - 1) * this.orderedHashes[0].length
-				+ this.orderedHashes[this.orderedHashes.length - 1].length;
+		return this.orderedHashes.length;
 	}
 }
