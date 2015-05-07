@@ -51,7 +51,7 @@ public final class FrequencyCounts
 			maxValue = Math.max(maxValue, val);
 		
 		this.maxValue = maxValue;
-		this.minValue = this.filterCutoff*0.1;
+		this.minValue = this.filterCutoff;
 		
 		this.minIdfValue = idf(this.maxValue);
 		this.maxIdfValue = idf(this.minValue);

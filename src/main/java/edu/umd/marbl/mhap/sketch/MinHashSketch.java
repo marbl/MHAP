@@ -95,7 +95,9 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			{
 				if (weighted)
 				{
-					weight = (int)kmerFilter.idfDiscrete(key, 3);
+					weight = (int)(((double)weight)*kmerFilter.idfDiscrete(key, 3));
+					if (weight<1)
+						weight = 1;
 				}
 				else
 				{
