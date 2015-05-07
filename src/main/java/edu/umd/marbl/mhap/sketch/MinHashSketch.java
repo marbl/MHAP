@@ -29,13 +29,13 @@
  */
 package edu.umd.marbl.mhap.sketch;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import edu.umd.marbl.mhap.utils.HitCounter;
@@ -60,7 +60,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, nGramSize, 0);
 		
 		//now compute the counts of occurance
-		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
+		Long2ObjectLinkedOpenHashMap<HitCounter> hitMap = new Long2ObjectLinkedOpenHashMap<HitCounter>(kmerHashes.length);
 		int maxCount = 0;
 		for (long kmer : kmerHashes)
 		{
