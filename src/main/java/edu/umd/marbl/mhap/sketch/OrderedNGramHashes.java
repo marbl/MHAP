@@ -29,6 +29,8 @@
  */
 package edu.umd.marbl.mhap.sketch;
 
+import it.unimi.dsi.fastutil.ints.IntArrays;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -62,6 +64,16 @@ public final class OrderedNGramHashes
 		{
 			return Integer.compare(this.x, p.x);
 		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString()
+		{
+			return "["+x + ", " + y + "]";
+		}
+	
 	}
 
 	private final int[][] orderedHashes;
@@ -176,17 +188,34 @@ public final class OrderedNGramHashes
 			if (val <= cutoff)
 				count++;
 
-		SortableIntPair[] completeHashAsPair = new SortableIntPair[count];
+		int[] cutHashes = new int[count];
+		int[] perm = new int[count];
+		int[] pos = new int[count];
+		
 		count = 0;
 		for (int iter = 0; iter < hashes.length; iter++)
 			if (hashes[iter] <= cutoff)
 			{
-				completeHashAsPair[count] = new SortableIntPair(hashes[iter], iter);
+				cutHashes[count] = hashes[iter];
+				perm[count] = count;
+				pos[count] = iter;
+
 				count++;
 			}
+		
+		//sort the array
+		IntArrays.radixSortIndirect(perm, cutHashes, true);
 
-		// sort the results, sort is in place so no need to look at second
-		Arrays.sort(completeHashAsPair);
+		SortableIntPair[] completeHashAsPair = new SortableIntPair[count];		
+		for (int iter=0; iter<count; iter++)
+		{
+			int index = perm[iter];
+			completeHashAsPair[iter] = new SortableIntPair(cutHashes[index], pos[index]);
+		}
+		
+		//System.err.println(Arrays.toString(completeHashAsPair));
+		// sort the results, sort in place so no need to look at second
+		//Arrays.sort(completeHashAsPair);
 
 		return storeAsArray(completeHashAsPair);
 	}

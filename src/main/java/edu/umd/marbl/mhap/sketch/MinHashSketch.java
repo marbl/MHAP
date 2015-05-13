@@ -95,7 +95,15 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			{
 				if (weighted)
 				{
-					weight = (int)(((double)weight)*kmerFilter.idfDiscrete(key, 3));
+					//compute the td part
+					double td = (double)weight;
+					//td = Math.log1p(td)*3.4;
+					
+					//compute the idf part
+					double idf = kmerFilter.idfDiscrete(key, 3);
+					
+					//compute td-idf
+					weight = (int)Math.round(td*idf);
 					if (weight<1)
 						weight = 1;
 				}
