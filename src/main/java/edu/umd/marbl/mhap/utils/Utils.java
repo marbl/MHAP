@@ -34,11 +34,16 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.FileReader;
+
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 import edu.umd.marbl.mhap.impl.MhapRuntimeException;
 import edu.umd.marbl.mhap.sketch.FrequencyCounts;
@@ -248,7 +253,7 @@ public final class Utils
 		return snew;
 	}
 
-	public final static BufferedReader getFile(String fileName, String postfix) throws Exception
+	public final static BufferedReader getFile(String fileName, String postfix) throws IOException
 	{
 		String[] array = new String[1];
 		array[0] = postfix;
@@ -258,23 +263,27 @@ public final class Utils
 
 	public final static BufferedReader getFile(String fileName, String[] postfix) throws IOException
 	{
-		BufferedReader bf = null;
-
 		if (fileName.endsWith("bz2"))
 		{
+			BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(new BufferedInputStream(new FileInputStream(fileName), BUFFER_BYTE_SIZE));
+			return new BufferedReader(new InputStreamReader(bzIn));
+			
 			// open file as a pipe
-			System.err.println("Running command " + "bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
-			Process p = Runtime.getRuntime().exec("bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
-			bf = new BufferedReader(new InputStreamReader(p.getInputStream()), BUFFER_BYTE_SIZE);
-			System.err.println(bf.ready());
+			//System.err.println("Running command " + "bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
+			//Process p = Runtime.getRuntime().exec("bzip2 -dc " + new File(fileName).getAbsolutePath() + " |");
+			//bf = new BufferedReader(new InputStreamReader(p.getInputStream()), BUFFER_BYTE_SIZE);
+			//System.err.println(bf.ready());
 		}
 		else if (fileName.endsWith("gz"))
 		{
+			GzipCompressorInputStream bzIn = new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(fileName), BUFFER_BYTE_SIZE));
+			return new BufferedReader(new InputStreamReader(bzIn));
+			
 			// open file as a pipe
-			System.err.println("Runnning comand " + "gzip -dc " + new File(fileName).getAbsolutePath() + " |");
-			Process p = Runtime.getRuntime().exec("gzip -dc " + new File(fileName).getAbsolutePath() + " |");
-			bf = new BufferedReader(new InputStreamReader(p.getInputStream()), BUFFER_BYTE_SIZE);
-			System.err.println(bf.ready());
+			//System.err.println("Runnning comand " + "gzip -dc " + new File(fileName).getAbsolutePath() + " |");
+			//Process p = Runtime.getRuntime().exec("gzip -dc " + new File(fileName).getAbsolutePath() + " |");
+			//bf = new BufferedReader(new InputStreamReader(p.getInputStream()), BUFFER_BYTE_SIZE);
+			//System.err.println(bf.ready());
 		}
 		else
 		{
@@ -282,18 +291,11 @@ public final class Utils
 			for (i = 0; i < postfix.length; i++)
 			{
 				if (fileName.endsWith(postfix[i]))
-				{
-					bf = new BufferedReader(new FileReader(fileName), BUFFER_BYTE_SIZE);
-					break;
-				}
+					return new BufferedReader(new FileReader(fileName), BUFFER_BYTE_SIZE);
 			}
-			if (i == postfix.length)
-			{
-				System.err.println("Unknown file format " + fileName + " Skipping!");
-			}
+			
+			throw new IOException("Unknown file format of file " + fileName+".");
 		}
-
-		return bf;
 	}
 
 	public final static String getID(String line)
