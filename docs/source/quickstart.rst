@@ -9,7 +9,7 @@ Running MHAP provides command-line documenation if you run it without parameters
  
 .. code-block:: bash
 
-    $ java -jar mhap-1.0.jar
+    $ java -jar mhap-1.6.jar
 
 MHAP has two main usage modes, the main finds all overlaps between the input sequences. The second  only constructs an index which can be subsequently reused. 
 
@@ -18,7 +18,7 @@ Finding overlaps
 
 .. code-block:: bash
 
-   $ java -Xmx32g -server -jar mhap-1.0.jar -s<fasta/dat from/self file> [-q<fasta/dat to file or directory>] [-f<kmer filter list, must be sorted>]
+   $ java -Xmx32g -server -jar mhap-1.6.jar -s<fasta/dat from/self file> [-q<fasta/dat to file or directory>] [-f<kmer filter list, must be sorted>]
 
 Both the -s and -q options can accept either FastA sequences or binary dat files (generated as described below). The -q option can accept either a file or a directory, in which case all FastA/dat files in the specified directory will be used. By default, only the sequences specified by -s are indexed and the sequences in -q are streamed against the constructed index. Since MHAP is written in Java, the memory usage can be high. Generally, 32GB of RAM is sufficient to index 20K sequences. If you have more sequences, you can partition your data and run MHAP on the partitions. You can also increase the memory MHAP is allowed to use by changing the Xmx parameter to a larger limit.
 
@@ -36,7 +36,7 @@ Constructing binary index
 
 .. code-block:: bash
 
-   $ java -Xmx32g -server -jar mhap-1.0.jar -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]
+   $ java -Xmx32g -server -jar mhap-1.6.jar -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]
 
 In this use case, files in the -p directory will be converted to binary dat files in the -q directory. Subsequent runs using the dat files (instead of FastA files) will be faster as the sequences no longer need to be indexed, only loaded into memory.
 
