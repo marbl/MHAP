@@ -29,13 +29,8 @@
  */
 package edu.umd.marbl.mhap.main;
 
-import jaligner.Alignment;
-import jaligner.SmithWatermanGotoh;
-import jaligner.NeedlemanWunschGotoh;
-import jaligner.matrix.MatrixLoader;
-import jaligner.matrix.MatrixLoaderException;
-
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,17 +44,23 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import edu.umd.marbl.mhap.impl.FastaData;
 import edu.umd.marbl.mhap.impl.Sequence;
 import edu.umd.marbl.mhap.utils.IntervalTree;
 import edu.umd.marbl.mhap.utils.Utils;
+import jaligner.NeedlemanWunschGotoh;
+import jaligner.SmithWatermanGotoh;
+import jaligner.matrix.MatrixLoader;
+import jaligner.matrix.MatrixLoaderException;
+import ssw.Aligner;
+
 
 public class EstimateROC {
 	private static final boolean ALIGN_SW = true;
+	private static final boolean ALIGN_JALIGN = false;
+	private static int[][] MATCH_MATRIX = new int[128][128];
 	private static final double MIN_REF_OVERLAP_DIFFERENCE = 0.8;
 	private static double MIN_IDENTITY = 0.70;
 	private static final double REF_IDENTITY_ADJUSTMENT = 0.1;
@@ -280,6 +281,27 @@ public class EstimateROC {
 		}
 
 		generator = new Random(seed);
+
+		if (!this.ALIGN_JALIGN) {
+			try {
+	            File f = new File(System.getProperty("java.class.path"));
+	            File dir = f.getAbsoluteFile().getParentFile();
+	            String path = dir.toString();
+	            System.err.println("Loaded file from path " + path);
+	            System.load(path + java.io.File.separator + "lib" + java.io.File.separator + "libsswjni.so");
+	            
+	            // now initialize matrix
+	            for (int i = 0; i < 128; i++) {
+	                for (int j = 0; j < 128; j++) {
+	                        if (i == j) MATCH_MATRIX[i][j] = 1;
+	                        else MATCH_MATRIX[i][j] = -1;
+	                }
+	            }
+			} catch (Exception e) {
+				System.err.println("Error: could not load DP library: " + e);
+				System.exit(1);
+			}
+		}
 	}
 
 	private static int getSequenceId(String id) {
@@ -629,11 +651,10 @@ public class EstimateROC {
 		}
 	}
 	
-	private static double getScore(Alignment alignment) {
+	private static double getScore(jaligner.Alignment alignment, int ovlLen) {
 		char[] sequence1 = alignment.getSequence1();
 		char[] sequence2 = alignment.getSequence2();
 		int length = Math.max(sequence1.length, sequence2.length);
-		int ovlLen = Math.min(sequence1.length, sequence2.length);
 		char GAP = '-';
 		@SuppressWarnings("unused")
 		int errors = 0;
@@ -655,48 +676,79 @@ public class EstimateROC {
 			}
 		}
 		return (matches / (double)ovlLen);
+
+	}
+	
+	private static double getScore(ssw.Alignment alignment, int ovlLen) {
+		// the result is a cigar string of the format 3M1I9M1I9M1D10M1I13M1I9M1D1M2D45M1D6M1D5
+        int matches = 0;
+        for (int i = 0; i < alignment.cigar.length(); i++) {
+                if (alignment.cigar.charAt(i) == 'M') {
+                        // get the match length
+                        int s = i-1;
+                        while (s >= 0 && Character.isDigit(alignment.cigar.charAt(s))) {
+                                s--;
+                        }
+                        s++;
+                        matches += Integer.parseInt(alignment.cigar.substring(s, i));
+                }
+        }
+		return matches/ (double) ovlLen;
 	}
 	
 	private boolean computeDP(String id, String id2) {
 		if (this.doDP == false) {
 			return false;
 		}
-		Logger logger = null;
-		if (ALIGN_SW) {
-			logger = Logger.getLogger(SmithWatermanGotoh.class.getName());
-		} else {
-			logger = Logger.getLogger(NeedlemanWunschGotoh.class.getName());
-		}
-		logger.setLevel(Level.OFF);
-		logger = Logger.getLogger(MatrixLoader.class.getName());
-		logger.setLevel(Level.OFF);
+
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, id2));
 		System.err.println("Aligning sequence " + ovl.id1 + " to " + ovl.id2 + " " + ovl.bfirst + " to " + ovl.bsecond + " and " + ovl.isFwd + " and " + ovl.afirst + " " + ovl.asecond);
 
-		jaligner.Sequence s1 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id1)].getSquenceString().substring(ovl.afirst, ovl.asecond));
-		jaligner.Sequence s2 = null;
+		String s1 = this.dataSeq[getSequenceId(ovl.id1)].getSquenceString().substring(ovl.afirst, ovl.asecond);
+		String s2 = null;
+		
 		if (ovl.isFwd) {
-			s2 = new jaligner.Sequence(this.dataSeq[getSequenceId(ovl.id2)].getSquenceString().substring(ovl.bfirst, ovl.bsecond));
+			s2 = this.dataSeq[getSequenceId(ovl.id2)].getSquenceString().substring(ovl.bfirst, ovl.bsecond);
 		} else {
-			s2 = new jaligner.Sequence(Utils.rc(this.dataSeq[getSequenceId(ovl.id2)].getSquenceString().substring(ovl.bfirst, ovl.bsecond)));
+			s2 = Utils.rc(this.dataSeq[getSequenceId(ovl.id2)].getSquenceString().substring(ovl.bfirst, ovl.bsecond));
 		}
-		Alignment alignment;
-		try {
-			if (ALIGN_SW) {
-				alignment = SmithWatermanGotoh.align(s1, s2, MatrixLoader.load("MATCH"), 2f, 1f);
-			} else {
-				alignment = NeedlemanWunschGotoh.align(s1, s2, MatrixLoader.load("MATCH"), 2f, 1f);
+		int ovlLen = Math.min(s1.length(), s2.length());
+		
+		double score = 0;
+		int length = 0;
+		if (ALIGN_JALIGN) {
+			jaligner.Sequence js1 = new jaligner.Sequence(s1);
+			jaligner.Sequence js2 = new jaligner.Sequence(s2);
+			jaligner.Alignment alignment = null;
+
+			try {
+				if (ALIGN_SW) {
+					alignment = SmithWatermanGotoh.align(js1, js2, MatrixLoader.load("MATCH"), 2f, 1f);
+				} else {
+					alignment = NeedlemanWunschGotoh.align(js1, js2, MatrixLoader.load("MATCH"), 2f, 1f);
+				}
+			} catch (MatrixLoaderException e) {
+				return false;
 			}
-		} catch (MatrixLoaderException e) {
-			return false;
+			score = getScore(alignment, ovlLen);
+			length = alignment.getLength();
+			if (DEBUG) { 
+				System.err.println(alignment.getSummary());
+				System.err.println("My score: " + score);
+				System.err.println (new jaligner.formats.Pair().format(alignment)); 
+			}
 		}
-		double score = getScore(alignment); // alignment.getIdentity() / 100;
-		if (DEBUG) { 
-			System.err.println(alignment.getSummary());
-			System.err.println("My score: " + score);
-			System.err.println (new jaligner.formats.Pair().format(alignment)); 
+		else {
+			ssw.Alignment alignment = Aligner.align(s1.getBytes(), s2.getBytes(), MATCH_MATRIX, 2, 1, true);
+			score = getScore(alignment, ovlLen);
+			length = Math.max(alignment.read_end1-alignment.read_begin1, alignment.ref_end1 - alignment.ref_begin1);
+			if (DEBUG) { 
+				System.err.println(alignment.toString());
+				System.err.println("My score: " + score); 
+			}
 		}
-		return (score > MIN_IDENTITY && alignment.getLength() > this.minOvlLen);
+
+		return (score > MIN_IDENTITY && length > this.minOvlLen);
 	}
 
 	private void estimateSensitivity() {
