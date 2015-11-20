@@ -30,12 +30,14 @@ package edu.umd.marbl.mhap.impl;
 
 public final class OverlapInfo
 {
-	public final double score;
-	public final double rawScore;
 	public final int a1;
-	public final int b1;
 	public final int a2;
+	public final int b1;
 	public final int b2;
+	public final double rawScore;
+	public final double score;
+	
+	public static OverlapInfo EMPTY = new OverlapInfo(0.0, 0.0, 0, 0, 0, 0);
 	
 	public OverlapInfo(double score, double rawScore, int a1, int a2, int b1, int b2)
 	{
@@ -46,7 +48,7 @@ public final class OverlapInfo
 		this.b1 = b1;
 		this.b2 = b2;
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
@@ -54,11 +56,6 @@ public final class OverlapInfo
 	public String toString()
 	{
 		return "[score="+this.score+", a1="+this.a1+" a2="+this.a2+", b1="+this.b1+" b2="+this.b2+"]";
-	}
-	
-	public String toBlasrString()
-	{
-		return ""+this.score+", "+this.a1+", "+this.a2+", "+this.b1+", "+this.b2;
 	}
 
 }

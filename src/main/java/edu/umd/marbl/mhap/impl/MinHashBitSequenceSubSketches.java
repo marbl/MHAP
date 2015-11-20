@@ -32,79 +32,14 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map.Entry;
-
 import edu.umd.marbl.mhap.align.AlignElementDoubleSketch;
 import edu.umd.marbl.mhap.align.Aligner;
-import edu.umd.marbl.mhap.sketch.HashUtils;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
-import edu.umd.marbl.mhap.sketch.SketchRuntimeException;
-import edu.umd.marbl.mhap.utils.HitCounter;
+import edu.umd.marbl.mhap.sketch.MinHashSketch;
 
 public final class MinHashBitSequenceSubSketches
 {
 	private final AlignElementDoubleSketch<MinHashBitSketch> alignmentSketch;
-	
-	private final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes)
-	{
-		final int numberNGrams = seq.length() - nGramSize + 1;
-	
-		if (numberNGrams < 1)
-			throw new SketchRuntimeException("N-gram size bigger than string length.");
-	
-		// get the kmer hashes
-		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, nGramSize, 0);
-		
-		//now compute the counts of occurance
-		HashMap<Long, HitCounter> hitMap = new LinkedHashMap<>(kmerHashes.length);
-		int maxCount = 0;
-		for (long kmer : kmerHashes)
-		{
-			HitCounter counter = hitMap.get(kmer);
-			if (counter==null)
-			{
-				counter = new HitCounter(1);
-				hitMap.put(kmer, counter);
-			}
-			else
-				counter.addHit();
-
-			if (maxCount<counter.count)
-				maxCount = counter.count;
-		}
-	
-		int[] best = new int[numHashes];
-		Arrays.fill(best, Integer.MAX_VALUE);
-
-		for (Entry<Long, HitCounter> kmer : hitMap.entrySet())
-		{
-			long key = kmer.getKey();
-			int weight = kmer.getValue().count;
-					
-			//set the initial shift value
-			int x = (int)key;
-			for (int word = 0; word < numHashes; word++)
-			{
-				for (int count = 0; count<weight; count++)
-				{				
-					// XORShift Random Number Generators
-					x ^= (x << 21);
-					x ^= (x >>> 35);
-					x ^= (x << 4);
-					
-					int intX = (int)x; 
-		
-					if (intX < best[word])
-						best[word] = intX;
-				}
-			}
-		}
-		
-		return best;
-	}
 	
 	public final static MinHashBitSketch[] computeSequences(String seq, int nGramSize, int stepSize, int numWords)
 	{
@@ -125,7 +60,7 @@ public final class MinHashBitSequenceSubSketches
 			int currStart = Math.max(0, end-stepSize);			
 
 			//compute minhashes
-			int[] sketch = computeNgramMinHashesWeighted(seq.substring(currStart, end), nGramSize, numWords*64);
+			int[] sketch = new MinHashSketch(seq.substring(currStart, end), nGramSize, numWords*64).getMinHashArray();
 			
 			sequence[iter] = new MinHashBitSketch(sketch);
 			
@@ -140,43 +75,27 @@ public final class MinHashBitSequenceSubSketches
 		int remainder = seq.length()%stepSize;
 		
 		//get number of sequence
-		int numSequence = (seq.length()-remainder)/stepSize;
+		int numSequence = (seq.length()-remainder)/stepSize-1;
 		
-		if (remainder>0)
+		//make sure big engough 
+		if (remainder>=stepSize/2 && remainder>=nGramSize)
 			numSequence++;
 				
 		//make sketches out of them
 		int start = 0;		
-		int[][] sketches = new int[numSequence][numWords*64];
+		MinHashBitSketch[] sketches = new MinHashBitSketch[numSequence];
 		for (int iter=0; iter<numSequence; iter++)
 		{
-			int end = Math.min(seq.length(), start+stepSize);
-			int currStart = Math.max(0, end-stepSize);			
+			int end = Math.min(seq.length(), start+stepSize*2);
+			int currStart = Math.max(0, end-stepSize*2);			
 
 			//compute minhashes
-			sketches[iter] = computeNgramMinHashesWeighted(seq.substring(currStart, end), nGramSize, numWords*64);
+			sketches[iter] = new MinHashBitSketch(new MinHashSketch(seq.substring(currStart, end), nGramSize, numWords*64).getMinHashArray());
 			
 			start += stepSize;
 		}
 		
-		MinHashBitSketch[] sequence = new MinHashBitSketch[numSequence];
-		for (int iter=0; iter<sketches.length; iter++)
-		{
-			//now convert in sequence double the length
-			if ((iter+1)<sketches.length)
-			{
-				sequence[iter] = new MinHashBitSketch(union(sketches[iter], sketches[iter+1]));
-				if ((iter+2)<sketches.length)
-					sequence[iter+1] = new MinHashBitSketch(union(sketches[iter+1], sketches[iter+2]));
-				else
-					sequence[iter+1] = new MinHashBitSketch(sketches[iter+1]);
-			}
-			else
-				sequence[iter] = new MinHashBitSketch(sketches[iter]);			
-
-		}
-
-		return sequence;
+		return sketches;
 	}
 	
 	public OverlapInfo getOverlapInfo(Aligner<AlignElementDoubleSketch<MinHashBitSketch>> aligner, MinHashBitSequenceSubSketches b)
@@ -223,6 +142,7 @@ public final class MinHashBitSequenceSubSketches
 		this.alignmentSketch = new AlignElementDoubleSketch<>(computeSequencesDouble(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
 	}
 	
+	/*
 	private static int[] union(int[] minHashes1, int[] minHashes2)
 	{
 		int[] newHashes = new int[minHashes1.length]; 
@@ -232,6 +152,7 @@ public final class MinHashBitSequenceSubSketches
 		
 		return newHashes;
 	}
+	*/
 	
 	public byte[] getAsByteArray()
 	{

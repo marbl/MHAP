@@ -65,7 +65,6 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final int numMinMatches;
 	private final double alignmentScore;
 	private final Map<SequenceId, SequenceSketch> sequenceVectorsHash;
-
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
 			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, double alignmentOffset, double alignmentScore) throws IOException
@@ -87,7 +86,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		data.enqueueFullFile(false, this.numThreads);
 
 		//store the bit aligner
-		this.aligner = new Aligner<AlignElementDoubleSketch<MinHashBitSketch>>(true, 0.0, 0.0, alignmentOffset);
+		this.aligner = new Aligner<AlignElementDoubleSketch<MinHashBitSketch>>(false, 0.0, 0.0, alignmentOffset);
 		this.alignmentScore = alignmentScore;
 
 		//this.sequenceVectorsHash = new HashMap<>(data.getNumberProcessed());
@@ -250,7 +249,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 				else
 				{
 					result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
-					accept = result.score >= this.acceptScore;
+					accept = result.score >= this.acceptScore;					
 				}
 								
 				//increment the counter

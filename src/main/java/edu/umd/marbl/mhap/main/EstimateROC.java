@@ -282,7 +282,7 @@ public class EstimateROC {
 
 		generator = new Random(seed);
 
-		if (!this.ALIGN_JALIGN) {
+		if (!EstimateROC.ALIGN_JALIGN) {
 			try {
 	            File f = new File(System.getProperty("java.class.path"));
 	            File dir = f.getAbsoluteFile().getParentFile();
@@ -795,7 +795,7 @@ public class EstimateROC {
 		AtomicInteger numTP = new AtomicInteger();
 		
 		
-		ForkJoinPool forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors()/2+1);  
+		ForkJoinPool forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());  
 		
 		forkJoinPool.submit(() ->
 			Stream.iterate(0, i->i+1).limit(this.numTrials).parallel().forEach(i-> {

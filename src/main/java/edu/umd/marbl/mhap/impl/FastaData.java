@@ -40,7 +40,7 @@ import edu.umd.marbl.mhap.utils.Utils;
 public class FastaData implements Cloneable
 {
 	private final BufferedReader fileReader;
-	private final int offset;
+	private final long offset;
 	private String lastLine;
 	private AtomicLong numberProcessed;
 	private boolean readFullFile;
@@ -59,7 +59,7 @@ public class FastaData implements Cloneable
 		this.offset = 0;
 	}
 
-	public FastaData(String file, int offset) throws IOException
+	public FastaData(String file, long offset) throws IOException
 	{
 		try
 		{
@@ -124,6 +124,9 @@ public class FastaData implements Cloneable
 
 	private boolean enqueueNextSequenceInFile() throws IOException
 	{
+		StringBuilder fastaSeq = new StringBuilder();
+		String header = null;
+
 		synchronized (this.fileReader)
 		{
 			if (this.readFullFile)
@@ -148,45 +151,53 @@ public class FastaData implements Cloneable
 				throw new MhapRuntimeException("Next sequence does not start with >. Invalid format.");
 
 			// process the current header
-			String header = null;
 			if (SequenceId.STORE_FULL_ID)
 				header = this.lastLine.substring(1).split("[\\s,]+", 2)[0];
 			
 			//read the first line of the sequence
 			this.lastLine = this.fileReader.readLine();
 
-			StringBuilder fastaSeq = new StringBuilder();
 			while (true)
 			{
-				if (this.lastLine == null || this.lastLine.startsWith(">"))
+				if (this.lastLine!=null && !this.lastLine.startsWith(">"))
 				{
-					//generate sequence id
-					SequenceId id;
-					if (SequenceId.STORE_FULL_ID)
-						id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1, true, header);
-					else
-						id = new SequenceId(this.numberProcessed.intValue() + this.offset + 1);
-
-					Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
-
-					// enqueue sequence
-					this.sequenceList.add(seq);
-					this.numberProcessed.getAndIncrement();
-
-					if (this.lastLine == null)
-					{
-						this.fileReader.close();
-						this.readFullFile = true;
-					}
-
-					return true;
+					// append the last line
+					fastaSeq.append(this.lastLine);
+					this.lastLine = this.fileReader.readLine();
 				}
-
-				// append the last line
-				fastaSeq.append(this.lastLine);
-				this.lastLine = this.fileReader.readLine();
+				else
+				if (this.lastLine == null)
+				{
+					this.fileReader.close();
+					this.readFullFile = true;
+					break;
+				}
+				else
+					break;
 			}
+		}			
+		
+		String fastaSeqSring = fastaSeq.toString();
+		if (!fastaSeqSring.isEmpty())
+		{
+			long index = this.numberProcessed.incrementAndGet();
+			
+			//generate sequence id
+			SequenceId id;
+			if (SequenceId.STORE_FULL_ID)
+				id = new SequenceId(index + this.offset, true, header);
+			else
+				id = new SequenceId(index + this.offset);
+
+			Sequence seq = new Sequence(fastaSeq.toString().toUpperCase(Locale.ENGLISH), id);
+
+			// enqueue sequence
+			this.sequenceList.add(seq);
+
+			return true;
 		}
+		else
+			return false;
 
 	}
 

@@ -64,6 +64,7 @@ public class SequenceSketchStreamer
 	private final boolean useAlignment;
 
 	private final int orderedKmerSize;
+	private final int orderedSketchSize;
 	private boolean readClosed;
 	private final boolean readingFasta;
 	private final ConcurrentLinkedQueue<SequenceSketch> sequenceHashList;
@@ -80,6 +81,7 @@ public class SequenceSketchStreamer
 		this.kmerSize = 0;
 		this.numHashes = 0;
 		this.orderedKmerSize = 0;
+		this.orderedSketchSize = 0;
 		this.readClosed = false;
 		this.offset = offset;
 		this.useAlignment = useAlignment;
@@ -87,19 +89,20 @@ public class SequenceSketchStreamer
 		this.buffInput = new DataInputStream(new BufferedInputStream(new FileInputStream(file), Utils.BUFFER_BYTE_SIZE));
 	}
 
-	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int orderedKmerSize,
+	public SequenceSketchStreamer(String file, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize,
 			FrequencyCounts kmerFilter, boolean weighted, int offset, boolean useAlignment) throws IOException
 	{
 		this.fastaData = new FastaData(file, offset);
 		this.readingFasta = true;
 		this.sequenceHashList = new ConcurrentLinkedQueue<SequenceSketch>();
 		this.numberProcessed = new AtomicLong();
-
 		this.weighted = weighted;
+
 		this.kmerFilter = kmerFilter;
 		this.kmerSize = kmerSize;
 		this.numHashes = numHashes;
 		this.orderedKmerSize = orderedKmerSize;
+		this.orderedSketchSize = orderedSketchSize;
 		this.buffInput = null;
 		this.readClosed = false;
 		this.offset = offset;
@@ -225,7 +228,7 @@ public class SequenceSketchStreamer
 	public SequenceSketch getSketch(Sequence seq)
 	{
 		// compute the hashes
-		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, false, this.kmerFilter, this.weighted, this.useAlignment);
+		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.weighted, this.useAlignment);
 	}
 
 	public int getNumberProcessed()

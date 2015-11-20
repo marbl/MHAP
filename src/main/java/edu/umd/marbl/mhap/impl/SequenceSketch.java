@@ -53,9 +53,8 @@ public final class SequenceSketch implements Serializable
 	private final MinHashBitSequenceSubSketches alignmentSketches;
 	private final int sequenceLength;
 
-	public final static double SHIFT_CONSENSUS_PERCENTAGE = 0.75;
-	public final static int BIT_SKETCH_SIZE = 16;
-	public final static int SUBSEQUENCE_SIZE = 200;
+	public final static int BIT_SKETCH_SIZE = 20;
+	public final static int SUBSEQUENCE_SIZE = 50;
 	public final static int BIT_KMER_SIZE = 7;
 
 	public static SequenceSketch fromByteStream(DataInputStream input, int offset, boolean useAlignment) throws IOException
@@ -68,7 +67,7 @@ public final class SequenceSketch implements Serializable
 			boolean isFwd = input.readBoolean();
 
 			// dos.writeInt(this.id.getHeaderId());
-			SequenceId id = new SequenceId(input.readInt() + offset, isFwd);
+			SequenceId id = new SequenceId(input.readLong() + offset, isFwd);
 			
 			//dos.writeInt(this.sequenceLength);
 			int sequenceLength = input.readInt();
@@ -112,22 +111,21 @@ public final class SequenceSketch implements Serializable
 		this.alignmentSketches = alignmentSketch;
 	}
 
-	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, boolean storeHashes,
-			FrequencyCounts kmerFilter, boolean weighted, boolean useAlignment)
+	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, boolean weighted, boolean useAlignment)
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
 		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, weighted);
 		
-		if (useAlignment)
+		//if (useAlignment)
 		{
-			this.orderedHashes = null;
+			//this.orderedHashes = null;
 			this.alignmentSketches = new MinHashBitSequenceSubSketches(seq.getSquenceString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, BIT_SKETCH_SIZE);
 		}
-		else
+		//else
 		{
-			this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize);
-			this.alignmentSketches = null;
+			this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
+			//this.alignmentSketches = null;
 		}		
 	}
 
@@ -157,7 +155,7 @@ public final class SequenceSketch implements Serializable
 		try
 		{
 			dos.writeBoolean(this.id.isForward());
-			dos.writeInt(this.id.getHeaderId());
+			dos.writeLong(this.id.getHeaderId());
 			dos.writeInt(this.sequenceLength);
 			dos.write(mainHashesBytes);
 			if (orderedHashesBytes!=null)
@@ -176,7 +174,7 @@ public final class SequenceSketch implements Serializable
 	
 	public boolean useAlignment()
 	{
-		return this.alignmentSketches!=null;
+		return this.alignmentSketches!=null && this.orderedHashes==null;
 	}
 
 	public MinHashSketch getMinHashes()

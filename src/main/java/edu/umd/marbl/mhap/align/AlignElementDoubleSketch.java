@@ -54,7 +54,7 @@ public final class AlignElementDoubleSketch<T extends Sketch<T>> implements Alig
 		int b2 = alignment.getB2()*2;
 		
 		if (alignment.getScore()<0.0)
-			return new OverlapInfo(0.0, 0.0, 0, 0, 0, 0);
+			return new OverlapInfo(0.0, 0.0, a1, a2, b1, b2);
 		
 		int offsetStart = similarityOffset(b, alignment.getA1(), alignment.getB1());
 		int offsetEnd = similarityOffset(b, alignment.getA2(), alignment.getB2());
@@ -79,8 +79,11 @@ public final class AlignElementDoubleSketch<T extends Sketch<T>> implements Alig
 		double score = alignment.getScore();
 		
 		//int overlapSize = Math.max(a2-a1, b2-b1);
+		//if (overlapSize<2000)
+		//	return new OverlapInfo(0.0, 0.0, 0, 0, 0, 0);
 		//double relOverlapSize = (double)overlapSize/(double)this.stepSize;
 		//score = score/relOverlapSize;
+
 		
 		return new OverlapInfo(score/100000.0, score, a1, a2, b1, b2);
 	}

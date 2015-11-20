@@ -35,7 +35,6 @@ import edu.umd.marbl.mhap.align.Alignment;
 import edu.umd.marbl.mhap.impl.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
-import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
 import edu.umd.marbl.mhap.utils.RandomSequenceGenerator;
 
 public class AlignmentTry
@@ -90,14 +89,16 @@ public class AlignmentTry
 		
 		System.exit(1);
 		
-		OrderedNGramHashes hashes1 = new OrderedNGramHashes(a, 10);
-		OrderedNGramHashes hashes2 = new OrderedNGramHashes(b, 10);
+		//OrderedNGramHashes hashes1 = new OrderedNGramHashes(a, 10, 1024);
+		//OrderedNGramHashes hashes2 = new OrderedNGramHashes(b, 10, 1024);
 		
+		/*
 		System.err.println("Ordered=");
 		System.err.println(hashes1.getOverlapInfo(hashes2, .2).a1);
 		System.err.println(hashes1.getOverlapInfo(hashes2, .2).b1);
 		System.err.println(hashes1.getOverlapInfo(hashes2, .2).a2);
 		System.err.println(hashes1.getOverlapInfo(hashes2, .2).b2);
+		*/
 		
 		/*
 		SimHash s1 = new SimHash(a, kmerSize, 100);

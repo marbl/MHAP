@@ -184,13 +184,8 @@ public final class Aligner<S extends AlignElement<S>>
 		{
 			//figure out the path
 			ArrayList<Alignment.Operation> backOperations = new ArrayList<>(a.length()+b.length());
-			int i = a.length();
-			while (i > maxI) {
-				backOperations.add(Operation.DELETE);
-				i--;
-			}
 			
-			i = maxI;
+			int i = maxI;
 			int j = maxJ;
 			while (i>0 && j>0)
 			{
@@ -243,16 +238,16 @@ public final class Aligner<S extends AlignElement<S>>
 				float sim = (float)a.similarityScore(b, i-1, j-1)+this.scoreOffset;
 				
 				P[i][j] = Math.max(D[i-1][j]+this.gapOpen, D[i][j-1]+this.gapOpen);
-				D[i][j] = D[i-1][j-1]+sim;
+				D[i][j] = S[i-1][j-1]+sim;
 				
 				S[i][j] = Math.max(P[i][j], D[i][j]);
 				if (i==a.length())
-					S[i][j] = Math.max(S[i][j], P[i][j-1]+this.gapOpen);
+					S[i][j] = Math.max(S[i][j], S[i][j-1]);
 				if (j==b.length())
-					S[i][j] = Math.max(S[i][j], P[i-1][j]+this.gapOpen);
+					S[i][j] = Math.max(S[i][j], S[i-1][j]);
 				
 				
-				if (S[i][j] > maxValue && (i==a.length() || j==b.length())) 
+				if (S[i][j] > maxValue && (i==a.length() || j==b.length()))
 				{
 					maxValue = S[i][j];
 					maxI = i;
@@ -314,7 +309,33 @@ public final class Aligner<S extends AlignElement<S>>
 		
 			return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, backOperations);
 		}
+		else
+		{
+			int i = maxI;
+			int j = maxJ;
+			while (i>0 && j>0)
+			{
+				if (S[i-1][j]>S[i][j-1] && S[i-1][j]>S[i-1][j-1])
+				{
+					i--;
+				}
+				else
+				if (S[i][j-1]>S[i-1][j-1])
+				{
+					j--;
+				}
+				else
+				{
+					i--;
+					j--;
+				}
+			}
+			
+			a1 = i;
+			b1 = j;
+			
+			return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, null);
+		}
 		
-		return new Alignment<S>(a, b, a1, a2, b1, b2, score, this.gapOpen, null);
 	}
 }
