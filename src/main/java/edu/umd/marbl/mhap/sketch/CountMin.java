@@ -68,22 +68,12 @@ public final class CountMin<T extends Object> implements Counter<T>
 				this.countTable[iter1][iter2] = new LongAdder();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.invincea.labs.pace.hash.Counter#add(java.lang.Object)
-	 */
 	@Override
 	public void add(T obj)
 	{
 		add(obj, 1);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.invincea.labs.pace.hash.Counter#add(java.lang.Object, int)
-	 */
 	@Override
 	public void add(T obj, long increment)
 	{
@@ -102,11 +92,6 @@ public final class CountMin<T extends Object> implements Counter<T>
 		this.totalAdded.add(increment);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.invincea.labs.pace.hash.Counter#getCount(java.lang.Object)
-	 */
 	@Override
 	public long getCount(Object obj)
 	{
@@ -135,11 +120,6 @@ public final class CountMin<T extends Object> implements Counter<T>
 		return this.width;
 	}
 	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.invincea.labs.pace.hash.Counter#maxCount()
-	 */
 	@Override
 	public long maxCount()
 	{
