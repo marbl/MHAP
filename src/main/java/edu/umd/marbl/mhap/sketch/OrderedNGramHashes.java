@@ -278,6 +278,7 @@ public final class OrderedNGramHashes
 	
 	private final int[][] orderedHashes;
 	private final int seqLength;
+	private final int kmerSize;
 
 	private static double computeKBottomSketchJaccard(int[][] seq1Hashes, int[][] seq2Hashes, int medianShift, int absMaxShiftInOverlap, int a1, int a2, int b1, int b2)
 	{
@@ -345,21 +346,19 @@ public final class OrderedNGramHashes
 	{
 		try
 		{
-			// dos.writeInt(this.seqLength);
-			// dos.writeInt(size());
 			int seqLength = input.readInt();
+			int kmerSize = input.readInt();
 			int hashLength = input.readInt();
 
 			int[][] orderedHashes = new int[hashLength][2];
 
 			for (int iter = 0; iter < hashLength; iter++)
 			{
-				// dos.writeInt(this.completeHash[iter][iter2]);
 				orderedHashes[iter][0] = input.readInt();
 				orderedHashes[iter][1] = input.readInt();
 			}
 
-			return new OrderedNGramHashes(seqLength, orderedHashes);
+			return new OrderedNGramHashes(seqLength, kmerSize, orderedHashes);
 
 		}
 		catch (EOFException e)
@@ -368,9 +367,10 @@ public final class OrderedNGramHashes
 		}
 	}
 	
-	public static double jaccardToIdentity(double score, int gramSize)
+	public static double jaccardToIdentity(double score, int kmerSize)
 	{
-		return -1.0/(double)gramSize*Math.log(2.0*score/(1.0+score));
+		double d = -1.0/(double)kmerSize*Math.log(2.0*score/(1.0+score));
+		return Math.exp(-d);
 	}
 
 	private static void recordMatchingKmers(
@@ -442,14 +442,16 @@ public final class OrderedNGramHashes
 		}
 	}
 
-	private OrderedNGramHashes(int seqLength, int[][] orderedHashes)
+	private OrderedNGramHashes(int seqLength, int kmerSize, int[][] orderedHashes)
 	{
 		this.seqLength = seqLength;
 		this.orderedHashes = orderedHashes;
+		this.kmerSize = kmerSize;
 	}
 
 	public OrderedNGramHashes(String seq, int kmerSize, int sketchSize)
 	{
+		this.kmerSize = kmerSize;
 		this.seqLength = seq.length() - kmerSize + 1;
 		
 		if (this.seqLength<=0)
@@ -491,7 +493,9 @@ public final class OrderedNGramHashes
 		try
 		{
 			dos.writeInt(this.seqLength);
+			dos.writeInt(this.kmerSize);
 			dos.writeInt(size());
+			
 			for (int iter = 0; iter < this.orderedHashes.length; iter++)
 			{
 				dos.writeInt(this.orderedHashes[iter][0]);
@@ -514,6 +518,9 @@ public final class OrderedNGramHashes
 	
 	public OverlapInfo getOverlapInfo(OrderedNGramHashes toSequence, double maxShiftPercent)
 	{
+		if (this.kmerSize!=toSequence.kmerSize)
+			throw new SketchRuntimeException("Sketch k-mer size does not match between the two sequences.");
+		
 		//allocate the memory for the search
 		MatchData matchData = new MatchData(this, toSequence, maxShiftPercent);
 
@@ -541,10 +548,10 @@ public final class OrderedNGramHashes
 		
 		//compute the jaccard score using bottom-k sketching
 		double score = computeKBottomSketchJaccard(this.orderedHashes, toSequence.orderedHashes, matchData.getMedianShift(), matchData.getAbsMaxShift(), edgeData.a1, edgeData.a2, edgeData.b1, edgeData.b2);
+		score = jaccardToIdentity(score, this.kmerSize);
 		
 		double rawScore = (double)edgeData.count;
-		//double rawScore = jaccardToIdentity(score, kmerSize);
-
+		
 		return new OverlapInfo(score, rawScore, edgeData.a1, edgeData.a2, edgeData.b1, edgeData.b2);
 	}
 	

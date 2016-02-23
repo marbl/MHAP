@@ -65,7 +65,8 @@ public final class MhapMain
 	private final boolean useAlignment;
 	private final boolean weighted;
 
-	private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.024;
+	//private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.024;
+	private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.78;
 
 	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.530;
 
@@ -105,7 +106,8 @@ public final class MhapMain
 		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency (second column).", "");
 		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is seperate, and cannot be modified.", DEFAULT_KMER_SIZE);
 		options.addOption("--num-hashes", "[int], number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
-		options.addOption("--threshold", "[double], the threshold cutoff for the second stage sort-merge filter. This is based on the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
+		//options.addOption("--threshold", "[double], the threshold cutoff for the second stage sort-merge filter. This is based on the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
+		options.addOption("--threshold", "[double], the threshold cutoff for the second stage sort-merge filter. This is based on the identity score computed from the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
 		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored.", DEFAULT_FILTER_CUTOFF);
 		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);

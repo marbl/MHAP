@@ -50,7 +50,7 @@ public final class SequenceSketch implements Serializable
 	private final SequenceId id;
 	private final MinHashSketch mainHashes;
 	private final OrderedNGramHashes orderedHashes;
-	private final MinHashBitSequenceSubSketches alignmentSketches;
+	//private final MinHashBitSequenceSubSketches alignmentSketches;
 	private final int sequenceLength;
 
 	public final static int BIT_SKETCH_SIZE = 20;
@@ -79,21 +79,11 @@ public final class SequenceSketch implements Serializable
 				throw new MhapRuntimeException("Unexpected data read error.");
 
 			OrderedNGramHashes orderedHashes = null;
-			MinHashBitSequenceSubSketches alignmentSketch = null;
-			if (useAlignment)
-			{
-				alignmentSketch = MinHashBitSequenceSubSketches.fromByteStream(input);
-				if (alignmentSketch == null)
-					throw new MhapRuntimeException("Unexpected data read when reading alignment sketches.");
-			}
-			else
-			{
-				orderedHashes = OrderedNGramHashes.fromByteStream(input);
-				if (orderedHashes == null)
-					throw new MhapRuntimeException("Unexpected data read error when reading ordered k-mers.");
-			}
+			orderedHashes = OrderedNGramHashes.fromByteStream(input);
+			if (orderedHashes == null)
+				throw new MhapRuntimeException("Unexpected data read error when reading ordered k-mers.");
 
-			return new SequenceSketch(id, sequenceLength, mainHashes, orderedHashes, alignmentSketch);
+			return new SequenceSketch(id, sequenceLength, mainHashes, orderedHashes);
 
 		}
 		catch (EOFException e)
@@ -102,13 +92,12 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 
-	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderedNGramHashes orderedHashes, MinHashBitSequenceSubSketches alignmentSketch)
+	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderedNGramHashes orderedHashes)
 	{
 		this.sequenceLength = sequenceLength;
 		this.id = id;
 		this.mainHashes = mainHashes;
 		this.orderedHashes = orderedHashes;
-		this.alignmentSketches = alignmentSketch;
 	}
 
 	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, boolean weighted, boolean useAlignment)
@@ -117,21 +106,12 @@ public final class SequenceSketch implements Serializable
 		this.id = seq.getId();
 		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, weighted);
 		
-		//if (useAlignment)
-		{
-			//this.orderedHashes = null;
-			this.alignmentSketches = new MinHashBitSequenceSubSketches(seq.getSquenceString(), BIT_KMER_SIZE, SUBSEQUENCE_SIZE, BIT_SKETCH_SIZE);
-		}
-		//else
-		{
-			this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
-			//this.alignmentSketches = null;
-		}		
+		this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
 	}
 
 	public SequenceSketch createOffset(int offset)
 	{
-		return new SequenceSketch(this.id.createOffset(offset), this.sequenceLength, this.mainHashes, this.orderedHashes, this.alignmentSketches);
+		return new SequenceSketch(this.id.createOffset(offset), this.sequenceLength, this.mainHashes, this.orderedHashes);
 	}
 
 	public byte[] getAsByteArray()
@@ -142,8 +122,6 @@ public final class SequenceSketch implements Serializable
 		byte[] alignmentSketchesBytes = null;
 		if (this.orderedHashes!=null)
 			orderedHashesBytes = this.orderedHashes.getAsByteArray();
-		if (this.alignmentSketches!=null)
-			alignmentSketchesBytes = alignmentSketches.getAsByteArray();
 		
 		//get size
 		
@@ -158,10 +136,7 @@ public final class SequenceSketch implements Serializable
 			dos.writeLong(this.id.getHeaderId());
 			dos.writeInt(this.sequenceLength);
 			dos.write(mainHashesBytes);
-			if (orderedHashesBytes!=null)
-				dos.write(orderedHashesBytes);
-			if (alignmentSketchesBytes!=null)
-				dos.write(alignmentSketchesBytes);
+			dos.write(orderedHashesBytes);
 
 			dos.flush();
 			return bos.toByteArray();
@@ -172,11 +147,6 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 	
-	public boolean useAlignment()
-	{
-		return this.alignmentSketches!=null && this.orderedHashes==null;
-	}
-
 	public MinHashSketch getMinHashes()
 	{
 		return this.mainHashes;
@@ -187,11 +157,6 @@ public final class SequenceSketch implements Serializable
 		return this.orderedHashes;
 	}
 	
-	public MinHashBitSequenceSubSketches getAlignmentSequence()
-	{
-		return this.alignmentSketches;
-	}
-
 	public SequenceId getSequenceId()
 	{
 		return this.id;

@@ -100,7 +100,7 @@ public final class MatchResult implements Comparable<MatchResult>
 		return String.format("%s %s %.6f %.6f %d %d %d %d %d %d %d %d",
 				getFromId().getHeader(), 
 				getToId().getHeader(),
-				(1.0-getScore())*100.0,
+				1.0-getScore(),
 				this.rawScore,
 				getFromId().isForward() ? 0 : 1,
 				this.a1,

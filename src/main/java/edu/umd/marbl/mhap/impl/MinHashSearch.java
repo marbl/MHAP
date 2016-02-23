@@ -39,9 +39,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-import edu.umd.marbl.mhap.align.AlignElementDoubleSketch;
-import edu.umd.marbl.mhap.align.Aligner;
-import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.utils.HitCounter;
 
@@ -56,14 +53,11 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final int minStoreLength;
 	private final AtomicLong numberElementsProcessed;
 	
-	private final Aligner<AlignElementDoubleSketch<MinHashBitSketch>> aligner;
-
 	private final AtomicLong numberSequencesFullyCompared;
 	private final AtomicLong numberSequencesHit;
 	private final AtomicLong numberSequencesMinHashed;
 
 	private final int numMinMatches;
-	private final double alignmentScore;
 	private final Map<SequenceId, SequenceSketch> sequenceVectorsHash;
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
@@ -84,10 +78,6 @@ public final class MinHashSearch extends AbstractMatchSearch
 		
 		// enqueue full file, since have to know full size
 		data.enqueueFullFile(false, this.numThreads);
-
-		//store the bit aligner
-		this.aligner = new Aligner<AlignElementDoubleSketch<MinHashBitSketch>>(false, 0.0, 0.0, alignmentOffset);
-		this.alignmentScore = alignmentScore;
 
 		//this.sequenceVectorsHash = new HashMap<>(data.getNumberProcessed());
 		this.sequenceVectorsHash = new Object2ObjectOpenHashMap<>(data.getNumberProcessed());
@@ -239,18 +229,8 @@ public final class MinHashSearch extends AbstractMatchSearch
 					continue;
 				
 				//compute the direct hash score
-				OverlapInfo result;
-				boolean accept;
-				if (seqHashes.useAlignment())
-				{
-					result = seqHashes.getAlignmentSequence().getOverlapInfo(this.aligner, matchedHashes.getAlignmentSequence());					
-					accept = result.rawScore>this.alignmentScore;
-				}
-				else
-				{
-					result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
-					accept = result.score >= this.acceptScore;					
-				}
+				OverlapInfo result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
+				boolean accept = result.score >= this.acceptScore;					
 								
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
