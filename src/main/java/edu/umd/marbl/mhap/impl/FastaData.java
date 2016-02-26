@@ -225,7 +225,10 @@ public class FastaData implements Cloneable
 
 	public boolean isEmpty()
 	{
-		return this.sequenceList.isEmpty() && this.readFullFile;
+		synchronized (this.fileReader)
+		{
+			return this.sequenceList.isEmpty() && this.readFullFile;
+		}
 	}
 
 	/*

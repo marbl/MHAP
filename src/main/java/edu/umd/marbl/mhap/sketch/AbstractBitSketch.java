@@ -62,7 +62,7 @@ public abstract class AbstractBitSketch<T extends AbstractBitSketch<T>> implemen
 		int arrayIndex = (int)(index/64L);
 		int bitPos = (int)(index%64L);
 		
-		long mask = 0b1<<bitPos;
+		long mask = 0b1L<<bitPos;
 		
 		return (bits[arrayIndex] & mask) != 0L;		
 	}

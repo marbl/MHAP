@@ -80,7 +80,8 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<addClasspath>true</addClasspath>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+               				<addClasspath>true</addClasspath>
 							<classpathPrefix>lib</classpathPrefix>
 							<mainClass>edu.umd.marbl.mhap.main.MhapMain</mainClass>
 						</manifest>
@@ -131,4 +132,6 @@
 			<version>1.0</version>
 		</dependency>
 	</dependencies>
+	<url>https://github.com/marbl/MHAP</url>
+	<description>MinHash alignment process (MHAP pronounced MAP): locality sensitive hashing to detect overlaps and utilities.</description>
 </project>

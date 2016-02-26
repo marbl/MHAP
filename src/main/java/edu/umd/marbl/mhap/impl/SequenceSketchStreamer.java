@@ -269,7 +269,6 @@ public class SequenceSketchStreamer
 
 					// allocate the array
 					byteArray = buf.getBuffer(byteSize);
-					// byteArray = new byte[byteSize];
 
 					// read that many bytes
 					this.buffInput.read(byteArray, 0, byteSize);

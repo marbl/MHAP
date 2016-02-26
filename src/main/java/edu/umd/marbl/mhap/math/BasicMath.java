@@ -65,7 +65,7 @@ public final class BasicMath
 	 */
 	public static double acos(double x)
 	{
-		return FastMath.acos(x);
+		return Math.acos(x);
 	}
 
 	/**
@@ -136,7 +136,7 @@ public final class BasicMath
 	 */
 	public final static double asin(final double x)
 	{
-		return FastMath.asin(x);
+		return Math.asin(x);
 	}
 
 	public final static double[][] catColumns(final double[][] A, final double[][] B)
@@ -181,7 +181,7 @@ public final class BasicMath
 	 */
 	public final static double cos(final double angle)
 	{
-		return FastMath.cos(angle);
+		return Math.cos(angle);
 	}
 
 	/**
@@ -780,7 +780,7 @@ public final class BasicMath
 	 */
 	public final static double sin(final double angle)
 	{
-		return FastMath.sin(angle);
+		return Math.sin(angle);
 	}
 
 	/**
@@ -804,7 +804,7 @@ public final class BasicMath
 	 */
 	public final static double sqrt(final double a)
 	{
-		return FastMath.sqrt(a);
+		return Math.sqrt(a);
 	}
 
 	/**

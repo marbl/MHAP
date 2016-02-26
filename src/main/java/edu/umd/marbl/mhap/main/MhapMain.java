@@ -40,7 +40,6 @@ import edu.umd.marbl.mhap.impl.MinHashSearch;
 import edu.umd.marbl.mhap.impl.SequenceId;
 import edu.umd.marbl.mhap.impl.SequenceSketchStreamer;
 import edu.umd.marbl.mhap.sketch.FrequencyCounts;
-import edu.umd.marbl.mhap.utils.PackageInfo;
 import edu.umd.marbl.mhap.utils.ParseOptions;
 import edu.umd.marbl.mhap.utils.Utils;
 
@@ -97,7 +96,7 @@ public final class MhapMain
 		
 		ParseOptions options = new ParseOptions();
 		options.addStartTextLine("MHAP: MinHash Alignment Protocol. A tool for finding overlaps of long-read sequences (such as PacBio or Nanopore) in bioinformatics.");
-		options.addStartTextLine("\tVersion: "+PackageInfo.VERSION+", Build time: "+PackageInfo.BUILD_TIME);		
+		options.addStartTextLine("\tVersion: "+MhapMain.class.getPackage().getImplementationVersion());		
 		options.addStartTextLine("\tUsage 1 (direct execution): java -server -Xmx<memory> -jar <MHAP jar> -s<fasta/dat from/self file> [-q<fasta/dat to file>] [-f<kmer filter list, must be sorted>]");
 		options.addStartTextLine("\tUsage 2 (generate precomputed binaries): java -server -Xmx<memory> -jar <MHAP jar> -p<directory of fasta files> -q <output directory> [-f<kmer filter list, must be sorted>]");
 		options.addOption("-s", "Usage 1 only. The FASTA or binary dat file (see Usage 2) of reads that will be stored in a box, and that all subsequent reads will be compared to.", "");
@@ -268,8 +267,6 @@ public final class MhapMain
 		
 		//printing the options used
 		System.err.println("Running with these settings:");
-		System.err.println("Version = "+PackageInfo.VERSION);
-		System.err.println("Build time = "+PackageInfo.BUILD_TIME);
 		System.err.println(options);
 
 		// start the main program
@@ -325,82 +322,6 @@ public final class MhapMain
 
 	}
 	
-	/*
-	public FrequencyCounts recordFastaKmerCounts(String file, double filterCutoff) throws IOException
-	{
-		System.err.println("Computing k-mer counts...");
-		
-		final FastaData data = new FastaData(this.inFile, 0);
-		
-		final CountMin<Long> countMin = new CountMin<>(1.0e-5, 1.0-1.0e-5, 0);
-		//System.err.println(countMin.getDepth()+" "+countMin.getWidth());
-		
-		// figure out number of cores
-		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
-
-		final AtomicInteger counter = new AtomicInteger();
-		for (int iter = 0; iter < this.numThreads; iter++)
-		{
-			Runnable task = new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					try
-					{
-						Sequence seq = data.dequeue();
-						while (seq != null)
-						{
-							//get the kmers integers
-							long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq.getSquenceString(), MhapMain.this.kmerSize, 0);
-							
-							//store the values
-							for (long val : kmerHashes)
-								countMin.add(val);
-
-							//get the kmers integers for reverse compliment
-							kmerHashes = HashUtils.computeSequenceHashesLong(seq.getReverseCompliment().getSquenceString(), MhapMain.this.kmerSize, 0);
-							
-							//store the values
-							for (long val : kmerHashes)
-								countMin.add(val);
-
-							int currCount = counter.addAndGet(2);
-							if (currCount % 5000 == 0)
-								System.err.println("Kmers counted for " + currCount + " sequences (including reverse compliment)...");
-
-							seq = data.dequeue();
-						}
-					}
-					catch (IOException e)
-					{
-						throw new MhapRuntimeException(e);
-					}
-				}
-			};
-
-			// enqueue the task
-			execSvc.execute(task);
-		}
-
-		// shutdown the service
-		execSvc.shutdown();
-		try
-		{
-			execSvc.awaitTermination(365L, TimeUnit.DAYS);
-		}
-		catch (InterruptedException e)
-		{
-			execSvc.shutdownNow();
-			throw new MhapRuntimeException("Unable to finish all tasks.");
-		}
-		
-		System.err.println("Computed k-mer counts for "+counter.get()+" sequences.");
-		
-		return new NGramCounts(countMin, counter.get(), filterCutoff);
-	}
-	*/
-
 	public void computeMain() throws IOException
 	{
 		long startTotalTime = System.nanoTime();		
@@ -434,20 +355,17 @@ public final class MhapMain
 			else
 			{			
 				//read the directory content
-				File[] fileList = file.listFiles(new FilenameFilter()
+				File[] fileList = file.listFiles((dir,name) -> 
 				{				
-					@Override
-					public boolean accept(File dir, String name)
-					{
-						if (!name.startsWith("."))
-							return true;
+					if (!name.startsWith("."))
+						return true;
 						
-						return false;
-					}
+					return false;
 				});
 				
-				for (File cf : fileList)
-					processFiles.add(cf);				
+				if (fileList!=null)
+					for (File cf : fileList)
+						processFiles.add(cf);				
 			}
 			
 			for (File pf : processFiles)

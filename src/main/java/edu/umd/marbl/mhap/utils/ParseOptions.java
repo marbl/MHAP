@@ -219,7 +219,7 @@ public class ParseOptions
 			else
 			if (needsVersion())
 			{
-				System.out.println("MHAP Version = "+PackageInfo.VERSION+", Build time = "+PackageInfo.BUILD_TIME);
+				System.out.println("Version = "+ParseOptions.class.getPackage().getImplementationVersion());
 				return false;
 			}
 

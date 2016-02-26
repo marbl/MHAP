@@ -116,18 +116,11 @@ public final class SequenceSketch implements Serializable
 
 	public byte[] getAsByteArray()
 	{
-		byte[] mainHashesBytes = this.mainHashes.getAsByteArray();
+		byte[] mainHashesBytes = this.mainHashes.getAsByteArray();		
+		byte[] orderedHashesBytes = this.orderedHashes.getAsByteArray();
 		
-		byte[] orderedHashesBytes = null;
-		byte[] alignmentSketchesBytes = null;
-		if (this.orderedHashes!=null)
-			orderedHashesBytes = this.orderedHashes.getAsByteArray();
-		
-		//get size
-		
-		ByteArrayOutputStream bos = new ByteArrayOutputStream(mainHashesBytes.length
-				+(orderedHashesBytes==null ? 0 : orderedHashesBytes.length)
-				+(alignmentSketchesBytes==null ? 0 : alignmentSketchesBytes.length));
+		//get size		
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(mainHashesBytes.length+orderedHashesBytes.length);
 		DataOutputStream dos = new DataOutputStream(bos);
 
 		try
