@@ -70,6 +70,6 @@ The full list of options is available via command-line help (--help or -h). Belo
    --num-threads  [int]  The number of threads to use for computation, default (2 x #cores on system)
    --no-self  Do not compute self-matches for sequences in the -s file, default=false
    --store-full-id  Output full sequence ID from the input FastA file. Otherwise, the output is the position of the sequence in the file (i.e. first sequence gets ID=1, second gets ID=2, and so on), default=false
-   --weighted Weight k-mers using tf-idf scaling which biases repetitive k-mers to higher hash values. default=true
-   --ordered-kmer-size The size of the k-mer used for second-stage filtering of initial hits. default=12
-   --ordered-sketch-size = The number of minimum values used by the second-stage filter. default=1536
+   --weighted  Weight k-mers using tf-idf scaling which biases repetitive k-mers to higher hash values. default=true
+   --ordered-kmer-size  The size of the k-mer used for second-stage filtering of initial hits. default=12
+   --ordered-sketch-size  The number of minimum values used by the second-stage filter. default=1536
