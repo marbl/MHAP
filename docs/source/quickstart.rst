@@ -52,7 +52,7 @@ An example of output from a small dataset is below::
    155 15 0.157788 163 0 16 1041 1704 1 67 1088 2935
    155 27 0.185483 159 0 455 1678 1704 0 0 1225 1862
 
-In this case sequence 155 overlaps 11, 15, and 27. The error percent is computed from the Jaccard estimate using the same formula as `Mash <http://mash.readthedocs.org/>`_. 
+In this case sequence 155 overlaps 11, 15, and 27. The error percent is computed from the Jaccard estimate using `mash distance <http://www.biorxiv.org/content/early/2015/10/26/029827.abstract>`_. 
 
 Options
 -----------------
