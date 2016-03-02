@@ -11,6 +11,8 @@ Prerequisites
     * java (1.8u6+)
     * maven (3.0+)
 
+If you have not already installed the dependencies using maven, you will need an internet connection to do so during maven installation.
+
 Here is a list of currently supported Operating Systems:
 
 1. Mac OSX (10.7 or newer)
