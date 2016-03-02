@@ -80,6 +80,6 @@ Once inside the MetAMOS directory, run:
 
 .. code-block:: bash
 
-    $ maven
+    $ maven install
 
 This will compile the program and create a target/mhap-2.0.jar file which you can use to run MHAP. The quick-start instructions assume you are in the target directory when running the program. You can also use the target/mhap-2.0.tar file to copy MHAP to a different system or directory. If you would like to run the `validation utilties <utilities.html>`_ you must also download and build the `SSW Library <https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library>`_. Follow the instructions on the `utilities <utilities.html>`_ page.
