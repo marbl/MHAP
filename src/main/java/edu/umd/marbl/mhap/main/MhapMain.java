@@ -168,9 +168,6 @@ public final class MhapMain
 
 			if (!options.get("--num-hashes").isSet())
 				options.setOptions("--num-hashes", 768);
-
-			if (!options.get("--threshold").isSet())
-				options.setOptions("--threshold", 0.022);
 		}
 		
 		if (options.get("-s").getString().isEmpty() && options.get("-p").getString().isEmpty())
@@ -251,9 +248,9 @@ public final class MhapMain
 		}
 		
 		//check range
-		if (options.get("--threshold").getDouble()<0.0)
+		if (options.get("--threshold").getDouble()<0.0 || options.get("--threshold").getDouble()>1.0)
 		{
-			System.out.println("The second stage filter cutoff must be >=0.");
+			System.out.println("The second stage filter threshold must be 0<=threshold<=1.0.");
 			System.exit(1);
 		}
 
