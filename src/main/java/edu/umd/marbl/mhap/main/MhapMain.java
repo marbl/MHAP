@@ -168,6 +168,9 @@ public final class MhapMain
 
 			if (!options.get("--num-hashes").isSet())
 				options.setOptions("--num-hashes", 768);
+
+			if (!options.get("--threshold").isSet())
+				options.setOptions("--threshold", 0.70);
 		}
 		
 		if (options.get("-s").getString().isEmpty() && options.get("-p").getString().isEmpty())
