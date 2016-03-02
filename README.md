@@ -4,7 +4,7 @@ MinHash alignment process (MHAP pronounced MAP): locality sensitive hashing to d
 
 ## Build
 
-You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html "JDK") and [Apache Maven](http://maven.apache.org/ "MAVEN") available. To checkout and build run:
+You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html "JDK") and [Apache Maven](http://maven.apache.org/ "MAVEN") available. To checkout and build run:
 
     git clone https://github.com/marbl/MHAP.git
     cd MHAP
