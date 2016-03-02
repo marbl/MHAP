@@ -58,18 +58,22 @@ Options
 -----------------
 The full list of options is available via command-line help (--help or -h). Below is a list of commonly used options.
 
-   -k  [int]  K-mer size, default=16
-   --num-hashes  [int]  Sketch size, higher=more sensitive but more memory usage and runtime, default=512
-   --num-min-matches  [int]  The number of hashes that maches before performing local alignment, default=3
-   --pacbio_fast  [boolean]  Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning, default = false
-   --pacbio_sensitive  [boolean]  Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning, default = false
-   --min-store-length  [int length (in bp)]  The minimum sequence length to index. Sequences shorter than this are ignored in the index, default=0
-   --threshold  [int]   The threshold for percentage of matching min-mers for a hit to be considered significant. Lowering will output more overlaps but increase false positives, higher will reduce overlaps but remove false positives, default=0.024
-   --filter-threshold  [double]  The cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored, default = 1.0E-5
-   --max-shift  [double]  The fraction of the overlap size by which the overlap sizes in two sequences may differ, default=0.2
-   --num-threads  [int]  The number of threads to use for computation, default (2 x #cores on system)
-   --no-self  Do not compute self-matches for sequences in the -s file, default=false
-   --store-full-id  Output full sequence ID from the input FastA file. Otherwise, the output is the position of the sequence in the file (i.e. first sequence gets ID=1, second gets ID=2, and so on), default=false
-   --weighted  Weight k-mers using tf-idf scaling which biases repetitive k-mers to higher hash values. default=true
-   --ordered-kmer-size  The size of the k-mer used for second-stage filtering of initial hits. default=12
-   --ordered-sketch-size  The number of minimum values used by the second-stage filter. default=1536
+   -h                  Displays the help menu.
+   --version           Displays the version.
+   --pacbio-fast       Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning, default = false.
+   --pacbio-sensitive  Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning, default = false.
+   --nanopore          Set all the parameters for the Nanopore settings. This is the current best guidance, and could change at any time without warning, default = false.
+   -k                  [int], k-mer size used for MinHashing. The k-mer size for second stage filter is seperate, default = 16.
+   --num-hashes        [int], number of min-mers to be used in MinHashing, default = 512.
+   --num-min-matches   [int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping, default = 3.
+   --threshold         [double], the threshold cutoff for the second stage sort-merge filter. This is based on the identity score computed from the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions, default = 0.78.
+   --filter-threshold  [double], the cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored, default = 1.0E-5.
+   --weighted          Perform weighted MinHashing using tf-idf scaling which biases repetitive k-mers to higher hash values. default=false.
+   --max-shift         [double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only, default = 0.2.
+   --min-store-length  [int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file, default = 0.
+   --no-self           Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files, default = false.
+   --num-threads       [int], number of threads to use for computation. Typically set to #cores, , default = 8.
+   --ordered-kmer-size  [int], The size of k-mers used in the ordered second stage filter, , default = 12.
+   --ordered-sketch-size  [int], The sketch size for second stage filter, default = 1536.
+   --store-full-id        Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format, default = false.
+   -f                     [string], k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency (second column), default = "".
