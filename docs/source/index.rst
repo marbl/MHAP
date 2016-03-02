@@ -10,7 +10,7 @@ sequence overlapping algorithm. Designed to efficiently detect all overlaps
 between noisy long-read sequence data. It efficiently estimates Jaccard similarity
 by compressing sequences to their representative fingerprints composed on min-mers (minimum k-mer).
 
-MHAP is included within the Celera Assembler `PBcR <http://wgs-assembler.sourceforge.net/wiki/index.php?title=PBcR>`_ pipeline. The Celera Assembler can be downloaded `here <https://sourceforge.net/projects/wgs-assembler/files/wgs-assembler/wgs-8.2/>`_.
+MHAP is included within the `Canu <http://canu.readthedocs.org/>`_ assembler. Canu can be downloaded `here <https://github.com/marbl/canu/releases>`_.
 
 Contents:
 

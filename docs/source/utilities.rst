@@ -14,9 +14,21 @@ Assuming you have a mapping of sequences to a truth (such as a reference genome)
 
 .. code-block:: bash
 
-   $ java -cp mhap-1.0.jar edu.umd.marbl.mhap.main.EstimateROC <reference mapping M4> <overlaps M4/MHAP> <fasta of sequences> [minimum overlap length to evaluate] [number of random trials] [use dynamic programming] [verbose]
+   $ java -cp mhap-2.0.jar edu.umd.marbl.mhap.main.EstimateROC <reference mapping M4> <overlaps M4/MHAP> <fasta of sequences> [minimum overlap length to evaluate] [number of random trials] [use dynamic programming] [verbose]
 
-The default minimum overlap length is 2000 and default number of trials is 10000. This will estimate sensitivity/specificity to within 1%. It can be increased at the expense of runtime. Specifying 0 will examine all possible N^2 overlap pairs. If the dynamic programming is turned on (by typing true for the parameter), overlaps not present in the reference mapping will be confirmed if a Smith-Watermann alignment can identify the overlap specified. 
+The default minimum overlap length is 2000 and default number of trials is 10000. This will estimate sensitivity/specificity to within 1%. It can be increased at the expense of runtime. Specifying 0 will examine all possible N^2 overlap pairs. 
+
+If the dynamic programming is turned on (by typing true for the parameter), overlaps not present in the reference mapping will be confirmed if a Smith-Watermann alignment can identify the overlap specified. This step requires the `SSW Library <https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library>`_ to be separately compiled and installed:
+
+.. code-block:: bash
+
+   $ wget https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library/archive/master.zip
+   $ unzip master.gip && cd  Complete-Striped-Smith-Waterman-Library-master/src
+   $ make all
+   $ cd /full/path/to/mhap/target/lib
+   $ ln -s /full/path/to/Complete-Striped-Smith-Waterman-Library-master/src/libsswjni.so
+
+Now, you can run the EstimateROC command above.
 
 Simulating Data
 -----------------
@@ -25,12 +37,12 @@ MHAP includes a tool to simulate sequencing data with random error as well as es
 
 .. code-block:: bash
 
-   $ java -cp mhap-1.0.jar edu.umd.marbl.mhap.main.KmerStatSimulator <# sequences> <sequence length (bp)> <insertion error rate> <deletion error rate> <substitution error rate> [reference genome]
+   $ java -cp mhap-2.0.jar edu.umd.marbl.mhap.main.KmerStatSimulator <# sequences> <sequence length (bp)> <insertion error rate> <deletion error rate> <substitution error rate> [reference genome]
 
 The error rates must be between 0 and 1 and are additive. Specifying 10% insertion, 2% deletion, and 1% substitution will result in sequences with a 13% error rate. If no reference sequence is given, completely random sequences are generated and errors added. Otherwise, random sequences are drawn from the reference and errors added. Errors are added randomly with no bias.
 
 .. code-block:: bash
 
-   $  java -cp mhap-1.0.jar edu.umd.marbl.mhap.main.KmerStatSimulator <# trials> <kmer size> <sequence length> <overlap length> <insertion error rate> <deletion error rate> <substitution error rate> [one-sided error] [reference genome] [kmer filter]
+   $  java -cp mhap-2.0.jar edu.umd.marbl.mhap.main.KmerStatSimulator <# trials> <kmer size> <sequence length> <overlap length> <insertion error rate> <deletion error rate> <substitution error rate> [one-sided error] [reference genome] [kmer filter]
 
 This usage will output a distribution of Jaccard similarity between a pair of overlapping sequences with the specified error rate (when using the specified k-mer size) and two random sequences of the same length. If no reference sequence is given, completely random sequences are generated and errors added, otherwise sequences are drawn from the reference. When one-sided error is specified (by typing true for the parameter), only one of the two sequences will have error simulated, matching a mapping of a noisy sequence to a reference. If a set of k-mers for filtering is given, they are excluded when computing Jaccard similarity, both between random and overlapping sequences.
