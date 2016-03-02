@@ -8,7 +8,7 @@ You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/down
 
     git clone https://github.com/marbl/MHAP.git
     cd MHAP
-    ant
+    maven install
     
 For a quick user-quide, run:
 
