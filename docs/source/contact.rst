@@ -20,7 +20,7 @@ Please include information on your run::
 
 Who to contact to report bugs, forward complaints, feature requests:
 
-Konstantin Berlin: kberlin@umd.edu
+Konstantin Berlin: kberlin@gmail.com
 ----------------------------
 
 Sergey Koren: sergek@umd.edu
