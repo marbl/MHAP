@@ -57,7 +57,7 @@ public final class SequenceSketch implements Serializable
 	public final static int SUBSEQUENCE_SIZE = 50;
 	public final static int BIT_KMER_SIZE = 7;
 
-	public static SequenceSketch fromByteStream(DataInputStream input, int offset, boolean useAlignment) throws IOException
+	public static SequenceSketch fromByteStream(DataInputStream input, int offset) throws IOException
 	{
 		try
 		{
@@ -100,11 +100,11 @@ public final class SequenceSketch implements Serializable
 		this.orderedHashes = orderedHashes;
 	}
 
-	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, boolean weighted, boolean useAlignment)
+	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, double repeatWeight)
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
-		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, weighted);
+		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, repeatWeight);
 		
 		this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
 	}

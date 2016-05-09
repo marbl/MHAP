@@ -31,6 +31,8 @@ package edu.umd.marbl.mhap.sketch;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.umd.marbl.mhap.impl.MhapRuntimeException;
+
 
 public final class FrequencyCounts
 {
@@ -40,11 +42,16 @@ public final class FrequencyCounts
 	private final double maxValue;
 	private final double minIdfValue;
 	private final double minValue;
+	private final double offset;
 	
-	public FrequencyCounts(Map<Long,Double> fractionCounts, double filterCutoff)
+	public FrequencyCounts(Map<Long,Double> fractionCounts, double filterCutoff, double offset)
 	{
+		if (offset<0.0 || offset>=1.0)
+			throw new MhapRuntimeException("Offset can only be between 0 and 1.0.");
+		
 		this.fractionCounts = new HashMap<>(fractionCounts);
 		this.filterCutoff = filterCutoff;
+		this.offset = offset;
 		
 		double maxValue = Double.NEGATIVE_INFINITY;
 		for (double val : this.fractionCounts.values())
@@ -78,7 +85,7 @@ public final class FrequencyCounts
 	
 	public double idf(double freq)
 	{
-		return Math.log(this.maxValue/freq);
+		return Math.log(this.maxValue/freq-offset);
 		//return Math.log1p(this.maxValue/freq);
 	}
 	
@@ -88,7 +95,7 @@ public final class FrequencyCounts
 		return idf(freq); 
 	}
 	
-	public double idfDiscrete(long hash, int maxValue)
+	public double scaledIdf(long hash, double maxValue)
 	{
 		Double val = this.fractionCounts.get(hash);
 		if (val == null)

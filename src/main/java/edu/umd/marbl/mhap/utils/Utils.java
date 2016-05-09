@@ -195,7 +195,7 @@ public final class Utils
 		return count;
 	}
 
-	public final static FrequencyCounts createKmerFilter(String fileName, double maxFraction, int kmerSize, int seed)
+	public final static FrequencyCounts createKmerFilter(String fileName, double maxFraction, int kmerSize, int seed, double offset)
 			throws IOException
 	{
 		File file = new File(fileName);
@@ -234,7 +234,7 @@ public final class Utils
 				// read the next line
 				line = bf.readLine();
 			}
-			return new FrequencyCounts(values, maxFraction);
+			return new FrequencyCounts(values, maxFraction, offset);
 		}
 	}
 

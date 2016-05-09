@@ -46,13 +46,12 @@ import edu.umd.marbl.mhap.utils.Utils;
 public final class MhapMain
 {
 	private final double acceptScore;
-	private final double alignmentOffset;
-	private final double alignmentScore;
 	private final String inFile;
 	private final FrequencyCounts kmerFilter;
 	private final int kmerSize;
 	private final double maxShift;
 	private final int minStoreLength;
+	private final int minOlapLength;
 	private final boolean noSelf;
 	private final int numHashes;
 	private final int numMinMatches;
@@ -61,15 +60,12 @@ public final class MhapMain
 	private final int orderedSketchSize;
 	private final String processFile;
 	private final String toFile;
-	private final boolean useAlignment;
-	private final boolean weighted;
+	private final double repeatWeight;
 
 	//private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.024;
 	private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.78;
 
-	private static final double DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY = -0.530;
-
-	private static final double DEFAULT_BIT_ALIGNMENT_SCORE = 1.0e-6;
+	private static final double DEFAULT_REPEAT_WEIGHT= 0.0;
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
@@ -78,6 +74,8 @@ public final class MhapMain
 	private static final double DEFAULT_MAX_SHIFT_PERCENT = 0.2;
 	
 	private static final int DEFAULT_MIN_STORE_LENGTH = 0;
+	
+	private static final int DEFAULT_MIN_OVL_LENGTH = DEFAULT_KMER_SIZE+100;
 
 	private static final int DEFAULT_NUM_MIN_MATCHES = 3;
 
@@ -105,36 +103,31 @@ public final class MhapMain
 		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency (second column).", "");
 		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is seperate, and cannot be modified.", DEFAULT_KMER_SIZE);
 		options.addOption("--num-hashes", "[int], number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
-		//options.addOption("--threshold", "[double], the threshold cutoff for the second stage sort-merge filter. This is based on the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
 		options.addOption("--threshold", "[double], the threshold cutoff for the second stage sort-merge filter. This is based on the identity score computed from the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
 		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored.", DEFAULT_FILTER_CUTOFF);
 		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to #cores.", DEFAULT_NUM_THREADS);
-		options.addOption("--weighted", "Perform weighted MinHashing.", false);
-		options.addOption("--alignment", "Experimental option.", false);
-		options.addOption("--alignment-offset", "The offset to account for the variance in the alignment match score. Experimental option.", DEFAULT_BIT_ALIGNMENT_MISMATCH_PANELTY);
-		options.addOption("--alignment-score", "The cutoff score for alignment matches. Experimental option.", DEFAULT_BIT_ALIGNMENT_SCORE);
+		options.addOption("--repeat-weight", "Repeat suppression strength. <0.0 do unweighted MinHash, >=1.0 fully suppresses repeats below --filter-threshold. To perform no idf weighting, do no supply -f option. ", DEFAULT_REPEAT_WEIGHT);
 		options.addOption("--ordered-kmer-size", "The size of k-mers used in the ordered second stage filter.", DEFAULT_ORDERED_KMER_SIZE);
 		options.addOption("--ordered-sketch-size", "The sketch size for second stage filter.", DEFAULT_ORDERED_SKETCH_SIZE);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
+		options.addOption("--min-olap-length", "[int], The minimum length of the read that used for overlapping. Used to filter out short reads from FASTA file.", DEFAULT_MIN_OVL_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format.", false);
-		options.addOption("--pacbio-fast", "Set all the parameters for the PacBio fast setting. This is the current best guidance, and could change at any time without warning.", false);
-		options.addOption("--pacbio-sensitive", "Set all the parameters for the PacBio sensitive settings. This is the current best guidance, and could change at any time without warning.", false);
-		options.addOption("--nanopore", "Set all the parameters for the Nanopore settings. This is the current best guidance, and could change at any time without warning.", false);
+		options.addOption("--settings", "Set all unset parameters for the default settings. Same defaults are applied to Nanopore and Pacbio reads. 0) None, 1) Default, 2) Fast, 3) Sensitive.", 0);
 		
 		if (!options.process(args))
 			System.exit(0);
-		
-		if (options.get("--pacbio-fast").getBoolean() && options.get("--pacbio-sensitive").getBoolean())
+
+		if (options.get("--settings").getInteger()<0 || options.get("--settings").getInteger()>3)
 		{
-			System.out.println("Two default sequence type parameters cannot be set at the same time.");
+			System.out.println("Please enter valid --settings flag. See options below:");
 			System.out.println(options.helpMenuString());
 			System.exit(1);
 		}
 
-		if (options.get("--pacbio-fast").getBoolean())
+		if (options.get("--settings").getInteger()==1) //default
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
@@ -144,21 +137,39 @@ public final class MhapMain
 
 			if (!options.get("--num-hashes").isSet())
 				options.setOptions("--num-hashes", 512);
+
+			if (!options.get("--threshold").isSet())
+				options.setOptions("--num-hashes", .78);
+
+			if (!options.get("--ordered-sketch-size").isSet())
+				options.setOptions("--ordered-sketch-size", 1536);
+
+			if (!options.get("--ordered-kmer-size").isSet())
+				options.setOptions("--ordered-kmer-size", 12);
 		}
 		else
-		if (options.get("--pacbio-sensitive").getBoolean())
+		if (options.get("--settings").getInteger()==2) //fast
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
 
 			if (!options.get("--num-min-matches").isSet())
-				options.setOptions("--num-min-matches", 2);
+				options.setOptions("--num-min-matches", 3);
 
 			if (!options.get("--num-hashes").isSet())
-				options.setOptions("--num-hashes", 768);
-		}
+				options.setOptions("--num-hashes", 256);
+
+			if (!options.get("--threshold").isSet())
+				options.setOptions("--num-hashes", .80);
+
+			if (!options.get("--ordered-sketch-size").isSet())
+				options.setOptions("--ordered-sketch-size", 1000);
+
+			if (!options.get("--ordered-kmer-size").isSet())
+				options.setOptions("--ordered-kmer-size", 14);
+		}	
 		else
-		if (options.get("--nanopore").getBoolean())
+		if (options.get("--settings").getInteger()==3) //sensitive
 		{
 			if (!options.get("-k").isSet())
 				options.setOptions("-k", 16);
@@ -170,8 +181,15 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 768);
 
 			if (!options.get("--threshold").isSet())
-				options.setOptions("--threshold", 0.70);
-		}
+				options.setOptions("--num-hashes", .73);
+
+			if (!options.get("--ordered-sketch-size").isSet())
+				options.setOptions("--ordered-sketch-size", 1536);
+
+			if (!options.get("--ordered-kmer-size").isSet())
+				options.setOptions("--ordered-kmer-size", 12);
+		}		
+		
 		
 		if (options.get("-s").getString().isEmpty() && options.get("-p").getString().isEmpty())
 		{
@@ -289,15 +307,13 @@ public final class MhapMain
 		this.kmerSize = options.get("-k").getInteger();
 		this.numMinMatches = options.get("--num-min-matches").getInteger();
 		this.minStoreLength = options.get("--min-store-length").getInteger();
+		this.minOlapLength = options.get("--min-olap-length").getInteger();
 		this.maxShift = options.get("--max-shift").getDouble();
 		this.acceptScore = options.get("--threshold").getDouble();
-		this.weighted = options.get("--weighted").getBoolean();
-		this.useAlignment = options.get("--alignment").getBoolean();
-		this.alignmentOffset = options.get("--alignment-offset").getDouble();
-		this.alignmentScore = options.get("--alignment-score").getDouble();
+		this.repeatWeight = options.get("--repeat-weight").getDouble();
 		this.orderedKmerSize = options.get("--ordered-kmer-size").getInteger();
 		this.orderedSketchSize = options.get("--ordered-sketch-size").getInteger();
-	
+		
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
 		
@@ -307,7 +323,11 @@ public final class MhapMain
 			System.err.println("Reading in filter file " + filterFile + ".");
 			try
 			{
-				this.kmerFilter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize, 0);
+				double offset = 0.0;
+				if (this.repeatWeight>=0.0 || this.repeatWeight<1.0)
+					offset = this.repeatWeight;
+			
+				this.kmerFilter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize, 0, offset);
 			}
 			catch (Exception e)
 			{
@@ -499,17 +519,17 @@ public final class MhapMain
 	public MinHashSearch getMatchSearch(SequenceSketchStreamer hashStreamer) throws IOException
 	{
 		return new MinHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
-				this.minStoreLength, this.maxShift, this.acceptScore, this.alignmentOffset, this.alignmentScore);
+				this.minStoreLength, this.maxShift, this.acceptScore);
 	}
 	
 	public SequenceSketchStreamer getSequenceHashStreamer(String file, int offset) throws IOException
 	{
 		SequenceSketchStreamer seqStreamer;
 		if (file.endsWith(".dat"))
-			seqStreamer = new SequenceSketchStreamer(file, offset, this.useAlignment);
+			seqStreamer = new SequenceSketchStreamer(file, this.minOlapLength, offset);
 		else
-			seqStreamer = new SequenceSketchStreamer(file, this.kmerSize, this.numHashes,
-					this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.weighted, offset, this.useAlignment);
+			seqStreamer = new SequenceSketchStreamer(file, this.minOlapLength, this.kmerSize, this.numHashes,
+					this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.repeatWeight, offset);
 
 		return seqStreamer;
 	}

@@ -61,7 +61,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final Map<SequenceId, SequenceSketch> sequenceVectorsHash;
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
-			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, double alignmentOffset, double alignmentScore) throws IOException
+			boolean storeResults, int minStoreLength, double maxShift, double acceptScore) throws IOException
 	{
 		super(numThreads, storeResults);
 

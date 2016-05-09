@@ -193,8 +193,8 @@ public class KmerStatSimulator {
 	}
 	
 	public double compareMinHash2(String first, String second) {
-		MinHashSketch h1 = new MinHashSketch(first, this.kmer, 1256, null, true);
-		MinHashSketch h2 = new MinHashSketch(second, this.kmer, 1256, null, true);
+		MinHashSketch h1 = new MinHashSketch(first, this.kmer, 1256, null, 1.0);
+		MinHashSketch h2 = new MinHashSketch(second, this.kmer, 1256, null, 1.0);
 		
 		return h1.jaccard(h2);
 	}
