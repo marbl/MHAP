@@ -100,7 +100,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			else
 			if (kmerFilter!=null)
 			{
-				if (repeatWeight>0.0 && repeatWeight<1.0)
+				if (repeatWeight>=0.0 && repeatWeight<1.0)
 				{
 					//compute the td part
 					double td = (double)weight;
