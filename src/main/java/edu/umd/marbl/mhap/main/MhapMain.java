@@ -139,7 +139,7 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 512);
 
 			if (!options.get("--threshold").isSet())
-				options.setOptions("--num-hashes", .78);
+				options.setOptions("--threshold", .78);
 
 			if (!options.get("--ordered-sketch-size").isSet())
 				options.setOptions("--ordered-sketch-size", 1536);
@@ -160,7 +160,7 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 256);
 
 			if (!options.get("--threshold").isSet())
-				options.setOptions("--num-hashes", .80);
+				options.setOptions("--threshold", .80);
 
 			if (!options.get("--ordered-sketch-size").isSet())
 				options.setOptions("--ordered-sketch-size", 1000);
@@ -181,7 +181,7 @@ public final class MhapMain
 				options.setOptions("--num-hashes", 768);
 
 			if (!options.get("--threshold").isSet())
-				options.setOptions("--num-hashes", .73);
+				options.setOptions("--threshold", .73);
 
 			if (!options.get("--ordered-sketch-size").isSet())
 				options.setOptions("--ordered-sketch-size", 1536);
