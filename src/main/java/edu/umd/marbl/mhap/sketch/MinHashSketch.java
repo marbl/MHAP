@@ -91,7 +91,12 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			int weight = kmer.getValue().count;
 			
 			if (repeatWeight<0.0)
+			{
 				weight = 1;
+			
+				if (kmerFilter!=null && kmerFilter.contains(key))
+					weight = 0;
+			}	
 			else
 			if (kmerFilter!=null)
 			{

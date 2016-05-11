@@ -108,7 +108,7 @@ public final class MhapMain
 		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to #cores.", DEFAULT_NUM_THREADS);
-		options.addOption("--repeat-weight", "Repeat suppression strength. <0.0 do unweighted MinHash (no tf or idf), >=1.0 fully suppresses repeats below --filter-threshold. To perform no idf weighting, do no supply -f option. ", DEFAULT_REPEAT_WEIGHT);
+		options.addOption("--repeat-weight", "Repeat suppression strength for tf-idf weighing. <0.0 do unweighted MinHash (version 1.0), >=1.0 do only the tf weighing. To perform no idf weighting, do no supply -f option. ", DEFAULT_REPEAT_WEIGHT);
 		options.addOption("--ordered-kmer-size", "The size of k-mers used in the ordered second stage filter.", DEFAULT_ORDERED_KMER_SIZE);
 		options.addOption("--ordered-sketch-size", "The sketch size for second stage filter.", DEFAULT_ORDERED_SKETCH_SIZE);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
