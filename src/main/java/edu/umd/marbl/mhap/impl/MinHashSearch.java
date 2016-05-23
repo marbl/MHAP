@@ -161,12 +161,13 @@ public final class MinHashSearch extends AbstractMatchSearch
 		//estimate size
 		long numLookups = this.getNumberSequencesSearched();
 		long numProcessed = this.numberElementsProcessed.get();
-		int mapSize = Math.max(256, (int)(4.0*(double)numLookups/(double)numProcessed));
+		int mapSize = Math.max(256, (int)(4.0*(double)numProcessed/(double)numLookups));
 
 		Map<SequenceId, HitCounter> bestSequenceHit = new Object2ObjectOpenHashMap<>(mapSize);
 		int[] minHashes = minHash.getMinHashArray();
 		
 		int hashIndex = 0;
+		long additionalProcessed = 0L;
 		for (Map<Integer,ArrayList<SequenceId>> currHash : this.hashes)
 		{
 			ArrayList<SequenceId> currentHashMatchList = currHash.get(minHashes[hashIndex]);
@@ -174,8 +175,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 			// if some matches exist add them
 			if (currentHashMatchList != null)
 			{
-				this.numberElementsProcessed.getAndAdd(currentHashMatchList.size());
-
+				additionalProcessed += currentHashMatchList.size();
 				for (SequenceId sequenceId : currentHashMatchList)
 				{
 					bestSequenceHit.compute(sequenceId, (k,v)-> (v==null) ? new HitCounter(1) : v.addHit());
@@ -188,8 +188,9 @@ public final class MinHashSearch extends AbstractMatchSearch
 		//record the search time
 		long minHashEndTime = System.nanoTime();
 		this.minhashSearchTime.getAndAdd(minHashEndTime - startTime);
-		
-		//record number of hash matches processed
+
+		//record the procssed statistic
+		this.numberElementsProcessed.getAndAdd(additionalProcessed);
 		this.numberSequencesHit.getAndAdd(bestSequenceHit.size());
 		
 		// compute the proper counts for all sets and remove below threshold
