@@ -44,7 +44,7 @@ public class GetHistogramStats {
 
 	public GetHistogramStats(String fileName, double p) {
 		try {
-			BufferedReader bf = Utils.getFile(fileName, "hist");
+			BufferedReader bf = Utils.getFile(fileName, null);
 			String line = null;
 
 			while ((line = bf.readLine()) != null) {

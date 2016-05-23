@@ -276,9 +276,9 @@ public final class OrderedNGramHashes
 		}
 	}
 	
+	private final int kmerSize;
 	private final int[][] orderedHashes;
 	private final int seqLength;
-	private final int kmerSize;
 
 	private static double computeKBottomSketchJaccard(int[][] seq1Hashes, int[][] seq2Hashes, int medianShift, int absMaxShiftInOverlap, int a1, int a2, int b1, int b2)
 	{
@@ -455,7 +455,7 @@ public final class OrderedNGramHashes
 		this.seqLength = seq.length() - kmerSize + 1;
 		
 		if (this.seqLength<=0)
-			throw new SketchRuntimeException("Sequence length must be greater or equal to kmerSize.");
+			throw new SketchRuntimeException("Sequence length must be greater or equal to n-gram size.");
 		
 		// compute just direct hash of sequence
 		int[] hashes = HashUtils.computeSequenceHashes(seq, kmerSize);

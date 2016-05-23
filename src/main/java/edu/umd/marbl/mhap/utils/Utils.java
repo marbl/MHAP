@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -44,10 +43,6 @@ import java.io.FileReader;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-
-import edu.umd.marbl.mhap.impl.MhapRuntimeException;
-import edu.umd.marbl.mhap.sketch.FrequencyCounts;
-import edu.umd.marbl.mhap.sketch.HashUtils;
 
 public final class Utils
 {
@@ -195,49 +190,6 @@ public final class Utils
 		return count;
 	}
 
-	public final static FrequencyCounts createKmerFilter(String fileName, double maxFraction, int kmerSize, int seed, double offset)
-			throws IOException
-	{
-		File file = new File(fileName);
-
-		// make sure don't leak resources
-		try (BufferedReader bf = new BufferedReader(new FileReader(file), BUFFER_BYTE_SIZE);)
-		{
-			// generate hashset
-			HashMap<Long, Double> values = new HashMap<>();
-
-			String line = bf.readLine();
-			while (line != null)
-			{
-				String[] str = line.split("\\s+", 3);
-
-				if (str.length < 2)
-					throw new MhapRuntimeException(
-							"K-mer filter file must have at least two column [k-mer k-mer_fraction].");
-
-				double percent = Double.parseDouble(str[1]);
-
-				// if greater, add to hashset
-				if (percent > maxFraction)
-				{
-					long[] minHash = HashUtils.computeSequenceHashesLong(str[0], kmerSize, seed);
-
-					if (minHash.length > 1)
-						throw new MhapRuntimeException("K-mer filter file size greater than the specified k-mer size.");
-
-					for (long val : minHash)
-						values.put(val, percent);
-				}
-				else
-					break;
-
-				// read the next line
-				line = bf.readLine();
-			}
-			return new FrequencyCounts(values, maxFraction, offset);
-		}
-	}
-
 	public final static int[] errorString(int[] s, double readError)
 	{
 		int[] snew = s.clone();
@@ -251,14 +203,6 @@ public final class Utils
 		}
 
 		return snew;
-	}
-
-	public final static BufferedReader getFile(String fileName, String postfix) throws IOException
-	{
-		String[] array = new String[1];
-		array[0] = postfix;
-
-		return getFile(fileName, array);
 	}
 
 	public final static BufferedReader getFile(String fileName, String[] postfix) throws IOException
@@ -287,6 +231,9 @@ public final class Utils
 		}
 		else
 		{
+			if (postfix==null)
+				return new BufferedReader(new FileReader(fileName), BUFFER_BYTE_SIZE);
+				
 			int i = 0;
 			for (i = 0; i < postfix.length; i++)
 			{

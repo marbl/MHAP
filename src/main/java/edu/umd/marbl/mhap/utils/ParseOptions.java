@@ -340,7 +340,7 @@ public class ParseOptions
 				throw new RuntimeException("Unknown flag \"" + flag + "\".");
 			else if (option.isBoolean())
 				option.setValue(true);
-			else if (iter + 1 < args.length && !args[iter + 1].startsWith("-"))
+			else if (iter + 1 < args.length)
 			{
 				if (option.isDouble())
 				{

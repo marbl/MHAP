@@ -29,6 +29,7 @@
  */
 package edu.umd.marbl.mhap.main;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -108,13 +109,15 @@ public final class MhapMain
 		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
 		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
 		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to #cores.", DEFAULT_NUM_THREADS);
-		options.addOption("--repeat-weight", "Repeat suppression strength for tf-idf weighing. <0.0 do unweighted MinHash (version 1.0), >=1.0 do only the tf weighing. To perform no idf weighting, do no supply -f option. ", DEFAULT_REPEAT_WEIGHT);
-		options.addOption("--ordered-kmer-size", "The size of k-mers used in the ordered second stage filter.", DEFAULT_ORDERED_KMER_SIZE);
-		options.addOption("--ordered-sketch-size", "The sketch size for second stage filter.", DEFAULT_ORDERED_SKETCH_SIZE);
+		options.addOption("--repeat-weight", "[double] Repeat suppression strength for tf-idf weighing. <0.0 do unweighted MinHash (version 1.0), >=1.0 do only the tf weighing. To perform no idf weighting, do no supply -f option. ", DEFAULT_REPEAT_WEIGHT);
+		options.addOption("--ordered-kmer-size", "[int] The size of k-mers used in the ordered second stage filter.", DEFAULT_ORDERED_KMER_SIZE);
+		options.addOption("--ordered-sketch-size", "[int] The sketch size for second stage filter.", DEFAULT_ORDERED_SKETCH_SIZE);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--min-olap-length", "[int], The minimum length of the read that used for overlapping. Used to filter out short reads from FASTA file.", DEFAULT_MIN_OVL_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format.", false);
+		options.addOption("--supress-noise", "[int] 0) Does nothing, 1) completely removes any k-mers not specified in the filter file, 2) supresses k-mers not specified in the filter file, similar to repeats. ", 0);
+		options.addOption("--no-tf", "Do not perform the tf weighing, of the tf-idf weighing.", false);
 		options.addOption("--settings", "Set all unset parameters for the default settings. Same defaults are applied to Nanopore and Pacbio reads. 0) None, 1) Default, 2) Fast, 3) Sensitive.", 0);
 		
 		if (!options.process(args))
@@ -275,6 +278,13 @@ public final class MhapMain
 			System.exit(1);
 		}
 
+		//check range
+		if (options.get("--supress-noise").getInteger()<0 || options.get("--supress-noise").getInteger()>2)
+		{
+			System.out.println("The --supress-noise parameter must be in [0,2].");
+			System.exit(1);
+		}
+
 		//check other options
 		//TODO move into the class
 		if (options.get("--store-full-id").getBoolean())
@@ -324,16 +334,25 @@ public final class MhapMain
 			try
 			{
 				double offset = 0.0;
-				if (this.repeatWeight>=0.0 || this.repeatWeight<1.0)
+				if (this.repeatWeight>=0.0 && this.repeatWeight<1.0)
 					offset = this.repeatWeight;
+				
+				double maxFraction = options.get("--filter-threshold").getDouble();
+				int removeUnique = options.get("--supress-noise").getInteger();
+				boolean noTf = options.get("--no-tf").getBoolean();
 			
-				this.kmerFilter = Utils.createKmerFilter(filterFile, options.get("--filter-threshold").getDouble(), this.kmerSize, 0, offset);
+				try (BufferedReader bf = Utils.getFile(filterFile, null))
+				{
+					this.kmerFilter = new FrequencyCounts(bf, maxFraction, offset, removeUnique, noTf, this.numThreads);
+				}
 			}
 			catch (Exception e)
 			{
 				throw new MhapRuntimeException("Could not parse k-mer filter file.", e);
 			}
 			System.err.println("Time (s) to read filter file: " + (System.nanoTime() - startTime) * 1.0e-9);
+			if (this.kmerFilter!=null)
+				System.err.println("Read in k-mer filter for sizes: " + this.kmerFilter.getKmerSizes());
 		}
 		else
 		{

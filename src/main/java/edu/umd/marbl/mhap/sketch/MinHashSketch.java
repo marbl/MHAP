@@ -48,8 +48,6 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	 */
 	private static final long serialVersionUID = 8846482698636860862L;
 	
-	public static final double REPEAT_SCALE = 3.0;
-	
 	private final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
 			FrequencyCounts kmerFilter, double repeatWeight)
 	{
@@ -66,6 +64,10 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		int maxCount = 0;
 		for (long kmer : kmerHashes)
 		{
+			//do not add unique kmers to the sketch
+			if (kmerFilter!=null && !kmerFilter.keepKmer(kmer))
+				continue;
+			
 			HitCounter counter = hitMap.get(kmer);
 			if (counter==null)
 			{
@@ -78,6 +80,10 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			if (maxCount<counter.count)
 				maxCount = counter.count;
 		}
+		
+		//make sure don't create a non-zero value
+		if (hitMap.isEmpty())
+			hitMap.put(kmerHashes[0], new HitCounter(1));
 	
 		//allocate the space
 		int[] hashes = new int[Math.max(1,numHashes)];		
@@ -94,7 +100,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			{
 				weight = 1;
 			
-				if (kmerFilter!=null && kmerFilter.contains(key))
+				if (kmerFilter!=null && kmerFilter.isPopular(key))
 					weight = 0;
 			}	
 			else
@@ -103,10 +109,10 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 				if (repeatWeight>=0.0 && repeatWeight<1.0)
 				{
 					//compute the td part
-					double td = (double)weight;
+					double td = (double)kmerFilter.tfWeight(weight);
 					
 					//compute the idf part, 1-3
-					double idf = kmerFilter.scaledIdf(key, REPEAT_SCALE);
+					double idf = kmerFilter.scaledIdf(key);
 					
 					//compute td-idf
 					weight = (int)Math.round(td*idf);
@@ -116,7 +122,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 				else
 				if (repeatWeight>=1.0)
 				{
-					if (kmerFilter.contains(key))
+					if (kmerFilter.isPopular(key))
 						weight = 0;
 				}
 			}

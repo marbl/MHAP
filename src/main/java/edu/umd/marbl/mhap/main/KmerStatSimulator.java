@@ -139,7 +139,7 @@ public class KmerStatSimulator {
 	}
 	
 	private void loadSkipMers(String file) throws Exception {
-		BufferedReader bf = Utils.getFile(file, "repeats");
+		BufferedReader bf = Utils.getFile(file, null);
 		String line = null;
 
 		while ((line = bf.readLine()) != null) {
