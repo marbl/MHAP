@@ -1,6 +1,6 @@
 # MHAP
 
-MinHash alignment process (MHAP pronounced MAP): locality sensitive hashing to detect overlaps and utilities. This is the development branch, please use the [latest tagged](https://github.com/marbl/MHAP/releases/tag/v2.0).
+MinHash alignment process (MHAP pronounced MAP): locality sensitive hashing to detect overlaps and utilities. This is the development branch, please use the [latest tagged](https://github.com/marbl/MHAP/releases/tag/v2.1).
 
 ## Build
 
@@ -13,7 +13,7 @@ You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/down
 For a quick user-quide, run:
 
     cd target
-    java -jar mhap-2.0.jar
+    java -jar mhap-2.1.jar
 
 ## Docs
 For the full documentation information please see http://mhap.readthedocs.io/en/latest/
