@@ -35,11 +35,13 @@ means the k-mer GGGGGGGGGGG represents 0.05% of the k-mers in the dataset (so if
 It is also possible to use the k-mer list as a positive selection as was used in `Carvalho et. al. <http://biorxiv.org/content/biorxiv/early/2016/05/14/053256.full.pdf>`_. Specify the k-mer list as above and the flag:
 
 .. code-block:: bash
+
    --supress-noise 2
 
 which will not allow any k-mer not in in the input file to be a minmer. The k-mers above --filter-threshold will be ignored as repeats.
 
 .. code-block:: bash
+
    --supress-noise 1
 
 will downweight any k-mer not in the input file to bias against its selection as a minmer. The k-mers above --filter-threshold will be downeighted as repeats.
