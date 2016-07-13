@@ -16,7 +16,7 @@ For a quick user-quide, run:
     java -jar mhap-2.0.jar
 
 ## Docs
-For the full documentation information please see http://mhap.readthedocs.org/en/
+For the full documentation information please see http://mhap.readthedocs.org
 
 ## Cite
  - Berlin K, Koren S, Chin CS, Drake PJ, Landolin JM, Phillippy AM [Assembling Large Genomes with Single-Molecule Sequencing and Locality Sensitive Hashing](http://www.nature.com/nbt/journal/v33/n6/abs/nbt.3238.html "nb"). Nature Biotechnology. (2015).
