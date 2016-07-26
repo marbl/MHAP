@@ -713,7 +713,7 @@ public class EstimateROC {
 				break;
 			case 'M':
 				for (int i = 0; i < cLen; i++) {
-					if (ref.charAt(refPos) != qry.charAt(qryPos)) {
+					if (ref.toUpperCase().charAt(refPos) != qry.toUpperCase().charAt(qryPos)) {
 						errors++;
 					} else {
 						// do nothing
