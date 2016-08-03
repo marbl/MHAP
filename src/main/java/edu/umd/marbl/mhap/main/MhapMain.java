@@ -63,10 +63,9 @@ public final class MhapMain
 	private final String toFile;
 	private final double repeatWeight;
 
-	//private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.024;
 	private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.78;
 
-	private static final double DEFAULT_REPEAT_WEIGHT= 0.0;
+	private static final double DEFAULT_REPEAT_WEIGHT= 0.9;
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
@@ -117,7 +116,7 @@ public final class MhapMain
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
 		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format.", false);
 		options.addOption("--supress-noise", "[int] 0) Does nothing, 1) completely removes any k-mers not specified in the filter file, 2) supresses k-mers not specified in the filter file, similar to repeats. ", 0);
-		options.addOption("--no-tf", "Do not perform the tf weighing, of the tf-idf weighing.", false);
+		options.addOption("--no-tf", "Do not perform the tf weighing, in the tf-idf weighing.", false);
 		options.addOption("--settings", "Set all unset parameters for the default settings. Same defaults are applied to Nanopore and Pacbio reads. 0) None, 1) Default, 2) Fast, 3) Sensitive.", 0);
 		
 		if (!options.process(args))

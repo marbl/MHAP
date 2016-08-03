@@ -158,12 +158,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 			throw new MhapRuntimeException("Number of hashes does not match. Stored size " + this.hashes.size()
 					+ ", input size " + minHash.numHashes() + ".");
 		
-		//estimate size
-		long numLookups = this.getNumberSequencesSearched();
-		long numProcessed = this.numberElementsProcessed.get();
-		int mapSize = Math.max(256, (int)(4.0*(double)numProcessed/(double)numLookups));
-
-		Map<SequenceId, HitCounter> bestSequenceHit = new Object2ObjectOpenHashMap<>(mapSize);
+		Map<SequenceId, HitCounter> bestSequenceHit = new Object2ObjectOpenHashMap<>(256);
 		int[] minHashes = minHash.getMinHashArray();
 		
 		int hashIndex = 0;

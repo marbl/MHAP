@@ -72,11 +72,12 @@ public final class FrequencyCounts
 		
 		// generate hashset
 		Long2DoubleOpenHashMap validMap = new Long2DoubleOpenHashMap();
-		BloomFilter<Long> validMers = null;
+		BloomFilter<Long> validMers;
 
 		//the max value observed in the list
 		AtomicReference<Double> maxValue = new AtomicReference<Double>(Double.NEGATIVE_INFINITY);
 
+		//read in the first line to generate the bloom filter
 		String line = bf.readLine();
 		try
 		{
@@ -100,8 +101,10 @@ public final class FrequencyCounts
 				}
 			}
 			
-			if (removeUnique>1)
+			if (removeUnique>0)
 				validMers = BloomFilter.create((value, sink) -> sink.putLong(value), size, 1.0e-5);
+			else
+				validMers = null;
 		}
 		catch (Exception e)
 		{
@@ -111,8 +114,6 @@ public final class FrequencyCounts
 		final ThreadPoolExecutor executor = new ThreadPoolExecutor(numThreads, numThreads, 100L, TimeUnit.MILLISECONDS,
 				new LinkedBlockingQueue<Runnable>(10000), new ThreadPoolExecutor.CallerRunsPolicy());
 		
-		BloomFilter<Long> currValidMers = validMers;
-
 		line = bf.readLine();			
 		while (line != null)
 		{
@@ -154,9 +155,9 @@ public final class FrequencyCounts
 		
 					//store in the bloom filter
 					if (removeUnique>0)
-						synchronized (currValidMers)
+						synchronized (validMers)
 						{
-							currValidMers.put(hash[0]);							
+							validMers.put(hash[0]);							
 						}
 				}
 				catch (Exception e)
