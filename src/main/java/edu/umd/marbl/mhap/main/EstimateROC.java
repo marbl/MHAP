@@ -44,6 +44,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import edu.umd.marbl.mhap.impl.FastaData;
@@ -65,10 +67,12 @@ public class EstimateROC {
 	private static double MIN_IDENTITY = 0.70;
 	private static final double REF_IDENTITY_ADJUSTMENT = 0.1;
 	private static double MIN_REF_IDENTITY = MIN_IDENTITY + REF_IDENTITY_ADJUSTMENT;
+	private static double MIN_ALIGNMENT_IDENTITY = MIN_IDENTITY - REF_IDENTITY_ADJUSTMENT;
 	private static double MIN_OVERLAP_DIFFERENCE = 0.30;
 	private static final int DEFAULT_NUM_TRIALS = 10000;
 	private static final int DEFAULT_MIN_OVL = 2000;
 	private static final boolean DEFAULT_DO_DP = false;
+	private static boolean LOAD_ALL = false;
 	private static boolean DEBUG = false;
 	
 	private static class Pair {
@@ -187,9 +191,13 @@ public class EstimateROC {
 		if (args.length > 7) {
 			MIN_IDENTITY = Double.parseDouble(args[7]);
 			MIN_REF_IDENTITY = MIN_IDENTITY + REF_IDENTITY_ADJUSTMENT;
+			MIN_ALIGNMENT_IDENTITY = MIN_IDENTITY - REF_IDENTITY_ADJUSTMENT/2;
 		}
 		if (args.length > 8) {
 			MIN_OVERLAP_DIFFERENCE = Double.parseDouble(args[8]);
+		}
+		if (args.length > 9) {
+			LOAD_ALL = Boolean.parseBoolean(args[9]);
 		}
 		
 		System.err.println("Running, reference: " + args[0] + " matches: " + args[1]);
@@ -198,6 +206,7 @@ public class EstimateROC {
 		System.err.println("Minimum acceptable %" + MIN_IDENTITY);
 		System.err.println("Minimum acceptable shift " + MIN_OVERLAP_DIFFERENCE);
 		System.err.println("Minimum overlap to ref %" + MIN_REF_IDENTITY);
+		System.err.println("Minimum acceptable overlap for dp check %" + MIN_ALIGNMENT_IDENTITY);
 		
 		// load and cluster reference
 		System.err.print("Loading reference...");
@@ -293,8 +302,8 @@ public class EstimateROC {
 	            // now initialize matrix
 	            for (int i = 0; i < 128; i++) {
 	                for (int j = 0; j < 128; j++) {
-	                        if (i == j) MATCH_MATRIX[i][j] = 1;
-	                        else MATCH_MATRIX[i][j] = -1;
+	                        if (i == j) MATCH_MATRIX[i][j] = 2;
+	                        else MATCH_MATRIX[i][j] = -2;
 	                }
 	            }
 			} catch (Exception e) {
@@ -338,6 +347,8 @@ public class EstimateROC {
 	private HashSet<String> getSequenceMatches(String id, int min) {
 		String chr = this.seqToChr.get(id);
 		Pair p1 = this.seqToPosition.get(id);
+		if (chr == null || p1 == null) { return null; }
+		
 		List<Integer> intersect = this.clusters.get(chr).get(p1.first,
 				p1.second);
 		HashSet<String> result = new HashSet<String>();
@@ -492,7 +503,7 @@ public class EstimateROC {
 			if (id.equalsIgnoreCase(id2)) {
 				continue;
 			}
-			if (this.seqToChr.get(id) == null || this.seqToChr.get(id2) == null) {
+			if ((EstimateROC.LOAD_ALL != true) && (this.seqToChr.get(id) == null || this.seqToChr.get(id2) == null)) {
 				continue;
 			}
 			String ovlName = getOvlName(id, id2);
@@ -651,7 +662,7 @@ public class EstimateROC {
 		}
 	}
 	
-	private static double getScore(jaligner.Alignment alignment, int ovlLen) {
+	private static double getScore(jaligner.Alignment alignment, String qry, String ref) {
 		char[] sequence1 = alignment.getSequence1();
 		char[] sequence2 = alignment.getSequence2();
 		int length = Math.max(sequence1.length, sequence2.length);
@@ -675,25 +686,61 @@ public class EstimateROC {
 				matches++;
 			}
 		}
-		return (matches / (double)ovlLen);
+		return (matches / (double)length);
 
 	}
 	
-	private static double getScore(ssw.Alignment alignment, int ovlLen) {
-		// the result is a cigar string of the format 3M1I9M1I9M1D10M1I13M1I9M1D1M2D45M1D6M1D5
-        int matches = 0;
-        for (int i = 0; i < alignment.cigar.length(); i++) {
-                if (alignment.cigar.charAt(i) == 'M') {
-                        // get the match length
-                        int s = i-1;
-                        while (s >= 0 && Character.isDigit(alignment.cigar.charAt(s))) {
-                                s--;
-                        }
-                        s++;
-                        matches += Integer.parseInt(alignment.cigar.substring(s, i));
-                }
-        }
-		return matches/ (double) ovlLen;
+	private static double getScore(ssw.Alignment alignment, String qry, String ref) {
+		// the result is a cigar string of the format
+		// 3M1I9M1I9M1D10M1I13M1I9M1D1M2D45M1D6M1D50
+		Pattern cigarPattern = Pattern.compile("[\\d]+[a-zA-Z|=]");
+		Matcher matcher = cigarPattern.matcher(alignment.cigar);
+		int errors = 0;
+		int len = 0;
+		int qryPos = alignment.read_begin1;
+		int refPos = alignment.ref_begin1;
+		while (matcher.find()) {
+			String cVal = matcher.group();
+			int cLen = Integer.parseInt(cVal.substring(0, cVal.length() - 1));
+			char cLetter = cVal.toUpperCase().charAt(cVal.length() - 1);
+			switch (cLetter) {
+			case 'H':
+				break;
+			case 'S':
+			case '=':
+				// ignore, not an error
+				len+=cLen;
+				break;
+			case 'M':
+				for (int i = 0; i < cLen; i++) {
+					if (ref.toUpperCase().charAt(refPos) != qry.toUpperCase().charAt(qryPos)) {
+						errors++;
+					} else {
+						// do nothing
+					}
+					refPos++;
+					qryPos++;
+				}
+				len+=cLen;
+				break;
+			case 'I':
+				errors += cLen;
+				qryPos += cLen;
+				len+=cLen;
+				break;
+			case 'D':
+				errors += cLen;
+				refPos += cLen;
+				len+=cLen;
+				break;
+			default:
+				System.err.println("Error, unknown base " + cLetter);
+				System.exit(1);
+				break;
+			}
+		}
+
+		return 1 - (errors / (double) len);
 	}
 	
 	private boolean computeDP(String id, String id2) {
@@ -702,7 +749,7 @@ public class EstimateROC {
 		}
 
 		Overlap ovl = this.ovlInfo.get(getOvlName(id, id2));
-		System.err.println("Aligning sequence " + ovl.id1 + " to " + ovl.id2 + " " + ovl.bfirst + " to " + ovl.bsecond + " and " + ovl.isFwd + " and " + ovl.afirst + " " + ovl.asecond);
+		if (DEBUG) System.err.println("Aligning sequence " + ovl.id1 + " to " + ovl.id2 + " " + ovl.bfirst + " to " + ovl.bsecond + " and " + ovl.isFwd + " and " + ovl.afirst + " " + ovl.asecond);
 
 		String s1 = this.dataSeq[getSequenceId(ovl.id1)].getSquenceString().substring(ovl.afirst, ovl.asecond);
 		String s2 = null;
@@ -730,8 +777,8 @@ public class EstimateROC {
 			} catch (MatrixLoaderException e) {
 				return false;
 			}
-			score = getScore(alignment, ovlLen);
 			length = alignment.getLength();
+			score = getScore(alignment, s1, s2);
 			if (DEBUG) { 
 				System.err.println(alignment.getSummary());
 				System.err.println("My score: " + score);
@@ -740,15 +787,16 @@ public class EstimateROC {
 		}
 		else {
 			ssw.Alignment alignment = Aligner.align(s1.getBytes(), s2.getBytes(), MATCH_MATRIX, 2, 1, true);
-			score = getScore(alignment, ovlLen);
 			length = Math.max(alignment.read_end1-alignment.read_begin1, alignment.ref_end1 - alignment.ref_begin1);
+			score = getScore(alignment, s1, s2);
 			if (DEBUG) { 
 				System.err.println(alignment.toString());
+				System.err.println(alignment.read_end1 + " " + alignment.read_begin1 + " " + alignment.ref_end1 + " " + alignment.ref_begin1 + " " + length);
 				System.err.println("My score: " + score); 
 			}
 		}
 
-		return (score > MIN_IDENTITY && length > this.minOvlLen);
+		return (score > MIN_ALIGNMENT_IDENTITY && length > this.minOvlLen && 1-((float)length/ovlLen) < MIN_OVERLAP_DIFFERENCE);
 	}
 
 	private void estimateSensitivity() {
@@ -817,7 +865,7 @@ public class EstimateROC {
 					String id2 = ovl[1];
 					
 					HashSet<String> matches = getSequenceMatches(id, 0);
-					if (matches.contains(id2)) {
+					if (matches != null && matches.contains(id2)) {
 						numTP.getAndIncrement();
 					} else {
 						if (computeDP(id, id2)) {
