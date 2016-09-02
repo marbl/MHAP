@@ -2,7 +2,7 @@ package edu.umd.marbl.mhap.sketch;
 
 import it.unimi.dsi.fastutil.ints.IntArrays;
 
-public class BottomHash implements Sketch<BottomHash>
+public class BottomSketch implements Sketch<BottomSketch>
 {
 	private final int[] hashPositions;
 	
@@ -11,7 +11,7 @@ public class BottomHash implements Sketch<BottomHash>
 	 */
 	private static final long serialVersionUID = 9035607728472270206L;
 
-	public BottomHash(String str, int nGramSize, int k)
+	public BottomSketch(String str, int nGramSize, int k)
 	{
 		int[] hashes = HashUtils.computeSequenceHashes(str, nGramSize);
 		
@@ -34,7 +34,7 @@ public class BottomHash implements Sketch<BottomHash>
 
 	}
 	
-	public double jaccard(BottomHash sh)
+	public double jaccard(BottomSketch sh)
 	{
 		//make sure you look at same number
 		int k = Math.min(this.hashPositions.length, sh.hashPositions.length);
@@ -64,7 +64,7 @@ public class BottomHash implements Sketch<BottomHash>
 	}
 
 	@Override
-	public double similarity(BottomHash sh)
+	public double similarity(BottomSketch sh)
 	{
 		return jaccard(sh);
 	}

@@ -75,7 +75,7 @@ public final class MinHashBitSketch extends AbstractBitSketch<MinHashBitSketch>
 		super(getAsBits(minHashes));
 	}
 	
-	public MinHashBitSketch(String seq, int nGramSize, int numWords)
+	public MinHashBitSketch(String seq, int nGramSize, int numWords) throws ZeroNGramsFoundException
 	{
 		super(getAsBits(new MinHashSketch(seq, nGramSize, numWords*64).getMinHashArray()));
 	}

@@ -63,6 +63,13 @@ public final class FrequencyCounts
 	
 	public FrequencyCounts(BufferedReader bf, double filterCutoff, double offset, int removeUnique, boolean noTf, int numThreads) throws IOException
 	{
+		//removeUnique = 0: do nothing extra to k-mers not specified in the file
+		//removeUnique = 1: remove k-mers not specified in the file from the sketch
+		//removeUnique = 2: supress k-mers not specified in the file the same as max supression
+		
+		if (removeUnique<0 || removeUnique>2)
+			throw new MhapRuntimeException("Unknown removeUnique option "+removeUnique+".");
+		
 		if (offset<0.0 || offset>=1.0)
 			throw new MhapRuntimeException("Offset can only be between 0 and 1.0.");
 
@@ -101,6 +108,7 @@ public final class FrequencyCounts
 				}
 			}
 			
+			//if no nothing, no need to store the while list
 			if (removeUnique>0)
 				validMers = BloomFilter.create((value, sink) -> sink.putLong(value), size, 1.0e-5);
 			else
@@ -141,7 +149,7 @@ public final class FrequencyCounts
 						double percent = Double.parseDouble(str[1]);
 						
 						// if greater, add to hashset
-						if (percent > filterCutoff)
+						if (percent >= filterCutoff)
 						{
 							maxValue.getAndUpdate(v -> Math.max(v, percent));
 							
@@ -217,7 +225,7 @@ public final class FrequencyCounts
 	
 	public double idf(double freq)
 	{
-		return Math.log(this.maxValue/freq-offset);
+		return Math.log(this.maxValue/freq-this.offset);
 		//return Math.log1p(this.maxValue/freq);
 	}
 	
@@ -239,13 +247,10 @@ public final class FrequencyCounts
 
 	public boolean keepKmer(long hash)
 	{
-		if (this.removeUnique==0 || this.removeUnique==2)
-			return true;
-		
-		if (this.validMers==null)
-			return false;
+		if (this.removeUnique==1)
+			return this.validMers.mightContain(hash);
 			
-		return this.validMers.mightContain(hash);
+		return true;
 	}
 	
 	public double maxIdf()

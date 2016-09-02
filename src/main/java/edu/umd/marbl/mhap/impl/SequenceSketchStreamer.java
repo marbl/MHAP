@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import edu.umd.marbl.mhap.sketch.FrequencyCounts;
+import edu.umd.marbl.mhap.sketch.ZeroNGramsFoundException;
 import edu.umd.marbl.mhap.utils.ReadBuffer;
 import edu.umd.marbl.mhap.utils.Utils;
 
@@ -57,16 +58,16 @@ public class SequenceSketchStreamer
 	private final FastaData fastaData;
 	private final FrequencyCounts kmerFilter;
 	private final int kmerSize;
+	private final int minOlapLength;
 	private final AtomicLong numberProcessed;
 	private final int numHashes;
 	private final int offset;
-	private final double repeatWeight;
-	private final int minOlapLength;
-
 	private final int orderedKmerSize;
+
 	private final int orderedSketchSize;
 	private boolean readClosed;
 	private final boolean readingFasta;
+	private final double repeatWeight;
 	private final ConcurrentLinkedQueue<SequenceSketch> sequenceHashList;
 
 	public SequenceSketchStreamer(String file, int minOlapLength, int offset) throws FileNotFoundException
@@ -111,12 +112,12 @@ public class SequenceSketchStreamer
 
 	public SequenceSketch dequeue(boolean fwdOnly, ReadBuffer buf) throws IOException
 	{
-		enqueue(fwdOnly, buf);
+		enqueueUntilFound(fwdOnly, buf);
 
 		return this.sequenceHashList.poll();
 	}
-
-	private boolean enqueue(boolean fwdOnly, ReadBuffer buf) throws IOException
+	
+	private boolean enqueue(boolean fwdOnly, ReadBuffer buf) throws IOException, ZeroNGramsFoundException
 	{
 		SequenceSketch seqHashes;
 		if (this.readingFasta)
@@ -189,7 +190,7 @@ public class SequenceSketchStreamer
 
 					try
 					{
-						while (enqueue(fwdOnly, buf))
+						while (enqueueUntilFound(fwdOnly, buf))
 						{
 						}
 					}
@@ -217,6 +218,26 @@ public class SequenceSketchStreamer
 		}
 	}
 
+	private boolean enqueueUntilFound(boolean fwdOnly, ReadBuffer buf) throws IOException
+	{
+		boolean getNext = true;
+		boolean returnValue = false;
+		while(getNext)
+		{
+			try
+			{
+				returnValue = enqueue(fwdOnly, buf);
+				getNext = false;
+			}
+			catch (ZeroNGramsFoundException e)
+			{
+				System.err.println("Could not process sketch for a read because zero valid n-grams found: "+e.getSequenceString());
+			}
+		}
+		
+		return returnValue; 
+	}
+
 	public Iterator<SequenceSketch> getDataIterator()
 	{
 		return this.sequenceHashList.iterator();
@@ -230,15 +251,15 @@ public class SequenceSketchStreamer
 		return this.fastaData.getNumberProcessed();
 	}
 
-	public SequenceSketch getSketch(Sequence seq)
-	{
-		// compute the hashes
-		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.repeatWeight);
-	}
-
 	public int getNumberProcessed()
 	{
 		return this.numberProcessed.intValue();
+	}
+
+	public SequenceSketch getSketch(Sequence seq) throws ZeroNGramsFoundException
+	{
+		// compute the hashes
+		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.repeatWeight);
 	}
 
 	protected void processAddition(SequenceSketch seqHashes)

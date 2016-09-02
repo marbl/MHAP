@@ -49,19 +49,21 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	private static final long serialVersionUID = 8846482698636860862L;
 	
 	private final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
-			FrequencyCounts kmerFilter, double repeatWeight)
+			FrequencyCounts kmerFilter, double repeatWeight) throws ZeroNGramsFoundException
 	{
 		final int numberNGrams = seq.length() - nGramSize + 1;
 	
 		if (numberNGrams < 1)
-			throw new SketchRuntimeException("N-gram size bigger than string length.");
+			throw new ZeroNGramsFoundException("N-gram size bigger than string length.", seq);
 	
+		//if (repeatWeight>=1.0)
+		//	throw new SketchRuntimeException("repeatWeight cannot be >=1.");
+
 		// get the kmer hashes
 		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, nGramSize, 0);
 		
 		//now compute the counts of occurance
 		Long2ObjectLinkedOpenHashMap<HitCounter> hitMap = new Long2ObjectLinkedOpenHashMap<HitCounter>(kmerHashes.length);
-		int maxCount = 0;
 		for (long kmer : kmerHashes)
 		{
 			//do not add unique kmers to the sketch
@@ -76,14 +78,11 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			}
 			else
 				counter.addHit();
-
-			if (maxCount<counter.count)
-				maxCount = counter.count;
 		}
 		
-		//make sure don't create a non-zero value
+		//make sure don't create a zero value
 		if (hitMap.isEmpty())
-			hitMap.put(kmerHashes[0], new HitCounter(1));
+			throw new ZeroNGramsFoundException("Found zero unfiltered n-grams in the string.", seq);
 	
 		//allocate the space
 		int[] hashes = new int[Math.max(1,numHashes)];		
@@ -91,11 +90,14 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		Arrays.fill(best, Long.MAX_VALUE);
 
 		//go through all the k-mers and find the min values
+		int numberValid = 0;
+		
 		for (Entry<Long, HitCounter> kmer : hitMap.entrySet())
 		{
 			long key = kmer.getKey();
 			int weight = kmer.getValue().count;
 			
+			//original version of MHAP
 			if (repeatWeight<0.0)
 			{
 				weight = 1;
@@ -109,27 +111,25 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 				if (repeatWeight>=0.0 && repeatWeight<1.0)
 				{
 					//compute the td part
-					double td = (double)kmerFilter.tfWeight(weight);
+					double tf = (double)kmerFilter.tfWeight(weight);
 					
 					//compute the idf part, 1-3
 					double idf = kmerFilter.scaledIdf(key);
 					
 					//compute td-idf
-					weight = (int)Math.round(td*idf);
+					weight = (int)Math.round(tf*idf);
 					if (weight<1)
 						weight = 1;
 				}
-				else
-				if (repeatWeight>=1.0)
-				{
-					if (kmerFilter.isPopular(key))
-						weight = 0;
-				}
 			}
+			//keep the tf weight otherwise			
 						
 			if (weight<=0)
 				continue;
-		
+			
+			//increment valid counter
+			numberValid++;
+			
 			//set the initial shift value
 			long x = key;
 			for (int word = 0; word < numHashes; word++)
@@ -153,6 +153,9 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 			}
 		}
 		
+		if (numberValid<=0)
+			throw new ZeroNGramsFoundException("Found zero unfiltered n-grams in the string.", seq);
+
 		//now combine into super shingles
 		/*
 		HashFunction hf = Hashing.murmur3_32(0);
@@ -202,12 +205,12 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		this.minHashes = minHashes;
 	}
 	
-	public MinHashSketch(String str, int nGramSize, int numHashes)
+	public MinHashSketch(String str, int nGramSize, int numHashes) throws ZeroNGramsFoundException
 	{
 		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(str, nGramSize, numHashes, null, -1.0);
 	}
 	
-	public MinHashSketch(String seq, int nGramSize, int numHashes, FrequencyCounts freqFilter, double repeatWeight)
+	public MinHashSketch(String seq, int nGramSize, int numHashes, FrequencyCounts freqFilter, double repeatWeight) throws ZeroNGramsFoundException
 	{
 		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numHashes, freqFilter, repeatWeight);
 	}

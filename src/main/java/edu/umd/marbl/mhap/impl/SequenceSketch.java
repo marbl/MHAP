@@ -38,7 +38,8 @@ import java.io.Serializable;
 
 import edu.umd.marbl.mhap.sketch.FrequencyCounts;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
-import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
+import edu.umd.marbl.mhap.sketch.BottomOverlapSketch;
+import edu.umd.marbl.mhap.sketch.ZeroNGramsFoundException;
 
 public final class SequenceSketch implements Serializable
 {
@@ -49,7 +50,7 @@ public final class SequenceSketch implements Serializable
 
 	private final SequenceId id;
 	private final MinHashSketch mainHashes;
-	private final OrderedNGramHashes orderedHashes;
+	private final BottomOverlapSketch orderedHashes;
 	//private final MinHashBitSequenceSubSketches alignmentSketches;
 	private final int sequenceLength;
 
@@ -78,8 +79,8 @@ public final class SequenceSketch implements Serializable
 			if (mainHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error.");
 
-			OrderedNGramHashes orderedHashes = null;
-			orderedHashes = OrderedNGramHashes.fromByteStream(input);
+			BottomOverlapSketch orderedHashes = null;
+			orderedHashes = BottomOverlapSketch.fromByteStream(input);
 			if (orderedHashes == null)
 				throw new MhapRuntimeException("Unexpected data read error when reading ordered k-mers.");
 
@@ -92,7 +93,7 @@ public final class SequenceSketch implements Serializable
 		}
 	}
 
-	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, OrderedNGramHashes orderedHashes)
+	public SequenceSketch(SequenceId id, int sequenceLength, MinHashSketch mainHashes, BottomOverlapSketch orderedHashes)
 	{
 		this.sequenceLength = sequenceLength;
 		this.id = id;
@@ -100,13 +101,13 @@ public final class SequenceSketch implements Serializable
 		this.orderedHashes = orderedHashes;
 	}
 
-	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, double repeatWeight)
+	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, double repeatWeight) throws ZeroNGramsFoundException
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
 		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, repeatWeight);
 		
-		this.orderedHashes = new OrderedNGramHashes(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
+		this.orderedHashes = new BottomOverlapSketch(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
 	}
 
 	public SequenceSketch createOffset(int offset)
@@ -145,7 +146,7 @@ public final class SequenceSketch implements Serializable
 		return this.mainHashes;
 	}
 
-	public OrderedNGramHashes getOrderedHashes()
+	public BottomOverlapSketch getOrderedHashes()
 	{
 		return this.orderedHashes;
 	}

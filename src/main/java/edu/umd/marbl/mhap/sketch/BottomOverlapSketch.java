@@ -41,7 +41,7 @@ import java.util.Arrays;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.utils.Utils;
 
-public final class OrderedNGramHashes
+public final class BottomOverlapSketch
 {
 	private final static class EdgeData
 	{
@@ -74,7 +74,7 @@ public final class OrderedNGramHashes
 		private final int seqLength1;
 		private final int seqLength2;
 
-		public MatchData(OrderedNGramHashes o1, OrderedNGramHashes o2, double maxShiftPercent)
+		public MatchData(BottomOverlapSketch o1, BottomOverlapSketch o2, double maxShiftPercent)
 		{
 			this.seqLength1 = o1.getSequenceLength();
 			this.seqLength2 = o2.getSequenceLength();
@@ -342,7 +342,7 @@ public final class OrderedNGramHashes
 		return score;
 	}
 
-	public final static OrderedNGramHashes fromByteStream(DataInputStream input) throws IOException
+	public final static BottomOverlapSketch fromByteStream(DataInputStream input) throws IOException
 	{
 		try
 		{
@@ -358,7 +358,7 @@ public final class OrderedNGramHashes
 				orderedHashes[iter][1] = input.readInt();
 			}
 
-			return new OrderedNGramHashes(seqLength, kmerSize, orderedHashes);
+			return new BottomOverlapSketch(seqLength, kmerSize, orderedHashes);
 
 		}
 		catch (EOFException e)
@@ -442,20 +442,20 @@ public final class OrderedNGramHashes
 		}
 	}
 
-	private OrderedNGramHashes(int seqLength, int kmerSize, int[][] orderedHashes)
+	private BottomOverlapSketch(int seqLength, int kmerSize, int[][] orderedHashes)
 	{
 		this.seqLength = seqLength;
 		this.orderedHashes = orderedHashes;
 		this.kmerSize = kmerSize;
 	}
 
-	public OrderedNGramHashes(String seq, int kmerSize, int sketchSize)
+	public BottomOverlapSketch(String seq, int kmerSize, int sketchSize) throws ZeroNGramsFoundException
 	{
 		this.kmerSize = kmerSize;
 		this.seqLength = seq.length() - kmerSize + 1;
 		
 		if (this.seqLength<=0)
-			throw new SketchRuntimeException("Sequence length must be greater or equal to n-gram size.");
+			throw new ZeroNGramsFoundException("Sequence length must be greater or equal to n-gram size "+kmerSize+".", seq);
 		
 		// compute just direct hash of sequence
 		int[] hashes = HashUtils.computeSequenceHashes(seq, kmerSize);
@@ -516,7 +516,7 @@ public final class OrderedNGramHashes
 		return this.orderedHashes[index][0];
 	}
 	
-	public OverlapInfo getOverlapInfo(OrderedNGramHashes toSequence, double maxShiftPercent)
+	public OverlapInfo getOverlapInfo(BottomOverlapSketch toSequence, double maxShiftPercent)
 	{
 		if (this.kmerSize!=toSequence.kmerSize)
 			throw new SketchRuntimeException("Sketch k-mer size does not match between the two sequences.");

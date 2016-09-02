@@ -35,12 +35,13 @@ import edu.umd.marbl.mhap.align.Alignment;
 import edu.umd.marbl.mhap.impl.MinHashBitSequenceSubSketches;
 import edu.umd.marbl.mhap.impl.OverlapInfo;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
+import edu.umd.marbl.mhap.sketch.ZeroNGramsFoundException;
 import edu.umd.marbl.mhap.utils.RandomSequenceGenerator;
 
 public class AlignmentTry
 {
 
-	public static void main(String[] args)
+	public static void main(String[] args) throws ZeroNGramsFoundException
 	{
 		String a = "bcdefghij1234567890";
 		String b = "abcdefghij1234567890";

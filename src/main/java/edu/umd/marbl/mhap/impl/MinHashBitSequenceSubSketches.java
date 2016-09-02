@@ -36,12 +36,13 @@ import edu.umd.marbl.mhap.align.AlignElementDoubleSketch;
 import edu.umd.marbl.mhap.align.Aligner;
 import edu.umd.marbl.mhap.sketch.MinHashBitSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
+import edu.umd.marbl.mhap.sketch.ZeroNGramsFoundException;
 
 public final class MinHashBitSequenceSubSketches
 {
 	private final AlignElementDoubleSketch<MinHashBitSketch> alignmentSketch;
 	
-	public final static MinHashBitSketch[] computeSequences(String seq, int nGramSize, int stepSize, int numWords)
+	public final static MinHashBitSketch[] computeSequences(String seq, int nGramSize, int stepSize, int numWords) throws ZeroNGramsFoundException
 	{
 		int remainder = seq.length()%stepSize;
 		
@@ -70,7 +71,7 @@ public final class MinHashBitSequenceSubSketches
 		return sequence;
 	}
 	
-	public final static MinHashBitSketch[] computeSequencesDouble(String seq, int nGramSize, int stepSize, int numWords)
+	public final static MinHashBitSketch[] computeSequencesDouble(String seq, int nGramSize, int stepSize, int numWords) throws ZeroNGramsFoundException
 	{
 		int remainder = seq.length()%stepSize;
 		
@@ -137,7 +138,7 @@ public final class MinHashBitSequenceSubSketches
 		this.alignmentSketch = new AlignElementDoubleSketch<>(sketches, stepSize, seqLength);
 	}
 	
-	public MinHashBitSequenceSubSketches(String seq, int kmerSize, int stepSize, int numWords)
+	public MinHashBitSequenceSubSketches(String seq, int kmerSize, int stepSize, int numWords) throws ZeroNGramsFoundException
 	{
 		this.alignmentSketch = new AlignElementDoubleSketch<>(computeSequencesDouble(seq, kmerSize, stepSize, numWords), stepSize, seq.length());
 	}

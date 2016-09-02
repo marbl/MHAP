@@ -41,9 +41,10 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 
 import edu.umd.marbl.mhap.impl.FastaData;
-import edu.umd.marbl.mhap.sketch.BottomHash;
+import edu.umd.marbl.mhap.sketch.BottomSketch;
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
-import edu.umd.marbl.mhap.sketch.OrderedNGramHashes;
+import edu.umd.marbl.mhap.sketch.BottomOverlapSketch;
+import edu.umd.marbl.mhap.sketch.ZeroNGramsFoundException;
 import edu.umd.marbl.mhap.utils.Utils;
 
 public class KmerStatSimulator {
@@ -186,13 +187,13 @@ public class KmerStatSimulator {
 	}
 	
 	public double compareMinHash(String first, String second) {
-		BottomHash h1 = new BottomHash(first, this.kmer, 1256);
-		BottomHash h2 = new BottomHash(second, this.kmer, 1256);
+		BottomSketch h1 = new BottomSketch(first, this.kmer, 1256);
+		BottomSketch h2 = new BottomSketch(second, this.kmer, 1256);
 		
 		return h1.jaccard(h2);
 	}
 	
-	public double compareMinHash2(String first, String second) {
+	public double compareMinHash2(String first, String second) throws ZeroNGramsFoundException {
 		MinHashSketch h1 = new MinHashSketch(first, this.kmer, 1256, null, 1.0);
 		MinHashSketch h2 = new MinHashSketch(second, this.kmer, 1256, null, 1.0);
 		
@@ -459,7 +460,7 @@ public class KmerStatSimulator {
 			System.out.println(this.sharedMerCounts.get(i) + "\t"
 					+ this.sharedJaccard.get(i) + "\t"
 					+ this.sharedMinHash.get(i) + "\t"
-					+ OrderedNGramHashes.jaccardToIdentity(this.sharedMinHash.get(i), this.kmer) + "\t"
+					+ BottomOverlapSketch.jaccardToIdentity(this.sharedMinHash.get(i), this.kmer) + "\t"
 					+ this.randomMerCounts.get(i) + "\t"
 					+ this.randomJaccard.get(i) + "\t"
 					+ this.randomMinHash.get(i));
