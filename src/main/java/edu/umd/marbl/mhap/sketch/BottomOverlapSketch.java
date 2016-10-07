@@ -61,7 +61,7 @@ public final class BottomOverlapSketch
 		}
 	}
 	
-	private final static class MatchData
+	public final static class MatchData
 	{
 		private int absMaxShiftInOverlap;
 		private int count; 
@@ -207,7 +207,7 @@ public final class BottomOverlapSketch
 				else
 				{
 					this.medianShift = 0;
-					this.absMaxShiftInOverlap = Math.max(this.seqLength1, this.seqLength2);
+					this.absMaxShiftInOverlap = Math.max(this.seqLength1, this.seqLength2)+1;
 				}
 			}
 			
@@ -273,6 +273,27 @@ public final class BottomOverlapSketch
 			int valid = Math.min(this.seqLength2, this.seqLength1 + getMedianShift() + getAbsMaxShift());
 			
 			return valid;
+		}
+		
+		public String matchesToString()
+		{
+			StringBuilder str = new StringBuilder();
+			str.append("MatchData matches (size="+this.count+"):\n");
+			for (int i=0; i<this.count; i++)
+			{
+				str.append("\t"+this.pos1Index[i]+" "+this.pos2Index[i]+" "+this.posShift[i]+"\n");
+			}
+			
+			return str.toString();
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString()
+		{
+			return "MatchData [count=" + count + ", shift="+getMedianShift()+"]";
 		}
 	}
 	
@@ -432,11 +453,63 @@ public final class BottomOverlapSketch
 				{				
 					//record match
 					matchData.recordMatch(pos1, pos2, currShift);
-	
-					// don't rely on repeats in the first iteration
-					if (repeat == 0)
+
+					//we need to create symmetry for reverse compliment, so we will look at first and last matches
+					
+					//move the index to last point of same hash
+					int i1Last = i1;
+					int i1Try = i1+1;
+					if (i1Try<seq1KmerHashes.length)
+					{
+						int hash1Try = seq1KmerHashes[i1Try][0];
+						int pos1Try = seq1KmerHashes[i1Try][1];
+						while((hash1Try == hash1 && pos1Try >= valid1Lower && pos1Try < valid1Upper))
+						{
+							i1Last = i1Try;
+
+							i1Try++;
+							if (i1Try>=seq1KmerHashes.length)
+								break;
+							
+							hash1Try = seq1KmerHashes[i1Try][0];
+							pos1Try = seq1KmerHashes[i1Try][1];
+						}
+					}
+
+					//move the index to last point of same hash
+					int i2Last = i2;
+					int i2Try = i2+1;
+					if (i2Try<seq2KmerHashes.length)
+					{
+						int hash2Try = seq2KmerHashes[i2Try][0];
+						int pos2Try = seq2KmerHashes[i2Try][1];
+						while((hash2Try == hash2 && pos2Try >= valid2Lower && pos2Try < valid2Upper))
+						{
+							i2Last = i2Try;
+							i2Try++;
+							if (i2Try>=seq2KmerHashes.length)
+								break;
+
+							hash2Try = seq2KmerHashes[i2Try][0];
+							pos2Try = seq2KmerHashes[i2Try][1];
+						}
+					}
+
+					//store the match and update the counters
+					if (i1!=i1Last || i2!=i2Last)
+					{		
+						int pos1New =  seq1KmerHashes[i1Last][1];
+						int pos2New =  seq2KmerHashes[i2Last][1];
+						matchData.recordMatch(pos1New, pos2New, pos2New-pos1New);
+						i1 = i1Last+1;
+						i2 = i2Last+1;
+					}
+					else
+					{
+						//simply move on if they don't match
 						i1++;
-					i2++;
+						i2++;
+					}
 				}
 			}
 		}
@@ -449,7 +522,7 @@ public final class BottomOverlapSketch
 		this.kmerSize = kmerSize;
 	}
 
-	public BottomOverlapSketch(String seq, int kmerSize, int sketchSize) throws ZeroNGramsFoundException
+	public BottomOverlapSketch(String seq, int kmerSize, int sketchSize, boolean doReverseCompliment) throws ZeroNGramsFoundException
 	{
 		this.kmerSize = kmerSize;
 		this.seqLength = seq.length() - kmerSize + 1;
@@ -458,7 +531,7 @@ public final class BottomOverlapSketch
 			throw new ZeroNGramsFoundException("Sequence length must be greater or equal to n-gram size "+kmerSize+".", seq);
 		
 		// compute just direct hash of sequence
-		int[] hashes = HashUtils.computeSequenceHashes(seq, kmerSize);
+		int[] hashes = HashUtils.computeSequenceHashes(seq, kmerSize, doReverseCompliment);
 
 		int[] perm = new int[hashes.length];
 
@@ -525,7 +598,8 @@ public final class BottomOverlapSketch
 		MatchData matchData = new MatchData(this, toSequence, maxShiftPercent);
 
 		//get the initial matches
-		recordMatchingKmers(matchData, this.orderedHashes, toSequence.orderedHashes, 0);			
+		recordMatchingKmers(matchData, this.orderedHashes, toSequence.orderedHashes, 0);
+		//System.out.println(matchData.matchesToString());
 		if (matchData.isEmpty())
 			return OverlapInfo.EMPTY;
 

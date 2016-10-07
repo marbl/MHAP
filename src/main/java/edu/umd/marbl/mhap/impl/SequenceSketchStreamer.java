@@ -66,6 +66,7 @@ public class SequenceSketchStreamer
 
 	private final int orderedSketchSize;
 	private boolean readClosed;
+	private boolean doReverseCompliment;
 	private final boolean readingFasta;
 	private final double repeatWeight;
 	private final ConcurrentLinkedQueue<SequenceSketch> sequenceHashList;
@@ -79,6 +80,7 @@ public class SequenceSketchStreamer
 		this.kmerFilter = null;
 		this.repeatWeight = 0;
 		this.minOlapLength = minOlapLength;
+		this.doReverseCompliment = false;
 
 		this.kmerSize = 0;
 		this.numHashes = 0;
@@ -91,7 +93,7 @@ public class SequenceSketchStreamer
 	}
 
 	public SequenceSketchStreamer(String file, int minOlapLength, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize,
-			FrequencyCounts kmerFilter, double repeatWeight, int offset) throws IOException
+			FrequencyCounts kmerFilter, boolean doReverseCompliment, double repeatWeight, int offset) throws IOException
 	{
 		this.fastaData = new FastaData(file, offset);
 		this.readingFasta = true;
@@ -99,7 +101,8 @@ public class SequenceSketchStreamer
 		this.numberProcessed = new AtomicLong();
 		this.repeatWeight = repeatWeight;
 		this.minOlapLength = minOlapLength;
-
+		this.doReverseCompliment = doReverseCompliment;
+		
 		this.kmerFilter = kmerFilter;
 		this.kmerSize = kmerSize;
 		this.numHashes = numHashes;
@@ -259,7 +262,7 @@ public class SequenceSketchStreamer
 	public SequenceSketch getSketch(Sequence seq) throws ZeroNGramsFoundException
 	{
 		// compute the hashes
-		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.repeatWeight);
+		return new SequenceSketch(seq, this.kmerSize, this.numHashes, this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.doReverseCompliment, this.repeatWeight);
 	}
 
 	protected void processAddition(SequenceSketch seqHashes)

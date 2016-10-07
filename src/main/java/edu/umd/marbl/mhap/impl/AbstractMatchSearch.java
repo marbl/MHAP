@@ -64,7 +64,7 @@ public abstract class AbstractMatchSearch
 		this.sequencesSearched = new AtomicLong();
 	}
 
-	protected void addData(final SequenceSketchStreamer data)
+	protected void addData(final SequenceSketchStreamer data, boolean doReverseCompliment)
 	{
 		// figure out number of cores
 		ExecutorService execSvc = Executors.newFixedThreadPool(this.numThreads);
@@ -80,7 +80,7 @@ public abstract class AbstractMatchSearch
 					try
 					{
 						ReadBuffer buf = new ReadBuffer();
-						SequenceSketch seqHashes = data.dequeue(false, buf);
+						SequenceSketch seqHashes = data.dequeue(!doReverseCompliment, buf);
 						while (seqHashes != null)
 						{
 							addSequence(seqHashes);

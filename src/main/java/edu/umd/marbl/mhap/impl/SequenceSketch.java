@@ -101,13 +101,16 @@ public final class SequenceSketch implements Serializable
 		this.orderedHashes = orderedHashes;
 	}
 
-	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, double repeatWeight) throws ZeroNGramsFoundException
+	public SequenceSketch(Sequence seq, int kmerSize, int numHashes, int orderedKmerSize, int orderedSketchSize, FrequencyCounts kmerFilter, boolean doReverseCompliment, double repeatWeight) throws ZeroNGramsFoundException
 	{
 		this.sequenceLength = seq.length();
 		this.id = seq.getId();
-		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, repeatWeight);
 		
-		this.orderedHashes = new BottomOverlapSketch(seq.getSquenceString(), orderedKmerSize, orderedSketchSize);
+		//do not do reverse compliment for minhash, since unordered
+		this.mainHashes = new MinHashSketch(seq.getSquenceString(), kmerSize, numHashes, kmerFilter, false, repeatWeight);
+		
+		//do not do reverse compliment
+		this.orderedHashes = new BottomOverlapSketch(seq.getSquenceString(), orderedKmerSize, orderedSketchSize, false);
 	}
 
 	public SequenceSketch createOffset(int offset)

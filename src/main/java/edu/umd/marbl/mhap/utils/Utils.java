@@ -33,6 +33,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -44,10 +45,12 @@ import java.io.FileReader;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+
 public final class Utils
 {
 
-	public enum ToProtein
+	public static enum ToProtein
 	{
 		AAA("K"), AAC("N"), AAG("K"), AAT("N"), ACA("T"), ACC("T"), ACG("T"), ACT("T"), AGA("R"), AGC("S"), AGG("R"), AGT(
 				"S"), ATA("I"), ATC("I"), ATG("M"), ATT("I"), CAA("Q"), CAC("H"), CAG("Q"), CAT("H"), CCA("P"), CCC("P"), CCG(
@@ -78,22 +81,39 @@ public final class Utils
 		}
 	}
 
-	public enum Translate
+	public static class Translate
 	{
-		A("T"), B("V"), C("G"), D("H"), G("C"), H("D"), K("M"), M("K"), N("N"), R("Y"), S("S"), T("A"), V("B"), W("W"), Y(
-				"R");
-
-		private String other;
-
-		Translate(String other)
+		private static Map<String,String> lookup = new Object2ObjectOpenHashMap<String,String>();
+		
+		static
 		{
-			this.other = other;
+			lookup.put("A", "T");
+			lookup.put("B", "V");
+			lookup.put("C", "G");
+			lookup.put("D", "H");
+			lookup.put("G", "C");
+			lookup.put("H", "D");
+			lookup.put("K", "M");
+			lookup.put("M", "K");
+			lookup.put("N", "N");
+			lookup.put("R", "Y");
+			lookup.put("S", "S");
+			lookup.put("T", "A");
+			lookup.put("V", "B");
+			lookup.put("W", "W");
+			lookup.put("Y", "R");
+		}
+		
+		public static String getTranslation(String c)
+		{
+			String value = lookup.get(c);
+			if (value==null)
+				return c;
+			
+			return value;
 		}
 
-		public String getCompliment()
-		{
-			return this.other;
-		}
+		//A("T"), B("V"), C("G"), D("H"), G("C"), H("D"), K("M"), M("K"), N("N"), R("Y"), S("S"), T("A"), V("B"), W("W"), Y("R");
 	}
 
 	public static final int BUFFER_BYTE_SIZE = 8388608; // 8MB
@@ -479,16 +499,9 @@ public final class Utils
 		for (int i = supplied.length() - 1; i >= 0; i--)
 		{
 			char theChar = supplied.charAt(i);
-
-			if (theChar != '-')
-			{
-				Translate t = Translate.valueOf(Character.toString(theChar).toUpperCase());
-				st.append(t.getCompliment());
-			}
-			else
-			{
-				st.append("-");
-			}
+			
+			String c = Translate.getTranslation((Character.toString(theChar).toUpperCase()));
+			st.append(c);
 		}
 		return st.toString();
 	}

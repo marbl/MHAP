@@ -126,7 +126,8 @@ public class FastaData implements Cloneable
 	{
 		StringBuilder fastaSeq = new StringBuilder();
 		String header = null;
-
+		long index = -1 - this.offset;
+		
 		synchronized (this.fileReader)
 		{
 			if (this.readFullFile)
@@ -175,13 +176,14 @@ public class FastaData implements Cloneable
 				else
 					break;
 			}
+
+			if (fastaSeq.length()>0)
+				index = this.numberProcessed.incrementAndGet();			
 		}			
 		
 		String fastaSeqSring = fastaSeq.toString();
 		if (!fastaSeqSring.isEmpty())
 		{
-			long index = this.numberProcessed.incrementAndGet();
-			
 			//generate sequence id
 			SequenceId id;
 			if (SequenceId.STORE_FULL_ID)

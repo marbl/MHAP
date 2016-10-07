@@ -49,7 +49,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 	private static final long serialVersionUID = 8846482698636860862L;
 	
 	private final static int[] computeNgramMinHashesWeighted(String seq, final int nGramSize, final int numHashes,
-			FrequencyCounts kmerFilter, double repeatWeight) throws ZeroNGramsFoundException
+			FrequencyCounts kmerFilter, boolean doReverseCompliment, double repeatWeight) throws ZeroNGramsFoundException
 	{
 		final int numberNGrams = seq.length() - nGramSize + 1;
 	
@@ -60,7 +60,7 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		//	throw new SketchRuntimeException("repeatWeight cannot be >=1.");
 
 		// get the kmer hashes
-		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, nGramSize, 0);
+		final long[] kmerHashes = HashUtils.computeSequenceHashesLong(seq, nGramSize, 0, doReverseCompliment);
 		
 		//now compute the counts of occurance
 		Long2ObjectLinkedOpenHashMap<HitCounter> hitMap = new Long2ObjectLinkedOpenHashMap<HitCounter>(kmerHashes.length);
@@ -205,14 +205,14 @@ public final class MinHashSketch implements Sketch<MinHashSketch>
 		this.minHashes = minHashes;
 	}
 	
-	public MinHashSketch(String str, int nGramSize, int numHashes) throws ZeroNGramsFoundException
+	public MinHashSketch(String str, int nGramSize, int numHashes, boolean doReverseCompliment) throws ZeroNGramsFoundException
 	{
-		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(str, nGramSize, numHashes, null, -1.0);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(str, nGramSize, numHashes, null, doReverseCompliment, -1.0);
 	}
 	
-	public MinHashSketch(String seq, int nGramSize, int numHashes, FrequencyCounts freqFilter, double repeatWeight) throws ZeroNGramsFoundException
+	public MinHashSketch(String seq, int nGramSize, int numHashes, FrequencyCounts freqFilter, boolean doReverseCompliment, double repeatWeight) throws ZeroNGramsFoundException
 	{
-		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numHashes, freqFilter, repeatWeight);
+		this.minHashes = MinHashSketch.computeNgramMinHashesWeighted(seq, nGramSize, numHashes, freqFilter, doReverseCompliment, repeatWeight);
 	}
 
 	public byte[] getAsByteArray()

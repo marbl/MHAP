@@ -187,15 +187,15 @@ public class KmerStatSimulator {
 	}
 	
 	public double compareMinHash(String first, String second) {
-		BottomSketch h1 = new BottomSketch(first, this.kmer, 1256);
-		BottomSketch h2 = new BottomSketch(second, this.kmer, 1256);
+		BottomSketch h1 = new BottomSketch(first, this.kmer, 1256, true);
+		BottomSketch h2 = new BottomSketch(second, this.kmer, 1256, true);
 		
 		return h1.jaccard(h2);
 	}
 	
 	public double compareMinHash2(String first, String second) throws ZeroNGramsFoundException {
-		MinHashSketch h1 = new MinHashSketch(first, this.kmer, 1256, null, 1.0);
-		MinHashSketch h2 = new MinHashSketch(second, this.kmer, 1256, null, 1.0);
+		MinHashSketch h1 = new MinHashSketch(first, this.kmer, 1256, null, true, 1.0);
+		MinHashSketch h2 = new MinHashSketch(second, this.kmer, 1256, null, true, 1.0);
 		
 		return h1.jaccard(h2);
 	}

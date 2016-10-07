@@ -37,6 +37,7 @@ import com.google.common.hash.Hashing;
 
 import edu.umd.marbl.mhap.math.BasicMath;
 import edu.umd.marbl.mhap.utils.MersenneTwisterFast;
+import edu.umd.marbl.mhap.utils.Utils;
 
 public class HashUtils
 {
@@ -157,7 +158,7 @@ public class HashUtils
 		return hashes;
 	}
 
-	public final static long[][] computeNGramHashes(final String seq, final int nGramSize, final int numWords, final int seed)
+	public final static long[][] computeNGramHashes(final String seq, final int nGramSize, final int numWords, final int seed, boolean doReverseCompliment)
 	{
 		final int numberNGrams = seq.length()-nGramSize+1;
 	
@@ -165,7 +166,7 @@ public class HashUtils
 			throw new SketchRuntimeException("N-gram size bigger than string length.");
 	
 		// get the rabin hashes
-		final long[] rabinHashes = computeSequenceHashesLong(seq, nGramSize, seed);
+		final long[] rabinHashes = computeSequenceHashesLong(seq, nGramSize, seed, doReverseCompliment);
 	
 		final long[][] hashes = new long[rabinHashes.length][numWords];
 	
@@ -209,28 +210,47 @@ public class HashUtils
 		return hashes;
 	}
 
-	public final static int[] computeSequenceHashes(final String seq, final int nGramSize)
+	public final static int[] computeSequenceHashes(final String seq, final int nGramSize, boolean doReverseCompliment)
 	{
 		HashFunction hf = Hashing.murmur3_32(0);
 	
 		int[] hashes = new int[seq.length() - nGramSize + 1];
 		for (int iter = 0; iter < hashes.length; iter++)
 		{
-			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + nGramSize)).hash();
+			String str = seq.substring(iter, iter + nGramSize);
+			
+			String strReverse = null;
+			if (doReverseCompliment)
+			{
+				strReverse  = Utils.rc(str);
+				if (strReverse.compareTo(str)<0)
+					str = strReverse;
+			}
+
+			HashCode hc = hf.newHasher().putUnencodedChars(str).hash();
 			hashes[iter] = hc.asInt();
 		}
 	
 		return hashes;
 	}
 
-	public final static long[] computeSequenceHashesLong(final String seq, final int nGramSize, final int seed)
+	public final static long[] computeSequenceHashesLong(final String seq, final int nGramSize, final int seed, final boolean doReverseCompliment)
 	{
 		HashFunction hf = Hashing.murmur3_128(seed);
 	
 		long[] hashes = new long[seq.length() - nGramSize + 1];
 		for (int iter = 0; iter < hashes.length; iter++)
 		{
-			HashCode hc = hf.newHasher().putUnencodedChars(seq.substring(iter, iter + nGramSize)).hash();
+			String str = seq.substring(iter, iter + nGramSize);
+			String strReverse = null;
+			if (doReverseCompliment)
+			{
+				strReverse  = Utils.rc(str);
+				if (strReverse.compareTo(str)<0)
+					str = strReverse;
+			}
+			
+			HashCode hc = hf.newHasher().putUnencodedChars(str).hash();
 			hashes[iter] = hc.asLong();
 		}
 	

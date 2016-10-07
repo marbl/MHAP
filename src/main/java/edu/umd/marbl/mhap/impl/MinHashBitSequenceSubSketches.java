@@ -61,7 +61,7 @@ public final class MinHashBitSequenceSubSketches
 			int currStart = Math.max(0, end-stepSize);			
 
 			//compute minhashes
-			int[] sketch = new MinHashSketch(seq.substring(currStart, end), nGramSize, numWords*64).getMinHashArray();
+			int[] sketch = new MinHashSketch(seq.substring(currStart, end), nGramSize, numWords*64, true).getMinHashArray();
 			
 			sequence[iter] = new MinHashBitSketch(sketch);
 			
@@ -91,7 +91,7 @@ public final class MinHashBitSequenceSubSketches
 			int currStart = Math.max(0, end-stepSize*2);			
 
 			//compute minhashes
-			sketches[iter] = new MinHashBitSketch(new MinHashSketch(seq.substring(currStart, end), nGramSize, numWords*64).getMinHashArray());
+			sketches[iter] = new MinHashBitSketch(new MinHashSketch(seq.substring(currStart, end), nGramSize, numWords*64, true).getMinHashArray());
 			
 			start += stepSize;
 		}

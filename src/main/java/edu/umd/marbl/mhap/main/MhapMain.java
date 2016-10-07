@@ -62,10 +62,13 @@ public final class MhapMain
 	private final String processFile;
 	private final String toFile;
 	private final double repeatWeight;
+	private final boolean doReverseCompliment;
 
 	private static final double DEFAULT_OVERLAP_ACCEPT_SCORE = 0.78;
 
 	private static final double DEFAULT_REPEAT_WEIGHT= 0.9;
+
+	private static final double DEFAULT_REPEAT_IDF_SCALE = 3.0;
 
 	private static final double DEFAULT_FILTER_CUTOFF = 1.0e-5;
 
@@ -101,22 +104,24 @@ public final class MhapMain
 		options.addOption("-q", "Usage 1: The FASTA file of reads, or a directory of files, that will be compared to the set of reads in the box (see -s). Usage 2: The output directory for the binary formatted dat files.", "");
 		options.addOption("-p", "Usage 2 only. The directory containing FASTA files that should be converted to binary format for storage.", "");
 		options.addOption("-f", "k-mer filter file used for filtering out highly repetative k-mers. Must be sorted in descending order of frequency (second column).", "");
-		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is seperate, and cannot be modified.", DEFAULT_KMER_SIZE);
-		options.addOption("--num-hashes", "[int], number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
-		options.addOption("--threshold", "[double], the threshold cutoff for the second stage sort-merge filter. This is based on the identity score computed from the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
-		options.addOption("--filter-threshold", "[double], the cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored.", DEFAULT_FILTER_CUTOFF);
-		options.addOption("--max-shift", "[double], region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
-		options.addOption("--num-min-matches", "[int], minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
-		options.addOption("--num-threads", "[int], number of threads to use for computation. Typically set to #cores.", DEFAULT_NUM_THREADS);
+		options.addOption("-k", "[int], k-mer size used for MinHashing. The k-mer size for second stage filter is seperate, and can also be modified.", DEFAULT_KMER_SIZE);
+		options.addOption("--num-hashes", "[int], Number of min-mers to be used in MinHashing.", DEFAULT_NUM_WORDS);
+		options.addOption("--threshold", "[double], The threshold cutoff for the second stage sort-merge filter. This is based on the identity score computed from the Jaccard distance of k-mers (size given by ordered-kmer-size) in the overlapping regions.", DEFAULT_OVERLAP_ACCEPT_SCORE);
+		options.addOption("--filter-threshold", "[double], The cutoff at which the k-mer in the k-mer filter file is considered repetitive. This value for a specific k-mer is specified in the second column in the filter file. If no filter file is provided, this option is ignored.", DEFAULT_FILTER_CUTOFF);
+		options.addOption("--max-shift", "[double], Region size to the left and right of the estimated overlap, as derived from the median shift and sequence length, where a k-mer matches are still considered valid. Second stage filter only.", DEFAULT_MAX_SHIFT_PERCENT);
+		options.addOption("--num-min-matches", "[int], Minimum # min-mer that must be shared before computing second stage filter. Any sequences below that value are considered non-overlapping.", DEFAULT_NUM_MIN_MATCHES);
+		options.addOption("--num-threads", "[int], nNumber of threads to use for computation. Typically set to #cores.", DEFAULT_NUM_THREADS);
 		options.addOption("--repeat-weight", "[double] Repeat suppression strength for tf-idf weighing. <0.0 do unweighted MinHash (version 1.0), >=1.0 do only the tf weighing. To perform no idf weighting, do no supply -f option. ", DEFAULT_REPEAT_WEIGHT);
+		options.addOption("--repeat-idf-scale", "[double] The upper range of the idf (from tf-idf) scale. The full scale will be [1,X], where X is the parameter.", DEFAULT_REPEAT_IDF_SCALE);
 		options.addOption("--ordered-kmer-size", "[int] The size of k-mers used in the ordered second stage filter.", DEFAULT_ORDERED_KMER_SIZE);
 		options.addOption("--ordered-sketch-size", "[int] The sketch size for second stage filter.", DEFAULT_ORDERED_SKETCH_SIZE);
 		options.addOption("--min-store-length", "[int], The minimum length of the read that is stored in the box. Used to filter out short reads from FASTA file.", DEFAULT_MIN_STORE_LENGTH);
 		options.addOption("--min-olap-length", "[int], The minimum length of the read that used for overlapping. Used to filter out short reads from FASTA file.", DEFAULT_MIN_OVL_LENGTH);
 		options.addOption("--no-self", "Do not compute the overlaps between sequences inside a box. Should be used when the to and from sequences are coming from different files.", false);
-		options.addOption("--store-full-id", "Store full IDs as seen in FASTA file, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format.", false);
+		options.addOption("--store-full-id", "Store full IDs as seen in FASTA files, rather than storing just the sequence position in the file. Some FASTA files have long IDS, slowing output of results. This options is ignored when using compressed file format. Indexed file (-s) is indexed first, followed by -q files in alphabetical order.", false);
 		options.addOption("--supress-noise", "[int] 0) Does nothing, 1) completely removes any k-mers not specified in the filter file, 2) supresses k-mers not specified in the filter file, similar to repeats. ", 0);
 		options.addOption("--no-tf", "Do not perform the tf weighing, in the tf-idf weighing.", false);
+		options.addOption("--no-rc", "Do not store or do comparison of the reverse compliment strings.", false);
 		options.addOption("--settings", "Set all unset parameters for the default settings. Same defaults are applied to Nanopore and Pacbio reads. 0) None, 1) Default, 2) Fast, 3) Sensitive.", 0);
 		
 		if (!options.process(args))
@@ -264,6 +269,13 @@ public final class MhapMain
 		}
 
 		//check range
+		if (options.get("--repeat-idf-scale").getDouble()<1.0)
+		{
+			System.out.println("The minimum repeat idf scale must be >=1.0.");
+			System.exit(1);
+		}
+
+		//check range
 		if (options.get("--max-shift").getDouble()<-1.0)
 		{
 			System.out.println("The minimum shift must be greater than -1.");
@@ -322,6 +334,7 @@ public final class MhapMain
 		this.repeatWeight = options.get("--repeat-weight").getDouble();
 		this.orderedKmerSize = options.get("--ordered-kmer-size").getInteger();
 		this.orderedSketchSize = options.get("--ordered-sketch-size").getInteger();
+		this.doReverseCompliment = !options.get("--no-rc").getBoolean();
 		
 		// read in the kmer filter set
 		String filterFile = options.get("-f").getString();
@@ -339,10 +352,11 @@ public final class MhapMain
 				double maxFraction = options.get("--filter-threshold").getDouble();
 				int removeUnique = options.get("--supress-noise").getInteger();
 				boolean noTf = options.get("--no-tf").getBoolean();
+				double range = options.get("--repeat-idf-scale").getDouble();
 			
 				try (BufferedReader bf = Utils.getFile(filterFile, null))
 				{
-					this.kmerFilter = new FrequencyCounts(bf, maxFraction, offset, removeUnique, noTf, this.numThreads);
+					this.kmerFilter = new FrequencyCounts(bf, maxFraction, offset, removeUnique, noTf, this.numThreads, range, this.doReverseCompliment);
 				}
 			}
 			catch (Exception e)
@@ -403,7 +417,10 @@ public final class MhapMain
 				
 				if (fileList!=null)
 					for (File cf : fileList)
-						processFiles.add(cf);				
+						processFiles.add(cf);	
+				
+				//sort the files in alphabetical order
+				Collections.sort(processFiles);
 			}
 			
 			for (File pf : processFiles)
@@ -537,7 +554,7 @@ public final class MhapMain
 	public MinHashSearch getMatchSearch(SequenceSketchStreamer hashStreamer) throws IOException
 	{
 		return new MinHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
-				this.minStoreLength, this.maxShift, this.acceptScore);
+				this.minStoreLength, this.maxShift, this.acceptScore, this.doReverseCompliment);
 	}
 	
 	public SequenceSketchStreamer getSequenceHashStreamer(String file, int offset) throws IOException
@@ -547,7 +564,7 @@ public final class MhapMain
 			seqStreamer = new SequenceSketchStreamer(file, this.minOlapLength, offset);
 		else
 			seqStreamer = new SequenceSketchStreamer(file, this.minOlapLength, this.kmerSize, this.numHashes,
-					this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.repeatWeight, offset);
+					this.orderedKmerSize, this.orderedSketchSize, this.kmerFilter, this.doReverseCompliment, this.repeatWeight, offset);
 
 		return seqStreamer;
 	}

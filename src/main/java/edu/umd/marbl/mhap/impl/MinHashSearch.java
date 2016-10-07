@@ -61,7 +61,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final Map<SequenceId, SequenceSketch> sequenceVectorsHash;
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
-			boolean storeResults, int minStoreLength, double maxShift, double acceptScore) throws IOException
+			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, boolean doReverseCompliment) throws IOException
 	{
 		super(numThreads, storeResults);
 
@@ -91,8 +91,8 @@ public final class MinHashSearch extends AbstractMatchSearch
 			this.hashes.add(map);
 		}
 		
-		addData(data);
-		
+		//store both forward andd reverse
+		addData(data, doReverseCompliment);
 		
 		System.err.println("Stored "+this.sequenceVectorsHash.size()+" sequences in the index.");
 	}

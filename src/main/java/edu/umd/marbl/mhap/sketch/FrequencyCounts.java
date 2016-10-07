@@ -56,16 +56,17 @@ public final class FrequencyCounts
 	private final double minValue;
 	private final boolean noTf;
 	private final double offset;
+	private final double range;
 	private final int removeUnique;
 	private final BloomFilter<Long> validMers;
 	
-	public static final double REPEAT_SCALE = 3.0;
-	
-	public FrequencyCounts(BufferedReader bf, double filterCutoff, double offset, int removeUnique, boolean noTf, int numThreads) throws IOException
+	public FrequencyCounts(BufferedReader bf, double filterCutoff, double offset, int removeUnique, boolean noTf, int numThreads, double range, boolean doReverseCompliment) throws IOException
 	{
 		//removeUnique = 0: do nothing extra to k-mers not specified in the file
 		//removeUnique = 1: remove k-mers not specified in the file from the sketch
 		//removeUnique = 2: supress k-mers not specified in the file the same as max supression
+		
+		this.range = range;
 		
 		if (removeUnique<0 || removeUnique>2)
 			throw new MhapRuntimeException("Unknown removeUnique option "+removeUnique+".");
@@ -142,7 +143,7 @@ public final class FrequencyCounts
 						this.kmerSizes.add(str[0].length());
 					}					
 					
-					long[] hash = HashUtils.computeSequenceHashesLong(str[0], str[0].length(), 0);
+					long[] hash = HashUtils.computeSequenceHashesLong(str[0], str[0].length(), 0, doReverseCompliment);
 					
 					if (str.length >= 2)
 					{
@@ -265,7 +266,7 @@ public final class FrequencyCounts
 	
 	public double scaledIdf(long hash)
 	{
-		return scaledIdf(hash, REPEAT_SCALE);
+		return scaledIdf(hash, this.range);
 	}
 	
 	public double scaledIdf(long hash, double maxValue)

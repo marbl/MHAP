@@ -11,9 +11,9 @@ public class BottomSketch implements Sketch<BottomSketch>
 	 */
 	private static final long serialVersionUID = 9035607728472270206L;
 
-	public BottomSketch(String str, int nGramSize, int k)
+	public BottomSketch(String str, int nGramSize, int k, boolean doReverseCompliment)
 	{
-		int[] hashes = HashUtils.computeSequenceHashes(str, nGramSize);
+		int[] hashes = HashUtils.computeSequenceHashes(str, nGramSize, doReverseCompliment);
 		
 		k = Math.min(k, hashes.length);
 		
