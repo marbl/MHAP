@@ -9,7 +9,7 @@ Running MHAP provides command-line documenation if you run it without parameters
  
 .. code-block:: bash
 
-    $ java -jar mhap-2.1.jar
+    $ java -jar mhap-2.1.1.jar
 
 MHAP has two main usage modes, the main finds all overlaps between the input sequences. The second  only constructs an index which can be subsequently reused. 
 
@@ -18,7 +18,7 @@ Finding overlaps
 
 .. code-block:: bash
 
-   $ java -Xmx32g -server -jar mhap-2.1.jar -s<fasta/dat from/self file> [-q<fasta/dat to file or directory>] [-f<kmer filter list, must be sorted>]
+   $ java -Xmx32g -server -jar mhap-2.1.1.jar -s<fasta/dat from/self file> [-q<fasta/dat to file or directory>] [-f<kmer filter list, must be sorted>]
 
 Both the -s and -q options can accept either FastA sequences or binary dat files (generated as described below). The -q option can accept either a file or a directory, in which case all FastA/dat files in the specified directory will be used. By default, only the sequences specified by -s are indexed and the sequences in -q are streamed against the constructed index. Generally, 32GB of RAM is sufficient to index 40K sequences. If you have more sequences, you can partition your data and run MHAP on the partitions. You can also increase the memory MHAP is allowed to use by changing the Xmx parameter to a larger limit.
 
@@ -101,6 +101,8 @@ The full list of options is available via command-line help (--help or -h). Belo
 			[int] The size of k-mers used in the ordered second stage filter.
 		--ordered-sketch-size, default = 1536
 			[int] The sketch size for second stage filter.
+		--repeat-idf-scale, default = 3.0
+			[double] The upper range of the idf (from tf-idf) scale. The full scale will be [1,X], where X is the parameter.
 		--repeat-weight, default = 0.9
 			[double] Repeat suppression strength for tf-idf weighing. <0.0 do unweighted MinHash (version 1.0), >=1.0 do only the tf weighing. To perform no idf weighting, do no supply -f option. 
 		--settings, default = 0
@@ -125,3 +127,4 @@ The full list of options is available via command-line help (--help or -h). Belo
 			Usage 1: The FASTA file of reads, or a directory of files, that will be compared to the set of reads in the box (see -s). Usage 2: The output directory for the binary formatted dat files.
 		-s, default = ""
 			Usage 1 only. The FASTA or binary dat file (see Usage 2) of reads that will be stored in a box, and that all subsequent reads will be compared to.
+
