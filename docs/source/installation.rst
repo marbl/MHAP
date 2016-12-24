@@ -28,19 +28,19 @@ The pre-compiled version is recommended to users who want to run MHAP, without d
 
 .. code-block:: bash
 
-    $ wget https://github.com/marbl/MHAP/releases/download/v2.1.1/mhap-2.1.1.tar.gz
+    $ wget https://github.com/marbl/MHAP/releases/download/v2.1.1/mhap-2.1.1.jar.gz
 
 And if ``wget`` not available, you can use ``curl`` instead:
 
 .. code-block:: bash
 
-    $ curl -L https://github.com/marbl/MHAP/releases/download/v2.1.1/mhap-2.1.1.tar.gz > mhap-2.1.1.tar.gz
+    $ curl -L https://github.com/marbl/MHAP/releases/download/v2.1.1/mhap-2.1.1.jar.gz
 
 Then run
 
 .. code-block:: bash
 
-   $ tar xvzf mhap-2.1.1.tar.gz
+   $ gunzip mhap-2.1.1.jar.gz
 
 Source
 -----------------
