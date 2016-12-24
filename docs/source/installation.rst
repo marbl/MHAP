@@ -42,9 +42,10 @@ Then run
 
    $ gunzip mhap-2.1.1.jar.gz
    
-Now to run mhap run
+Now to run mhap
 
 .. code-block:: bash
+
    $ java -jar mhap-2.1.1.jar
 
 Source
