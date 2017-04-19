@@ -79,7 +79,7 @@ public final class FrequencyCounts
 		this.noTf = noTf;
 		
 		// generate hashset
-		Long2DoubleOpenHashMap validMap = new Long2DoubleOpenHashMap();
+		Long2DoubleOpenHashMap validMap;
 		BloomFilter<Long> validMers;
 
 		//the max value observed in the list
@@ -109,6 +109,24 @@ public final class FrequencyCounts
 				}
 			}
 			
+			System.err.println("Initializing");
+			Long2DoubleOpenHashMap tempMap = null;
+			for (long i = size; i > 0; i /= 2) {
+				try {	
+					System.err.print("Trying size " + i);
+					tempMap = new Long2DoubleOpenHashMap((int)(i));
+					System.err.println(" and it was successfull");
+					break;
+				} catch (IllegalArgumentException e) {
+					System.err.println(" and it was too big, trying smaller");
+				}
+			}
+			if (tempMap == null)
+				validMap = new Long2DoubleOpenHashMap();
+			else
+				validMap = tempMap;
+			System.err.println("Initialized");
+
 			//if no nothing, no need to store the while list
 			if (removeUnique>0)
 				validMers = BloomFilter.create((value, sink) -> sink.putLong(value), size, 1.0e-5);
