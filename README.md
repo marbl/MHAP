@@ -13,7 +13,7 @@ You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/down
 For a quick user-quide, run:
 
     cd target
-    java -jar mhap-2.1.1.jar
+    java -jar mhap-2.1.3.jar
 
 ## Docs
 For the full documentation information please see http://mhap.readthedocs.io/en/latest/
