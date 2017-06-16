@@ -10,7 +10,7 @@ You must have a recent  [JDK](http://www.oracle.com/technetwork/java/javase/down
     cd MHAP
     mvn install
     
-For a quick user-quide, run:
+Maven executables vary by system, it could also be maven/mvn/mv32, depending on your installation. For a quick user-quide, run:
 
     cd target
     java -jar mhap-2.1.3.jar
