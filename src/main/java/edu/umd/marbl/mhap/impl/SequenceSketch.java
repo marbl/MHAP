@@ -67,8 +67,10 @@ public final class SequenceSketch implements Serializable
 			// dos.writeBoolean(this.id.isForward());
 			boolean isFwd = input.readBoolean();
 
-			// dos.writeInt(this.id.getHeaderId());
-			SequenceId id = new SequenceId(input.readLong() + offset, isFwd);
+			// dos.writeLong(this.id.getHeaderId());
+			// dos.writeUTF(this.id.getHeader());
+			
+			SequenceId id = new SequenceId(input.readLong() + offset, isFwd, input.readUTF());
 			
 			//dos.writeInt(this.sequenceLength);
 			int sequenceLength = input.readInt();
@@ -131,6 +133,7 @@ public final class SequenceSketch implements Serializable
 		{
 			dos.writeBoolean(this.id.isForward());
 			dos.writeLong(this.id.getHeaderId());
+			dos.writeUTF(this.id.getHeader());
 			dos.writeInt(this.sequenceLength);
 			dos.write(mainHashesBytes);
 			dos.write(orderedHashesBytes);
