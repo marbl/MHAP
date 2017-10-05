@@ -89,29 +89,34 @@ public final class FrequencyCounts
 		String line = bf.readLine();
 		try
 		{
-			long size;
+			long sizeBloom;
+			long sizeRepeat;
 			if (line==null)
 			{
 				System.err.println("Warning, k-mer filter file is empty. Assuming zero entries.");
-				size = 1L;
+				sizeBloom = sizeRepeat = 1L;
 			}
 			else
 			{
-				size = Long.parseLong(line);
+				// we assume the line has two entries, the first is the size of the bloom filter, the second is the size of the filter set
+				String[] splitLine = line.trim().split("\\s+");
+				sizeBloom = Long.parseLong(splitLine[0]);
+				sizeRepeat = Long.parseLong(splitLine[1]);
+				System.err.println("Read in values for repeat " + sizeRepeat + " and " + sizeBloom);
 			
-				if (size<0L)
+				if (sizeBloom<0L || sizeRepeat <0L)
 					throw new MhapRuntimeException("K-mer filter file size line must have positive long value.");
 				else
-				if (size==0L)
+				if (sizeBloom==0L)
 				{
 					System.err.println("Warning, k-mer filter file has zero elements.");
-					size = 1L;
+					sizeBloom = 1L;
 				}
 			}
 			
 			System.err.println("Initializing");
 			Long2DoubleOpenHashMap tempMap = null;
-			for (long i = size; i > 0; i /= 2) {
+			for (long i = sizeRepeat; i > 0; i /= 2) {
 				try {	
 					System.err.print("Trying size " + i);
 					tempMap = new Long2DoubleOpenHashMap((int)(i));
@@ -129,7 +134,7 @@ public final class FrequencyCounts
 
 			//if no nothing, no need to store the while list
 			if (removeUnique>0)
-				validMers = BloomFilter.create((value, sink) -> sink.putLong(value), size, 1.0e-5);
+				validMers = BloomFilter.create((value, sink) -> sink.putLong(value), sizeBloom, 1.0e-5);
 			else
 				validMers = null;
 		}
