@@ -554,7 +554,7 @@ public final class MhapMain
 	public MinHashSearch getMatchSearch(SequenceSketchStreamer hashStreamer) throws IOException
 	{
 		return new MinHashSearch(hashStreamer, this.numHashes, this.numMinMatches, this.numThreads, false,
-				this.minStoreLength, this.maxShift, this.acceptScore, this.doReverseCompliment);
+				this.minStoreLength, this.maxShift, this.acceptScore, this.minOlapLength, this.doReverseCompliment);
 	}
 	
 	public SequenceSketchStreamer getSequenceHashStreamer(String file, int offset) throws IOException

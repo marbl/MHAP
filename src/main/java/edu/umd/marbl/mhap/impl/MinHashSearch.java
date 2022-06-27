@@ -41,10 +41,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import edu.umd.marbl.mhap.sketch.MinHashSketch;
 import edu.umd.marbl.mhap.utils.HitCounter;
+import edu.umd.marbl.mhap.impl.MatchResult;
 
 public final class MinHashSearch extends AbstractMatchSearch
 {
 	private final double acceptScore;
+	private final double minOlapLength;
 
 	private final ArrayList<Map<Integer, ArrayList<SequenceId>>> hashes;
 	private final double maxShift;
@@ -61,7 +63,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 	private final Map<SequenceId, SequenceSketch> sequenceVectorsHash;
 	
 	public MinHashSearch(SequenceSketchStreamer data, int numHashes, int numMinMatches, int numThreads, 
-			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, boolean doReverseCompliment) throws IOException
+			boolean storeResults, int minStoreLength, double maxShift, double acceptScore, int minOlapLength, boolean doReverseCompliment) throws IOException
 	{
 		super(numThreads, storeResults);
 
@@ -69,6 +71,7 @@ public final class MinHashSearch extends AbstractMatchSearch
 		this.numMinMatches = numMinMatches;
 		this.maxShift = maxShift;
 		this.acceptScore = acceptScore;
+		this.minOlapLength = minOlapLength;
 		this.numberSequencesHit = new AtomicLong();
 		this.numberSequencesFullyCompared = new AtomicLong();
 		this.numberSequencesMinHashed = new AtomicLong();
@@ -226,13 +229,13 @@ public final class MinHashSearch extends AbstractMatchSearch
 				
 				//compute the direct hash score
 				OverlapInfo result = seqHashes.getOrderedHashes().getOverlapInfo(matchedHashes.getOrderedHashes(), this.maxShift);
-				boolean accept = result.score >= this.acceptScore;					
 								
 				//increment the counter
 				this.numberSequencesFullyCompared.getAndIncrement();
 
 				//if score is good add
-				if (accept)
+				if (result.getScore()  >= this.acceptScore &&
+						result.getLength() >= this.minOlapLength)
 				{
 					MatchResult currResult = new MatchResult(seqHashes.getSequenceId(), matchId, result, seqHashes.getSequenceLength(), matchedHashes.getSequenceLength());
 

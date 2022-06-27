@@ -28,6 +28,8 @@
  */
 package edu.umd.marbl.mhap.impl;
 
+import java.lang.Math;
+
 public final class OverlapInfo
 {
 	public final int a1;
@@ -49,6 +51,22 @@ public final class OverlapInfo
 		this.b2 = b2;
 	}
 	
+	/**
+	 * @return the score
+	 */
+	public double getScore()
+	{
+		return this.score;
+	}
+
+	/**
+	 * @return the length of the overlap
+	 */
+	public double getLength()
+	{
+		return (Math.abs(this.a1 - this.a2) + Math.abs(this.b1 - this.b2)) / 2;
+	}
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
